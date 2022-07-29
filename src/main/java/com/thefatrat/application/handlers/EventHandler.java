@@ -4,11 +4,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
-public abstract class ListenerHandler<T> {
+public abstract class EventHandler<T> {
 
     private final Map<String, Consumer<T>> map = new HashMap<>();
 
-    public ListenerHandler() {
+    public EventHandler() {
         register();
     }
 
