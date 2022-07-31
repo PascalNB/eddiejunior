@@ -40,7 +40,7 @@ public abstract class DirectComponent extends Component {
                 ? Arrays.copyOfRange(command.args(), 1, command.args().length)
                 : new String[0];
 
-            handler.handle(new Command(newCommand, newArgs, command.event(), command.member()));
+            handler.handle(new Command(newCommand, newArgs, command.message(), command.member()));
         }, PermissionChecker.IS_ADMIN);
 
         ((Server) getSource()).getDirectHandler().addListener(message -> {
@@ -58,7 +58,7 @@ public abstract class DirectComponent extends Component {
                 newDestination = parsedDestination;
             } else {
                 newDestination = getDestination() == null
-                    ? command.event().getChannel()
+                    ? command.message().getChannel()
                     : getDestination();
             }
 
@@ -66,7 +66,7 @@ public abstract class DirectComponent extends Component {
                 !newDestination.getId().equals(getDestination().getId())) {
                 setDestination(newDestination);
 
-                command.event().getChannel().sendMessageFormat(
+                command.message().getChannel().sendMessageFormat(
                     ":gear: Destination set to %s `(%s)`%n",
                     getDestination().getAsMention(), getDestination().getId()
                 ).queue();
@@ -86,7 +86,7 @@ public abstract class DirectComponent extends Component {
                     builder.append(" ").append(component.getName()).append(",");
                 }
                 builder.deleteCharAt(builder.length() - 1);
-                command.event().getChannel().sendMessage(builder.toString()).queue();
+                command.message().getChannel().sendMessage(builder.toString()).queue();
             }
 
             start(command);
@@ -102,21 +102,21 @@ public abstract class DirectComponent extends Component {
         handler.addListener("destination", command -> {
             MessageChannel newDestination;
             if (command.args().length == 0) {
-                newDestination = command.event().getChannel();
+                newDestination = command.message().getChannel();
             } else {
                 newDestination = parseDestination(command, 0);
             }
 
             if (newDestination != null) {
                 setDestination(newDestination);
-                command.event().getChannel().sendMessageFormat(
+                command.message().getChannel().sendMessageFormat(
                         ":gear: Destination set to %s `(%s)`%n",
                         getDestination().getAsMention(), getDestination().getId())
                     .queue();
                 return;
             }
 
-            command.event().getChannel().sendMessageFormat(
+            command.message().getChannel().sendMessageFormat(
                 ":x: The given destination channel was not found."
             ).queue();
         });
@@ -124,18 +124,18 @@ public abstract class DirectComponent extends Component {
 
     private MessageChannel parseDestination(Command command, int position) {
         MessageChannel result;
-        List<GuildChannel> list = command.event().getMentions().getChannels();
+        List<GuildChannel> list = command.message().getMentions().getChannels();
 
         if (list.size() != 0) {
             String id = list.get(0).getId();
-            result = command.event()
+            result = command.message()
                 .getGuild().getChannelById(MessageChannel.class, id);
 
         } else {
             if (command.args().length == 0) {
                 return null;
             }
-            result = command.event().getGuild()
+            result = command.message().getGuild()
                 .getChannelById(MessageChannel.class, command.args()[position]);
         }
 

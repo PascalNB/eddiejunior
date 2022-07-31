@@ -1,8 +1,10 @@
 package com.thefatrat.application.components;
 
 import com.thefatrat.application.Command;
+import com.thefatrat.application.HelpEmbedBuilder;
 import com.thefatrat.application.sources.Source;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
 
 // TODO: user timeout
@@ -10,13 +12,23 @@ public class ModMail extends DirectComponent {
 
     public static final String NAME = "Modmail";
 
+    private final MessageEmbed help;
+
     public ModMail(Source server) {
         super(server, NAME);
+        // TODO
+        help = new HelpEmbedBuilder(NAME)
+            .addCommand("modmail start", "")
+            .addCommand("modmail start [channel]", "")
+            .addCommand("modmail stop", "")
+            .addCommand("modmail destination", "")
+            .addCommand("modmail destination [channel]", "")
+            .build();
     }
 
     @Override
-    public String getHelp() {
-        return "";
+    public MessageEmbed getHelp() {
+        return help;
     }
 
     @Override

@@ -1,8 +1,10 @@
 package com.thefatrat.application.components;
 
 import com.thefatrat.application.Command;
+import com.thefatrat.application.HelpEmbedBuilder;
 import com.thefatrat.application.sources.Source;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
 
 import java.util.HashSet;
@@ -16,29 +18,27 @@ public class Feedback extends DirectComponent {
         "[-a-zA-Z\\d+&@#/%=~_|]";
 
     private final Set<String> users = new HashSet<>();
+    private final MessageEmbed help;
 
     public Feedback(Source server) {
         super(server, NAME);
+        help = new HelpEmbedBuilder(NAME)
+            .addCommand("feedback start", "start the feedback session")
+            .addCommand("feedback start [channel]",
+                "start the feedback session in the given channel")
+            .addCommand("feedback stop", "stop the current feedback session")
+            .addCommand("feedback destination",
+                "set the destination channel to the current channel")
+            .addCommand("feedback destination [channel]",
+                "set the destination channel to the given channel")
+            .addCommand("feedback reset", "allow submissions for all users again")
+            .addCommand("feedback reset [users]", "allow specific users to submit again")
+            .build();
     }
 
     @Override
-    public String getHelp() {
-        return """
-            `feedback start`
-              - start the feedback session.
-            `feedback start [channel]`
-              - start the feedback session in the given channel.
-            `feedback stop`
-              - stop the current feedback session.
-            `feedback destination`
-              - set the destination channel to the current channel.
-            `feedback destination [channel]`
-              - set the destination channel to the given channel.
-            `feedback reset`
-              - allow submissions for all users again.
-            `feedback reset [users]`
-              - allow specific users to submit again.
-            """;
+    public MessageEmbed getHelp() {
+        return help;
     }
 
     @Override
@@ -48,20 +48,20 @@ public class Feedback extends DirectComponent {
         getHandler().addListener("reset", command -> {
             if (command.args().length == 0) {
                 users.clear();
-                command.event().getChannel().sendMessage(
+                command.message().getChannel().sendMessage(
                     ":arrows_counterclockwise: Feedback session reset, users can submit again"
                 ).queue();
                 return;
             }
 
-            for (User user : command.event().getMentions().getUsers()) {
+            for (User user : command.message().getMentions().getUsers()) {
                 users.remove(user.getId());
             }
             for (int i = 0, length = command.args().length; i < length; i++) {
                 users.remove(command.args()[i]);
             }
 
-            command.event().getChannel().sendMessage(
+            command.message().getChannel().sendMessage(
                 ":arrows_counterclockwise: Feedback session reset for " +
                     "the given users, they can submit again"
             ).queue();
@@ -110,14 +110,14 @@ public class Feedback extends DirectComponent {
     @Override
     protected void start(Command command) {
         users.clear();
-        command.event().getChannel().sendMessage(
+        command.message().getChannel().sendMessage(
             ":white_check_mark: Feedback session started"
         ).queue();
     }
 
     @Override
     protected void stop(Command command) {
-        command.event().getChannel().sendMessage(
+        command.message().getChannel().sendMessage(
             ":stop_sign: Feedback session stopped"
         ).queue();
     }

@@ -6,7 +6,7 @@ import net.dv8tion.jda.api.entities.Message;
 public record Command(
     String command,
     String[] args,
-    Message event,
+    Message message,
     Member member) {
 
 }

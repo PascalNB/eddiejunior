@@ -1,6 +1,7 @@
 package com.thefatrat.application.components;
 
 import com.thefatrat.application.sources.Source;
+import net.dv8tion.jda.api.entities.MessageEmbed;
 
 public abstract class Component {
 
@@ -41,7 +42,7 @@ public abstract class Component {
         return name;
     }
 
-    public abstract String getHelp();
+    public abstract MessageEmbed getHelp();
 
     public abstract void register();
 

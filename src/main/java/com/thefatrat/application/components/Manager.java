@@ -1,10 +1,12 @@
 package com.thefatrat.application.components;
 
 import com.thefatrat.application.Bot;
+import com.thefatrat.application.HelpEmbedBuilder;
 import com.thefatrat.application.PermissionChecker;
 import com.thefatrat.application.handlers.CommandHandler;
 import com.thefatrat.application.sources.Source;
 import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.Role;
 
 import java.util.Objects;
@@ -14,8 +16,26 @@ public class Manager extends Component {
 
     public static final String NAME = "Manager";
 
+    private final MessageEmbed help;
+
     public Manager(Source server) {
         super(server, NAME, true);
+        help = new HelpEmbedBuilder("Default")
+            .addCommand("help", "shows this message")
+            .addCommand("help [component]", "show the help message for the given component")
+            .addCommand("ping", "check the RTT of the connection in milliseconds")
+            .addCommand("setprefix", "set the prefix for all commands, - by default")
+            .addCommand("enable [component]", "enable a specific component by name")
+            .addCommand("disable [component]", "disable a specific component by name")
+            .addCommand("permission [component] [role id]",
+                "allow the given role to manage the given component")
+            .addCommand("revoke [component]", "revoke all roles from managing the given component")
+            .build();
+    }
+
+    @Override
+    public MessageEmbed getHelp() {
+        return help;
     }
 
     @Override
@@ -24,25 +44,33 @@ public class Manager extends Component {
 
         // TODO specific help for components
         handler.addListener("help", command -> {
-            if (!command.event().isFromGuild()) {
+            if (!command.message().isFromGuild()) {
                 return;
             }
-            StringBuilder builder = new StringBuilder();
-            for (Component component : getSource().getComponents()) {
-                if (component.isEnabled()) {
-                    builder.append("**").append(component.getName().toUpperCase())
-                        .append("**\n").append(component.getHelp());
-                }
+
+            if (command.args().length == 0) {
+                command.message().getChannel().sendMessageEmbeds(getHelp()).queue();
+                return;
             }
-            command.event().getChannel().sendMessage(builder.toString()).queue();
+
+            String componentString = command.args()[0];
+            Component component = getSource().getComponent(componentString);
+            if (component == null) {
+                command.message().getChannel().sendMessageFormat(
+                    ":x: Component `%s` does not exist", componentString).queue();
+                return;
+            }
+
+            command.message().getChannel().sendMessageEmbeds(component.getHelp()).queue();
+
         });
 
         handler.addListener("ping", command -> {
-            if (!command.event().isFromGuild()) {
+            if (!command.message().isFromGuild()) {
                 return;
             }
             final long start = System.currentTimeMillis();
-            command.event().getChannel()
+            command.message().getChannel()
                 .sendMessage("pong :ping_pong:")
                 .queue(message -> {
                     long time = System.currentTimeMillis() - start;
@@ -51,20 +79,20 @@ public class Manager extends Component {
         });
 
         handler.addListener("setprefix", command -> {
-            if (command.args().length != 1 || !command.event().isFromGuild()) {
+            if (command.args().length != 1 || !command.message().isFromGuild()) {
                 return;
             }
-            Bot.getInstance().getServer(command.event().getGuild().getId())
+            Bot.getInstance().getServer(command.message().getGuild().getId())
                 .setPrefix(command.args()[0]);
         }, PermissionChecker.IS_ADMIN);
 
         handler.addListener("enable", command -> {
-            if (command.args().length != 1 || !command.event().isFromGuild()) {
+            if (command.args().length != 1 || !command.message().isFromGuild()) {
                 return;
             }
 
             String component = command.args()[0];
-            MessageChannel channel = command.event().getChannel();
+            MessageChannel channel = command.message().getChannel();
 
             if (getSource().toggleComponent(component, true)) {
                 channel.sendMessageFormat(
@@ -77,12 +105,12 @@ public class Manager extends Component {
         }, PermissionChecker.IS_ADMIN);
 
         handler.addListener("disable", command -> {
-            if (command.args().length != 1 || !command.event().isFromGuild()) {
+            if (command.args().length != 1 || !command.message().isFromGuild()) {
                 return;
             }
 
             String component = command.args()[0];
-            MessageChannel channel = command.event().getChannel();
+            MessageChannel channel = command.message().getChannel();
 
             Component component1 = getSource().getComponent(component);
             if (component1 instanceof DirectComponent direct) {
@@ -99,7 +127,7 @@ public class Manager extends Component {
         }, PermissionChecker.IS_ADMIN);
 
         handler.addListener("components", command -> {
-            if (!command.event().isFromGuild()) {
+            if (!command.message().isFromGuild()) {
                 return;
             }
 
@@ -125,17 +153,17 @@ public class Manager extends Component {
                 }
             }
 
-            command.event().getChannel().sendMessage(builder.toString()).queue();
+            command.message().getChannel().sendMessage(builder.toString()).queue();
 
         });
 
         handler.addListener("permission", command -> {
-            if (command.args().length != 2 || !command.event().isFromGuild()) {
+            if (command.args().length != 2 || !command.message().isFromGuild()) {
                 return;
             }
 
             String componentString = command.args()[0];
-            MessageChannel channel = command.event().getChannel();
+            MessageChannel channel = command.message().getChannel();
             Component component = getSource().getComponent(componentString);
 
             if (component == null || component == this) {
@@ -147,7 +175,7 @@ public class Manager extends Component {
 
             try {
                 long id = Long.parseLong(command.args()[1]);
-                role = Objects.requireNonNull(command.event().getJDA().getRoleById(id));
+                role = Objects.requireNonNull(command.message().getJDA().getRoleById(id));
             } catch (NumberFormatException | NullPointerException e) {
                 channel.sendMessageFormat("The given role ID was not found",
                     componentString).queue();
@@ -164,12 +192,12 @@ public class Manager extends Component {
         }, PermissionChecker.IS_ADMIN);
 
         handler.addListener("revoke", command -> {
-            if (command.args().length != 1 || !command.event().isFromGuild()) {
+            if (command.args().length != 1 || !command.message().isFromGuild()) {
                 return;
             }
 
             String componentString = command.args()[0];
-            MessageChannel channel = command.event().getChannel();
+            MessageChannel channel = command.message().getChannel();
             Component component = getSource().getComponent(componentString);
 
             if (component == null) {
@@ -185,26 +213,6 @@ public class Manager extends Component {
                 .queue();
 
         }, PermissionChecker.IS_ADMIN);
-    }
-
-    @Override
-    public String getHelp() {
-        return """
-            `help`
-              - shows this message.
-            `ping`
-              - check the RTT of the connection in milliseconds.
-            `setprefix`
-              - set the prefix for all commands, - by default.
-            `enable [component]`
-              - enable a specific component by name.
-            `disable [component]`
-              - disable a specific component by name.
-            `permission [component] [role id]`
-              - allow the given role to manage the given component.
-            `revoke [component]`
-              - revoke all roles from managing the given component.
-            """;
     }
 
 }
