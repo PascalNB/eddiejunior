@@ -22,14 +22,17 @@ public class Manager extends Component {
     public void register() {
         CommandHandler handler = getSource().getCommandHandler();
 
+        // TODO specific help for components
         handler.addListener("help", command -> {
             if (!command.event().isFromGuild()) {
                 return;
             }
             StringBuilder builder = new StringBuilder();
             for (Component component : getSource().getComponents()) {
-                builder.append(component.getName()).append(":")
-                    .append(component.getHelp());
+                if (component.isEnabled()) {
+                    builder.append("**").append(component.getName().toUpperCase())
+                        .append("**\n").append(component.getHelp());
+                }
             }
             command.event().getChannel().sendMessage(builder.toString()).queue();
         });
@@ -81,18 +84,50 @@ public class Manager extends Component {
             String component = command.args()[0];
             MessageChannel channel = command.event().getChannel();
 
-            if (getSource().toggleComponent(component, false)) {
-                if (getSource().getComponent(component) instanceof DirectComponent direct) {
-                    // TODO: why are you not running
-                    if (direct.isRunning()) {
-                        direct.stop(command);
-                    }
+            Component component1 = getSource().getComponent(component);
+            if (component1 instanceof DirectComponent direct) {
+                if (direct.isRunning()) {
+                    direct.stop(command);
                 }
+            }
+
+            if (getSource().toggleComponent(component, false)) {
                 channel.sendMessageFormat(":no_entry: Component `%s` disabled", component).queue();
             } else {
                 channel.sendMessageFormat(":x: Component `%s` does not exist", component).queue();
             }
         }, PermissionChecker.IS_ADMIN);
+
+        handler.addListener("components", command -> {
+            if (!command.event().isFromGuild()) {
+                return;
+            }
+
+            StringBuilder builder = new StringBuilder()
+                .append("All components:");
+            for (Component component : getSource().getComponents()) {
+                builder.append("\n- ").append(component.getName());
+
+                if (component.isEnabled()) {
+                    if (component.isAlwaysEnabled()) {
+                        builder.append(" :lock:");
+                    } else {
+                        builder.append(" :ballot_box_with_check:");
+                    }
+
+                    if (component instanceof DirectComponent direct) {
+                        if (direct.isPaused()) {
+                            builder.append(" :pause_button:");
+                        } else if (direct.isRunning()) {
+                            builder.append(" :white_check_mark:");
+                        }
+                    }
+                }
+            }
+
+            command.event().getChannel().sendMessage(builder.toString()).queue();
+
+        });
 
         handler.addListener("permission", command -> {
             if (command.args().length != 2 || !command.event().isFromGuild()) {
@@ -103,7 +138,7 @@ public class Manager extends Component {
             MessageChannel channel = command.event().getChannel();
             Component component = getSource().getComponent(componentString);
 
-            if (component == null) {
+            if (component == null || component == this) {
                 channel.sendMessageFormat("Component `%s` does not exist", componentString).queue();
                 return;
             }
@@ -155,21 +190,20 @@ public class Manager extends Component {
     @Override
     public String getHelp() {
         return """
-            Commands:
-              `help`
-                - shows this message.
-              `ping`
-                - check the RTT of the connection in milliseconds.
-              `setprefix`
-                - set the prefix for all commands, - by default.
-              `enable [component]`
-                - enable a specific component by name.
-              `disable [component]`
-                - disable a specific component by name.
-              `permission [component] [role id]`
-                - allow the given role to manage the given component.
-              `revoke [component]`
-                - revoke all roles from managing the given component.
+            `help`
+              - shows this message.
+            `ping`
+              - check the RTT of the connection in milliseconds.
+            `setprefix`
+              - set the prefix for all commands, - by default.
+            `enable [component]`
+              - enable a specific component by name.
+            `disable [component]`
+              - disable a specific component by name.
+            `permission [component] [role id]`
+              - allow the given role to manage the given component.
+            `revoke [component]`
+              - revoke all roles from managing the given component.
             """;
     }
 

@@ -31,7 +31,6 @@ public abstract class Source {
 
     public List<Component> getComponents() {
         return components.values().stream()
-            .filter(Component::isEnabled)
             .sorted((c1, c2) -> String.CASE_INSENSITIVE_ORDER.compare(c1.getName(), c2.getName()))
             .collect(Collectors.toList());
     }

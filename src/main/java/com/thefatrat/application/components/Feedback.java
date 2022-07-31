@@ -24,21 +24,20 @@ public class Feedback extends DirectComponent {
     @Override
     public String getHelp() {
         return """
-            Commands:
-              `feedback start`
-                - start the feedback session.
-              `feedback start [channel]`
-                - start the feedback session in the given channel.
-              `feedback stop`
-                - stop the current feedback session.
-              `feedback destination`
-                - set the destination channel to the current channel.
-              `feedback destination [channel]`
-                - set the destination channel to the given channel.
-              `feedback reset`
-                - allow submissions for all users again.
-              `feedback reset [users]`
-                - allow specific users to submit again.
+            `feedback start`
+              - start the feedback session.
+            `feedback start [channel]`
+              - start the feedback session in the given channel.
+            `feedback stop`
+              - stop the current feedback session.
+            `feedback destination`
+              - set the destination channel to the current channel.
+            `feedback destination [channel]`
+              - set the destination channel to the given channel.
+            `feedback reset`
+              - allow submissions for all users again.
+            `feedback reset [users]`
+              - allow specific users to submit again.
             """;
     }
 
