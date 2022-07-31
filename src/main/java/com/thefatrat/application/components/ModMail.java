@@ -1,68 +1,51 @@
 package com.thefatrat.application.components;
 
-import com.thefatrat.application.PermissionChecker;
-import com.thefatrat.application.sources.Server;
+import com.thefatrat.application.Command;
 import com.thefatrat.application.sources.Source;
-import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
 
 // TODO: user timeout
-public class ModMail extends Component {
+public class ModMail extends DirectComponent {
 
-    public static final String NAME = "modmail";
-
-    private boolean running = false;
-    private MessageChannel destination;
+    public static final String NAME = "Modmail";
 
     public ModMail(Source server) {
-        super(server, NAME, false);
-    }
-
-    public void setRunning(boolean running) {
-        this.running = running;
+        super(server, NAME);
     }
 
     @Override
-    public void register() {
-        getSource().getCommandHandler().addListener(NAME, command -> {
-            if (!isEnabled() || command.args().length == 0) {
-                return;
-            }
+    public String getHelp() {
+        return "";
+    }
 
-            switch (command.args()[0].toLowerCase()) {
-                case "start" -> {
-                    running = true;
-                    destination = command.event().getChannel();
-                    destination.sendMessageFormat("Mod mail destination set to `%s`%n" +
-                            "Mod mail service started",
-                        destination.getId()).queue();
-                }
-                case "stop" -> {
-                    running = false;
-                    command.event().getChannel()
-                        .sendMessage("Mod mail service stopped").queue();
-                }
-                default -> {
-                }
-            }
-        }, PermissionChecker.IS_ADMIN);
+    @Override
+    protected void handleDirect(Message message) {
+        String content = message.getContentRaw();
+        if (content.length() < 20) {
+            return;
+        }
 
-        ((Server) getSource()).getDirectHandler().addListener(message -> {
-            if (!isEnabled() || !running || destination == null) {
-                return;
-            }
+        User author = message.getAuthor();
 
-            String content = message.getContentRaw();
-            if (content.length() < 20) {
-                return;
-            }
+        getDestination().sendMessageFormat(":email: %s `(%s)`:%n```%s```",
+            author.getAsMention(), author.getId(), content).queue();
+    }
 
-            User author = message.getAuthor();
+    @Override
+    protected void stop(Command command) {
+        getDestination().sendMessageFormat(
+            ":stop_sign: Mod mail service stopped",
+            getDestination().getId()
+        ).queue();
+    }
 
-            destination.sendMessageFormat("%s `(%s)`:%n```%s```",
-                author.getAsMention(), author.getId(), content).queue();
-
-        });
+    @Override
+    protected void start(Command command) {
+        getDestination().sendMessageFormat(
+            ":white_check_mark: Mod mail service started",
+            getDestination().getId()
+        ).queue();
     }
 
 }

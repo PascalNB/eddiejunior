@@ -10,7 +10,7 @@ public abstract class Component {
     private boolean enabled;
 
     public Component(Source source, String name, boolean alwaysEnabled) {
-        this.name = name;
+        this.name = name.toLowerCase();
         this.source = source;
         this.alwaysEnabled = alwaysEnabled;
         enabled = alwaysEnabled;
@@ -40,6 +40,8 @@ public abstract class Component {
     public String getName() {
         return name;
     }
+
+    public abstract String getHelp();
 
     public abstract void register();
 

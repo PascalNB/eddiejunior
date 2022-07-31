@@ -15,15 +15,15 @@ public class CommandHandler implements Handler<Command> {
     public void addListener(String key, Consumer<Command> listener, Predicate<Member> predicate) {
         ProtectedCommand command = new ProtectedCommand(listener);
         command.setPredicate(predicate);
-        map.put(key, command);
+        map.put(key.toLowerCase(), command);
     }
 
     public void setPredicate(String key, Predicate<Member> predicate) {
-        map.get(key).setPredicate(predicate);
+        map.get(key.toLowerCase()).setPredicate(predicate);
     }
 
     public void addListener(String key, Consumer<Command> listener) {
-        map.put(key, new ProtectedCommand(listener));
+        map.put(key.toLowerCase(), new ProtectedCommand(listener));
     }
 
     public void removeListener(String key) {

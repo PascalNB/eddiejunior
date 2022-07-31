@@ -12,15 +12,32 @@ import java.util.Objects;
 // TODO: overall permissions
 public class Manager extends Component {
 
+    public static final String NAME = "Manager";
+
     public Manager(Source server) {
-        super(server, "default", true);
+        super(server, NAME, true);
     }
 
     @Override
     public void register() {
         CommandHandler handler = getSource().getCommandHandler();
 
+        handler.addListener("help", command -> {
+            if (!command.event().isFromGuild()) {
+                return;
+            }
+            StringBuilder builder = new StringBuilder();
+            for (Component component : getSource().getComponents()) {
+                builder.append(component.getName()).append(":")
+                    .append(component.getHelp());
+            }
+            command.event().getChannel().sendMessage(builder.toString()).queue();
+        });
+
         handler.addListener("ping", command -> {
+            if (!command.event().isFromGuild()) {
+                return;
+            }
             final long start = System.currentTimeMillis();
             command.event().getChannel()
                 .sendMessage("pong :ping_pong:")
@@ -47,9 +64,12 @@ public class Manager extends Component {
             MessageChannel channel = command.event().getChannel();
 
             if (getSource().toggleComponent(component, true)) {
-                channel.sendMessageFormat("Component `%s` enabled", component).queue();
+                channel.sendMessageFormat(
+                    ":ballot_box_with_check: Component `%s` enabled",
+                    component
+                ).queue();
             } else {
-                channel.sendMessageFormat("Component `%s` does not exist", component).queue();
+                channel.sendMessageFormat(":x: Component `%s` does not exist", component).queue();
             }
         }, PermissionChecker.IS_ADMIN);
 
@@ -62,9 +82,15 @@ public class Manager extends Component {
             MessageChannel channel = command.event().getChannel();
 
             if (getSource().toggleComponent(component, false)) {
-                channel.sendMessageFormat("Component `%s` disabled", component).queue();
+                if (getSource().getComponent(component) instanceof DirectComponent direct) {
+                    // TODO: why are you not running
+                    if (direct.isRunning()) {
+                        direct.stop(command);
+                    }
+                }
+                channel.sendMessageFormat(":no_entry: Component `%s` disabled", component).queue();
             } else {
-                channel.sendMessageFormat("Component `%s` does not exist", component).queue();
+                channel.sendMessageFormat(":x: Component `%s` does not exist", component).queue();
             }
         }, PermissionChecker.IS_ADMIN);
 
@@ -124,6 +150,27 @@ public class Manager extends Component {
                 .queue();
 
         }, PermissionChecker.IS_ADMIN);
+    }
+
+    @Override
+    public String getHelp() {
+        return """
+            Commands:
+              `help`
+                - shows this message.
+              `ping`
+                - check the RTT of the connection in milliseconds.
+              `setprefix`
+                - set the prefix for all commands, - by default.
+              `enable [component]`
+                - enable a specific component by name.
+              `disable [component]`
+                - disable a specific component by name.
+              `permission [component] [role id]`
+                - allow the given role to manage the given component.
+              `revoke [component]`
+                - revoke all roles from managing the given component.
+            """;
     }
 
 }

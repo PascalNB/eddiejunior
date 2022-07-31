@@ -9,11 +9,11 @@ import java.util.function.Predicate;
 public final class PermissionChecker {
 
     public static final Predicate<Member> IS_ADMIN = member -> {
-        if (member.getPermissions().contains(Permission.ADMINISTRATOR)) {
+        if (member.getPermissions().contains(Permission.MANAGE_SERVER)) {
             return true;
         }
         for (Role role : member.getRoles()) {
-            if (role.hasPermission(Permission.ADMINISTRATOR)) {
+            if (role.hasPermission(Permission.MANAGE_SERVER)) {
                 return true;
             }
         }

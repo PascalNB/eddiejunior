@@ -7,7 +7,6 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 
 import java.util.Arrays;
-import java.util.Objects;
 
 public class Server extends Source {
 
@@ -37,8 +36,10 @@ public class Server extends Source {
         String content = message.getContentRaw();
 
         if (content.startsWith(prefix)) {
-            Member member = Objects.requireNonNull(
-                message.getGuild().getMember(message.getAuthor()));
+            Member member = message.getGuild().getMember(message.getAuthor());
+            if (member == null) {
+                member = message.getGuild().retrieveMember(message.getAuthor()).complete();
+            }
 
             String[] split = content.split("\\s+");
             String command = split[0].substring(prefix.length()).toLowerCase();
