@@ -5,6 +5,7 @@ import com.thefatrat.application.sources.Direct;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.sources.Source;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.events.guild.GuildReadyEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -44,12 +45,22 @@ public class Bot extends ListenerAdapter {
         this.components = components;
     }
 
-    @Override
-    public void onGuildReady(@NotNull GuildReadyEvent event) {
-        String id = event.getGuild().getId();
+    private void loadServer(String id) {
         Server server = new Server(id);
         sources.put(server.getId(), server);
         server.registerComponents(components);
+    }
+
+    @Override
+    public void onGuildReady(@NotNull GuildReadyEvent event) {
+        String id = event.getGuild().getId();
+        loadServer(id);
+    }
+
+    @Override
+    public void onGuildJoin(@NotNull GuildJoinEvent event) {
+        String id = event.getGuild().getId();
+        loadServer(id);
     }
 
     @Override
