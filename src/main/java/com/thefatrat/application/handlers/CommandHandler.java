@@ -1,33 +1,68 @@
 package com.thefatrat.application.handlers;
 
-import com.thefatrat.application.Bot;
 import com.thefatrat.application.Command;
+import net.dv8tion.jda.api.entities.Member;
 
-public class CommandHandler extends EventHandler<Command> {
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
-    @Override
-    protected void register() {
-        addListener("ping", command -> {
-            final long start = System.currentTimeMillis();
-            command.event().getChannel()
-                .sendMessage("pong :ping_pong:")
-                .queue(message -> {
-                    long time = System.currentTimeMillis() - start;
-                    message.editMessageFormat("%s %d ms", message.getContentRaw(), time).queue();
-                });
-        });
+public class CommandHandler implements Handler<Command> {
 
-        addListener("setprefix", command -> {
-            if (command.args().length != 1 || !command.event().isFromGuild()) {
-                return;
-            }
-            Bot.setPrefix(command.event().getGuild().getId(), command.args()[0]);
-        });
+    private final Map<String, ProtectedCommand> map = new HashMap<>();
+
+    public void addListener(String key, Consumer<Command> listener, Predicate<Member> predicate) {
+        ProtectedCommand command = new ProtectedCommand(listener);
+        command.setPredicate(predicate);
+        map.put(key, command);
+    }
+
+    public void setPredicate(String key, Predicate<Member> predicate) {
+        map.get(key).setPredicate(predicate);
+    }
+
+    public void addListener(String key, Consumer<Command> listener) {
+        map.put(key, new ProtectedCommand(listener));
+    }
+
+    public void removeListener(String key) {
+        map.remove(key);
     }
 
     @Override
     public boolean handle(Command command) {
-        return execute(command.command(), command);
+        ProtectedCommand listener = map.get(command.command());
+        if (listener == null) {
+            return false;
+        }
+        if (listener.isAllowed(command.member())) {
+            listener.accept(command);
+        }
+        return true;
+    }
+
+    private static class ProtectedCommand {
+
+        private final Consumer<Command> consumer;
+        private Predicate<Member> predicate = (__) -> true;
+
+        private ProtectedCommand(Consumer<Command> consumer) {
+            this.consumer = consumer;
+        }
+
+        public void accept(Command command) {
+            consumer.accept(command);
+        }
+
+        public boolean isAllowed(Member member) {
+            return predicate.test(member);
+        }
+
+        public void setPredicate(Predicate<Member> predicate) {
+            this.predicate = predicate;
+        }
+
     }
 
 }

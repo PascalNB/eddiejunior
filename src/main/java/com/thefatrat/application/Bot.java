@@ -1,25 +1,55 @@
 package com.thefatrat.application;
 
-import com.thefatrat.application.handlers.CommandHandler;
-import com.thefatrat.application.handlers.EventHandler;
+import com.thefatrat.application.components.Component;
+import com.thefatrat.application.sources.Direct;
+import com.thefatrat.application.sources.Server;
+import com.thefatrat.application.sources.Source;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.events.guild.GuildReadyEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 public class Bot extends ListenerAdapter {
 
+    public static Bot instance;
+
     public static final String DEFAULT_PREFIX = "-";
-    private static final Map<String, String> prefixes = new HashMap<>();
 
-    private final EventHandler<Command> commandHandler = new CommandHandler();
+    private final Map<String, Source> sources = new HashMap<>();
 
-    public static void setPrefix(String guild, String prefix) {
-        prefixes.put(guild, prefix);
+    private Class<? extends Component>[] components;
+
+    private Bot() {
+        Source direct = new Direct();
+        sources.put(null, direct);
+    }
+
+    public static Bot getInstance() {
+        if (instance == null) {
+            instance = new Bot();
+        }
+        return instance;
+    }
+
+    public Server getServer(String id) {
+        return (Server) sources.get(id);
+    }
+
+    @SafeVarargs
+    public final void setComponents(Class<? extends Component>... components) {
+        this.components = components;
+    }
+
+    @Override
+    public void onGuildReady(@NotNull GuildReadyEvent event) {
+        String id = event.getGuild().getId();
+        Server server = new Server(id);
+        sources.put(server.getId(), server);
+        server.registerComponents(components);
     }
 
     @Override
@@ -28,25 +58,11 @@ public class Bot extends ListenerAdapter {
             return;
         }
         Message message = event.getMessage();
-        String content = message.getContentRaw();
-
-        String prefix;
-        if (event.isFromGuild()) {
-            String guildId = event.getGuild().getId();
-            System.out.println(guildId);
-            prefixes.putIfAbsent(guildId, DEFAULT_PREFIX);
-            prefix = prefixes.get(guildId);
+        if (message.isFromGuild()) {
+            String id = message.getGuild().getId();
+            sources.get(id).receiveMessage(message);
         } else {
-            prefix = DEFAULT_PREFIX;
-        }
-
-        if (content.startsWith(prefix)) {
-            String[] split = content.split("\\s");
-            String command = split[0].substring(prefix.length()).toLowerCase();
-            String[] args = split.length > 1
-                ? Arrays.copyOfRange(split, 1, split.length)
-                : new String[0];
-            commandHandler.handle(new Command(command, args, message));
+            sources.get(null).receiveMessage(message);
         }
     }
 

@@ -1,5 +1,8 @@
 package com.thefatrat.application;
 
+import com.thefatrat.application.components.Feedback;
+import com.thefatrat.application.components.Manager;
+import com.thefatrat.application.components.ModMail;
 import com.thefatrat.database.DatabaseAuthenticator;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -21,13 +24,24 @@ public class Initializer {
         final JDA jda;
 
         try {
-            jda = JDABuilder.createLight(token)
-                .enableIntents(GatewayIntent.MESSAGE_CONTENT)
-                .addEventListeners(new Bot())
+            jda = JDABuilder.createDefault(token)
+                .enableIntents(
+                    GatewayIntent.MESSAGE_CONTENT,
+                    GatewayIntent.GUILD_MEMBERS,
+                    GatewayIntent.DIRECT_MESSAGES,
+                    GatewayIntent.GUILD_PRESENCES
+                )
+                .addEventListeners(Bot.getInstance())
                 .build();
         } catch (LoginException e) {
             throw new RuntimeException(e);
         }
+
+        Bot.getInstance().setComponents(
+            Manager.class,
+            ModMail.class,
+            Feedback.class
+        );
 
         try {
             jda.awaitReady();
