@@ -3,6 +3,7 @@ package com.thefatrat.application.components;
 import com.thefatrat.application.Command;
 import com.thefatrat.application.HelpEmbedBuilder;
 import com.thefatrat.application.PermissionChecker;
+import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Source;
 import net.dv8tion.jda.api.entities.Channel;
@@ -73,7 +74,7 @@ public class ModMail extends DirectComponent {
                 command.message().getChannel().sendMessageFormat(
                     ":white_check_mark: Timout set to %d seconds", timeout).queue();
             } catch (NumberFormatException e) {
-                throw new BotWarningException("Not valid number");
+                throw new BotErrorException("Not valid number");
             }
 
         }, PermissionChecker.IS_ADMIN);
