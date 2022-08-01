@@ -46,7 +46,7 @@ public class Server extends Source {
                 member = message.getGuild().retrieveMember(message.getAuthor()).complete();
             }
 
-            String[] split = content.split("\\s+");
+            String[] split = content.replaceAll(" +", " ").split("\\s+");
             String command = split[0].substring(prefix.length()).toLowerCase();
             String[] args = split.length > 1
                 ? Arrays.copyOfRange(split, 1, split.length)
