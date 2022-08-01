@@ -5,8 +5,11 @@ import com.thefatrat.application.Command;
 import com.thefatrat.application.HelpEmbedBuilder;
 import com.thefatrat.application.PermissionChecker;
 import com.thefatrat.application.exceptions.BotErrorException;
+import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.handlers.CommandHandler;
+import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.sources.Source;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.Role;
@@ -17,23 +20,32 @@ import java.util.List;
 // TODO: overall permissions
 public class Manager extends Component {
 
-    public static final String NAME = "Manager";
+    public static final String NAME = "Default";
 
     private final MessageEmbed help;
 
     public Manager(Source server) {
         super(server, NAME, true);
-        help = new HelpEmbedBuilder("Default")
+        help = new HelpEmbedBuilder(NAME)
             .addCommand("help", "shows this message")
             .addCommand("help [component]", "show the help message for the given component")
             .addCommand("ping", "check the RTT of the connection in milliseconds")
-            .addCommand("setprefix", "set the prefix for all commands, - by default")
+            .addCommand("status", "shows the current status of the bot")
+            .addCommand("status [component]", "shows the status of the given component")
+            .addCommand("prefix", "set the prefix for all commands, - by default")
             .addCommand("enable [component]", "enable a specific component by name")
             .addCommand("disable [component]", "disable a specific component by name")
-            .addCommand("permission [component] [role id]",
-                "allow the given role to manage the given component")
+            .addCommand("permission [component] [roles]",
+                "allow the given roles to manage the given component")
             .addCommand("revoke [component]", "revoke all roles from managing the given component")
-            .build();
+            .addCommand("revoke [component] [roles]",
+                "revoke component permissions of the given roles")
+            .build(getColor());
+    }
+
+    @Override
+    public int getColor() {
+        return 0xba3d52;
     }
 
     @Override
@@ -79,12 +91,21 @@ public class Manager extends Component {
                 });
         });
 
-        handler.addListener("setprefix", command -> {
+        handler.addListener("prefix", command -> {
             if (command.args().length != 1 || !command.message().isFromGuild()) {
                 return;
             }
+            String prefix = command.args()[0];
+
+            if (prefix.length() > 3) {
+                throw new BotWarningException("Prefix should not be longer than 3 characters");
+            }
+
             Bot.getInstance().getServer(command.message().getGuild().getId())
-                .setPrefix(command.args()[0]);
+                .setPrefix(prefix);
+            command.message().getChannel().sendMessageFormat(
+                ":white_check_mark: Prefix set to `%s`", prefix).queue();
+
         }, PermissionChecker.IS_ADMIN);
 
         handler.addListener("enable", command -> {
@@ -135,7 +156,7 @@ public class Manager extends Component {
             StringBuilder builder = new StringBuilder()
                 .append("All components:");
             for (Component component : getSource().getComponents()) {
-                builder.append("\n- ").append(component.getName());
+                builder.append("\n- ").append(component.getTitle());
 
                 if (component.isEnabled()) {
                     if (component.isAlwaysEnabled()) {
@@ -241,6 +262,49 @@ public class Manager extends Component {
             ).queue();
 
         }, PermissionChecker.IS_ADMIN);
+
+        handler.addListener("status", command -> {
+            if (!command.message().isFromGuild()) {
+                return;
+            }
+
+            Component component;
+
+            if (command.args().length > 0) {
+                String componentString = command.args()[0];
+                component = getSource().getComponent(componentString);
+
+                if (component == null) {
+                    componentNotFound(componentString);
+                    return;
+                }
+
+            } else {
+                component = this;
+            }
+
+            MessageEmbed embed = new EmbedBuilder()
+                .setTitle(component.getTitle())
+                .setColor(component.getColor())
+                .setDescription(component.getStatus())
+                .build();
+
+            command.message().getChannel().sendMessageEmbeds(embed).queue();
+
+        }, PermissionChecker.IS_ADMIN);
+    }
+
+    @Override
+    public String getStatus() {
+        long count = getSource().getComponents().stream().filter(Component::isEnabled).count() - 1;
+        return String.format("""
+                Prefix: `%s`
+                Components enabled: %d
+                Uptime: %s
+                """,
+            ((Server) getSource()).getPrefix(),
+            count,
+            Bot.getInstance().getUptime());
     }
 
     public static Role[] parseRoles(Command command, int position) {

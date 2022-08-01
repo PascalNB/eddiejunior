@@ -24,6 +24,10 @@ public class Server extends Source {
         return id;
     }
 
+    public String getPrefix() {
+        return prefix;
+    }
+
     public void setPrefix(String prefix) {
         this.prefix = prefix;
     }

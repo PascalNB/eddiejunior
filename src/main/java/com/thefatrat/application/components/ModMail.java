@@ -24,12 +24,27 @@ public class ModMail extends DirectComponent {
             .addCommand("modmail stop", "")
             .addCommand("modmail destination", "")
             .addCommand("modmail destination [channel]", "")
-            .build();
+            .build(getColor());
+    }
+
+    @Override
+    public int getColor() {
+        return 0xd6943e;
     }
 
     @Override
     public MessageEmbed getHelp() {
         return help;
+    }
+
+    @Override
+    public String getStatus() {
+        return String.format("""
+                Enabled: %b
+                Running: %b
+                Destination: %s
+                """,
+            isEnabled(), isRunning() && !isPaused(), getDestination().getAsMention());
     }
 
     @Override
@@ -47,7 +62,7 @@ public class ModMail extends DirectComponent {
 
     @Override
     protected void stop(Command command) {
-        getDestination().sendMessageFormat(
+        command.message().getChannel().sendMessageFormat(
             ":stop_sign: Mod mail service stopped",
             getDestination().getId()
         ).queue();
@@ -55,7 +70,7 @@ public class ModMail extends DirectComponent {
 
     @Override
     protected void start(Command command) {
-        getDestination().sendMessageFormat(
+        command.message().getChannel().sendMessageFormat(
             ":white_check_mark: Mod mail service started",
             getDestination().getId()
         ).queue();

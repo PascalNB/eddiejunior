@@ -4,6 +4,7 @@ import com.thefatrat.application.Bot;
 import com.thefatrat.application.exceptions.BotException;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.handlers.DirectHandler;
+import com.thefatrat.application.handlers.MessageHandler;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
@@ -68,15 +69,17 @@ public class Direct extends Source {
             try {
                 int i = Integer.parseInt(content);
                 if (i >= 0 && i < storedMutual.size()) {
-                    forward(storedMutual.get(i).getId(), handler.getMessage(author));
+                    Message m = handler.getMessage(author);
                     handler.removeUser(author);
+                    forward(storedMutual.get(i).getId(), m);
                     return;
                 }
             } catch (NumberFormatException e) {
                 for (Guild server : storedMutual) {
                     if (server.getName().trim().equalsIgnoreCase(content)) {
-                        forward(server.getId(), handler.getMessage(author));
+                        Message m = handler.getMessage(author);
                         handler.removeUser(author);
+                        forward(server.getId(), m);
                         return;
                     }
                 }
@@ -89,7 +92,11 @@ public class Direct extends Source {
     }
 
     private void forward(String id, Message message) throws BotException {
-        Bot.getInstance().getServer(id).getDirectHandler().handle(message);
+        MessageHandler handler = Bot.getInstance().getServer(id).getDirectHandler();
+        if (handler.size() == 0) {
+            throw new BotWarningException("The server does not handle any messages at the moment");
+        }
+        handler.handle(message);
     }
 
     private record ChannelExceptionHandler(MessageChannel channel)

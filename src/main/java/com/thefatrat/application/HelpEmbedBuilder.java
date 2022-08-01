@@ -1,5 +1,6 @@
 package com.thefatrat.application;
 
+import com.thefatrat.application.components.Component;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 
@@ -21,7 +22,12 @@ public class HelpEmbedBuilder {
     }
 
     public MessageEmbed build() {
+        return build(Component.getRandomColor(title));
+    }
+
+    public MessageEmbed build(int color) {
         EmbedBuilder builder = new EmbedBuilder()
+            .setColor(color)
             .setTitle(title);
         for (Command command : commands) {
             builder.addField(command.command(), command.description(), false);

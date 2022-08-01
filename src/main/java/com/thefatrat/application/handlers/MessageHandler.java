@@ -3,13 +3,17 @@ package com.thefatrat.application.handlers;
 import com.thefatrat.application.exceptions.BotException;
 import net.dv8tion.jda.api.entities.Message;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public class MessageHandler implements Handler<Message> {
 
-    private final List<Consumer<Message>> list = new ArrayList<>();
+    private final Set<Consumer<Message>> list = new HashSet<>();
+
+    public int size() {
+        return list.size();
+    }
 
     public void addListener(Consumer<Message> listener) {
         list.add(listener);

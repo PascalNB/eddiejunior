@@ -20,6 +20,7 @@ public class Feedback extends DirectComponent {
 
     private final Set<String> users = new HashSet<>();
     private final MessageEmbed help;
+    private int submissions = 0;
 
     public Feedback(Source server) {
         super(server, NAME);
@@ -34,7 +35,12 @@ public class Feedback extends DirectComponent {
                 "set the destination channel to the given channel")
             .addCommand("feedback reset", "allow submissions for all users again")
             .addCommand("feedback reset [users]", "allow specific users to submit again")
-            .build();
+            .build(getColor());
+    }
+
+    @Override
+    public int getColor() {
+        return 0x308acb;
     }
 
     @Override
@@ -70,6 +76,18 @@ public class Feedback extends DirectComponent {
     }
 
     @Override
+    public String getStatus() {
+        return String.format("""
+                Enabled: %b
+                Running: %b
+                Submissions: %d
+                Destination: %s
+                """,
+            isEnabled(), isRunning() && !isPaused(), submissions,
+            getDestination().getAsMention());
+    }
+
+    @Override
     protected void handleDirect(Message message) {
         List<Message.Attachment> attachments = message.getAttachments();
 
@@ -100,6 +118,7 @@ public class Feedback extends DirectComponent {
         users.add(author.getId());
         getDestination().sendMessageFormat("%s `(%s)`:%n<%s>",
             author.getAsMention(), author.getId(), url).queue();
+        submissions++;
         message.getChannel()
             .sendMessage(":white_check_mark: Successfully submitted")
             .queue();
@@ -108,6 +127,7 @@ public class Feedback extends DirectComponent {
     @Override
     protected void start(Command command) {
         users.clear();
+        submissions = 0;
         command.message().getChannel().sendMessage(
             ":white_check_mark: Feedback session started"
         ).queue();
@@ -115,6 +135,7 @@ public class Feedback extends DirectComponent {
 
     @Override
     protected void stop(Command command) {
+        submissions = 0;
         command.message().getChannel().sendMessage(
             ":stop_sign: Feedback session stopped"
         ).queue();

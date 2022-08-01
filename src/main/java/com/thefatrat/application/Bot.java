@@ -6,6 +6,7 @@ import com.thefatrat.application.sources.Direct;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.sources.Source;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.events.ReadyEvent;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.events.guild.GuildReadyEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -14,16 +15,16 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class Bot extends ListenerAdapter {
 
+    public static final String DEFAULT_PREFIX = "-";
     public static Bot instance;
 
-    public static final String DEFAULT_PREFIX = "-";
-
     private final Map<String, Source> sources = new HashMap<>();
-
     private Class<? extends Component>[] components;
+    private long time = 0;
 
     private Bot() {
         Source direct = new Direct();
@@ -50,6 +51,23 @@ public class Bot extends ListenerAdapter {
         Server server = new Server(id);
         sources.put(server.getId(), server);
         server.registerComponents(components);
+    }
+
+    public String getUptime() {
+        long t = System.currentTimeMillis() - time;
+        long hours = TimeUnit.MILLISECONDS.toHours(t);
+        long min = TimeUnit.MILLISECONDS.toMinutes(t);
+        long sec = TimeUnit.MILLISECONDS.toSeconds(t);
+        return String.format("%d hours, %d minutes, %d seconds",
+            hours,
+            min - TimeUnit.HOURS.toMinutes(hours),
+            sec - TimeUnit.MINUTES.toSeconds(min)
+        );
+    }
+
+    @Override
+    public void onReady(@NotNull ReadyEvent event) {
+        time = System.currentTimeMillis();
     }
 
     @Override

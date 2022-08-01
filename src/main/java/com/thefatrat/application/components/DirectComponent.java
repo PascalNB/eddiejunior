@@ -12,6 +12,7 @@ import net.dv8tion.jda.api.entities.MessageChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 
 public abstract class DirectComponent extends Component {
 
@@ -19,6 +20,12 @@ public abstract class DirectComponent extends Component {
     private boolean running = false;
     private boolean paused = false;
     private MessageChannel destination;
+    private final Consumer<Message> receiver = message -> {
+        if (getDestination() == null) {
+            return;
+        }
+        handleDirect(message);
+    };
 
     public DirectComponent(Source server, String name) {
         super(server, name, false);
@@ -42,13 +49,6 @@ public abstract class DirectComponent extends Component {
 
             handler.handle(new Command(newCommand, newArgs, command.message(), command.member()));
         }, PermissionChecker.IS_ADMIN);
-
-        ((Server) getSource()).getDirectHandler().addListener(message -> {
-            if (!isRunning() || isPaused() || getDestination() == null) {
-                return;
-            }
-            handleDirect(message);
-        });
 
         handler.addListener("start", command -> {
             MessageChannel parsedDestination = parseDestination(command, 0);
@@ -83,19 +83,22 @@ public abstract class DirectComponent extends Component {
                 StringBuilder builder = new StringBuilder()
                     .append(":pause_button: The following components were paused:");
                 for (Component component : pausedComponents) {
-                    builder.append(" ").append(component.getName()).append(",");
+                    builder.append(" ").append(component.getTitle()).append(",");
                 }
                 builder.deleteCharAt(builder.length() - 1);
                 command.message().getChannel().sendMessage(builder.toString()).queue();
             }
 
             start(command);
-            setPaused(false);
-            setRunning(true);
+            this.paused = false;
+            this.running = true;
+            ((Server) getSource()).getDirectHandler().addListener(receiver);
         });
 
         handler.addListener("stop", command -> {
-            setRunning(false);
+            ((Server) getSource()).getDirectHandler().removeListener(receiver);
+            this.running = false;
+            this.paused = false;
             stop(command);
         });
 
@@ -160,16 +163,17 @@ public abstract class DirectComponent extends Component {
         return destination;
     }
 
-    public void setRunning(boolean running) {
-        this.running = running;
-    }
-
     public boolean isRunning() {
         return running && isEnabled();
     }
 
     public void setPaused(boolean paused) {
         this.paused = paused;
+        if (paused) {
+            ((Server) getSource()).getDirectHandler().removeListener(receiver);
+        } else {
+            ((Server) getSource()).getDirectHandler().addListener(receiver);
+        }
     }
 
     public boolean isPaused() {
