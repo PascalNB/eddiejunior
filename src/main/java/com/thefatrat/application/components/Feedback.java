@@ -2,6 +2,7 @@ package com.thefatrat.application.components;
 
 import com.thefatrat.application.Command;
 import com.thefatrat.application.HelpEmbedBuilder;
+import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Source;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
@@ -87,23 +88,20 @@ public class Feedback extends DirectComponent {
             }
         }
         if (url == null) {
-            return;
+            throw new BotWarningException("Please send a valid file or link");
         }
 
         User author = message.getAuthor();
 
         if (users.contains(author.getId())) {
-            message.getChannel().sendMessage(
-                ":warning: You can only submit once!"
-            ).queue();
-            return;
+            throw new BotWarningException("You can only submit once");
         }
 
         users.add(author.getId());
         getDestination().sendMessageFormat("%s `(%s)`:%n<%s>",
             author.getAsMention(), author.getId(), url).queue();
         message.getChannel()
-            .sendMessage(":white_check_mark: Successfully submitted!")
+            .sendMessage(":white_check_mark: Successfully submitted")
             .queue();
     }
 

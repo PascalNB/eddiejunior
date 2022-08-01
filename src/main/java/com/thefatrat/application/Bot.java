@@ -1,6 +1,7 @@
 package com.thefatrat.application;
 
 import com.thefatrat.application.components.Component;
+import com.thefatrat.application.exceptions.BotException;
 import com.thefatrat.application.sources.Direct;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.sources.Source;
@@ -69,11 +70,15 @@ public class Bot extends ListenerAdapter {
             return;
         }
         Message message = event.getMessage();
-        if (message.isFromGuild()) {
-            String id = message.getGuild().getId();
-            sources.get(id).receiveMessage(message);
-        } else {
-            sources.get(null).receiveMessage(message);
+        try {
+            if (message.isFromGuild()) {
+                String id = message.getGuild().getId();
+                sources.get(id).receiveMessage(message);
+            } else {
+                sources.get(null).receiveMessage(message);
+            }
+        } catch (BotException e) {
+            event.getChannel().sendMessage(e.getMessage()).queue();
         }
     }
 

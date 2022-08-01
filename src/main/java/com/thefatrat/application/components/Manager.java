@@ -1,15 +1,18 @@
 package com.thefatrat.application.components;
 
 import com.thefatrat.application.Bot;
+import com.thefatrat.application.Command;
 import com.thefatrat.application.HelpEmbedBuilder;
 import com.thefatrat.application.PermissionChecker;
+import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.handlers.CommandHandler;
 import com.thefatrat.application.sources.Source;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.Role;
 
-import java.util.Objects;
+import java.util.ArrayList;
+import java.util.List;
 
 // TODO: overall permissions
 public class Manager extends Component {
@@ -42,7 +45,6 @@ public class Manager extends Component {
     public void register() {
         CommandHandler handler = getSource().getCommandHandler();
 
-        // TODO specific help for components
         handler.addListener("help", command -> {
             if (!command.message().isFromGuild()) {
                 return;
@@ -56,8 +58,7 @@ public class Manager extends Component {
             String componentString = command.args()[0];
             Component component = getSource().getComponent(componentString);
             if (component == null) {
-                command.message().getChannel().sendMessageFormat(
-                    ":x: Component `%s` does not exist", componentString).queue();
+                componentNotFound(componentString);
                 return;
             }
 
@@ -100,7 +101,7 @@ public class Manager extends Component {
                     component
                 ).queue();
             } else {
-                channel.sendMessageFormat(":x: Component `%s` does not exist", component).queue();
+                componentNotFound(component);
             }
         }, PermissionChecker.IS_ADMIN);
 
@@ -122,7 +123,7 @@ public class Manager extends Component {
             if (getSource().toggleComponent(component, false)) {
                 channel.sendMessageFormat(":no_entry: Component `%s` disabled", component).queue();
             } else {
-                channel.sendMessageFormat(":x: Component `%s` does not exist", component).queue();
+                componentNotFound(component);
             }
         }, PermissionChecker.IS_ADMIN);
 
@@ -158,7 +159,7 @@ public class Manager extends Component {
         });
 
         handler.addListener("permission", command -> {
-            if (command.args().length != 2 || !command.message().isFromGuild()) {
+            if (command.args().length < 2 || !command.message().isFromGuild()) {
                 return;
             }
 
@@ -167,32 +168,36 @@ public class Manager extends Component {
             Component component = getSource().getComponent(componentString);
 
             if (component == null || component == this) {
-                channel.sendMessageFormat("Component `%s` does not exist", componentString).queue();
+                componentNotFound(componentString);
                 return;
             }
 
-            Role role;
+            Role[] roles = parseRoles(command, 1);
 
-            try {
-                long id = Long.parseLong(command.args()[1]);
-                role = Objects.requireNonNull(command.message().getJDA().getRoleById(id));
-            } catch (NumberFormatException | NullPointerException e) {
-                channel.sendMessageFormat("The given role ID was not found",
-                    componentString).queue();
-                return;
+            if (roles.length == 0) {
+                String message = command.args().length < 3
+                    ? "The given role was not found"
+                    : "One or more roles were not found";
+                throw new BotErrorException(message);
             }
 
-            getSource().getCommandHandler().setPredicate(componentString,
-                PermissionChecker.hasAnyRole(role).or(PermissionChecker.IS_ADMIN));
+            getSource().getCommandHandler().getCommand(componentString).addRoles(roles);
 
-            channel.sendMessageFormat("Role `%s (%s)` now has command permissions for component " +
-                    "`%s`", role.getName(), role.getId(), componentString)
-                .queue();
+            StringBuilder builder = new StringBuilder();
+            for (Role role : roles) {
+                builder.append(role).append(", ");
+            }
+            builder.delete(builder.length() - 2, builder.length());
+
+            channel.sendMessageFormat(
+                "Command permissions for `%s` for component `%s` have been granted",
+                builder.toString(), componentString
+            ).queue();
 
         }, PermissionChecker.IS_ADMIN);
 
         handler.addListener("revoke", command -> {
-            if (command.args().length != 1 || !command.message().isFromGuild()) {
+            if (command.args().length == 0 || !command.message().isFromGuild()) {
                 return;
             }
 
@@ -200,19 +205,72 @@ public class Manager extends Component {
             MessageChannel channel = command.message().getChannel();
             Component component = getSource().getComponent(componentString);
 
-            if (component == null) {
-                channel.sendMessageFormat("Component `%s` does not exist", componentString).queue();
+            if (component == null || component == this) {
+                componentNotFound(componentString);
+            }
+
+            if (command.args().length == 1) {
+                getSource().getCommandHandler().getCommand(componentString).removeAllRoles();
+                channel.sendMessageFormat(
+                    "Command permissions for component `%s` have been revoked",
+                    componentString
+                ).queue();
                 return;
             }
 
-            getSource().getCommandHandler().setPredicate(componentString,
-                PermissionChecker.IS_ADMIN);
+            Role[] roles = parseRoles(command, 1);
 
-            channel.sendMessageFormat("Command permissions for component `%s` have been reset",
-                    componentString)
-                .queue();
+            if (roles.length == 0) {
+                String message = command.args().length < 3
+                    ? "The given role was not found"
+                    : "One or more roles were not found";
+                throw new BotErrorException(message);
+            }
+
+            getSource().getCommandHandler().getCommand(componentString).removeRoles(roles);
+
+            StringBuilder builder = new StringBuilder();
+            for (Role role : roles) {
+                builder.append(role).append(", ");
+            }
+            builder.delete(builder.length() - 2, builder.length());
+
+            channel.sendMessageFormat(
+                "Command permissions for `%s` for component `%s` have been revoked",
+                builder.toString(), componentString
+            ).queue();
 
         }, PermissionChecker.IS_ADMIN);
+    }
+
+    public static Role[] parseRoles(Command command, int position) {
+        if (command.args().length == 0) {
+            return new Role[0];
+        }
+        List<Role> result = new ArrayList<>(command.message().getMentions().getRoles());
+
+        if (result.size() != 0) {
+            return result.toArray(Role[]::new);
+        }
+
+        for (int i = position; i < command.args().length; i++) {
+            long id;
+            try {
+                id = Long.parseLong(command.args()[i]);
+            } catch (NumberFormatException e) {
+                continue;
+            }
+            Role role = command.message().getGuild().getRoleById(id);
+            if (role != null) {
+                result.add(role);
+            }
+        }
+
+        if (result.size() != 0) {
+            return result.toArray(Role[]::new);
+        }
+
+        return new Role[0];
     }
 
 }

@@ -1,5 +1,6 @@
 package com.thefatrat.application.handlers;
 
+import com.thefatrat.application.exceptions.BotException;
 import net.dv8tion.jda.api.entities.Message;
 
 import java.util.ArrayList;
@@ -19,15 +20,14 @@ public class MessageHandler implements Handler<Message> {
     }
 
     @Override
-    public boolean handle(Message message) {
+    public void handle(Message message) throws BotException {
         if (list.size() == 0) {
-            return false;
+            return;
         }
 
         for (Consumer<Message> listener : list) {
             listener.accept(message);
         }
-        return true;
     }
 
 }

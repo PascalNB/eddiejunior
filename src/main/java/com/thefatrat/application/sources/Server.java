@@ -2,6 +2,7 @@ package com.thefatrat.application.sources;
 
 import com.thefatrat.application.Bot;
 import com.thefatrat.application.Command;
+import com.thefatrat.application.exceptions.BotException;
 import com.thefatrat.application.handlers.MessageHandler;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -32,7 +33,7 @@ public class Server extends Source {
     }
 
     @Override
-    public void receiveMessage(Message message) {
+    public void receiveMessage(Message message) throws BotException {
         String content = message.getContentRaw();
 
         if (content.startsWith(prefix)) {

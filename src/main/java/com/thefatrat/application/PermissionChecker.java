@@ -20,11 +20,11 @@ public final class PermissionChecker {
         return false;
     };
 
-    public static Predicate<Member> hasAnyRole(Role... roles) {
+    public static Predicate<Member> hasAnyRole(String... roles) {
         return member -> {
             for (Role role : member.getRoles()) {
-                for (Role role2 : roles) {
-                    if (role.getId().equals(role2.getId())) {
+                for (String id : roles) {
+                    if (role.getId().equals(id)) {
                         return true;
                     }
                 }

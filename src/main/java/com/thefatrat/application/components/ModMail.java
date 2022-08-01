@@ -2,6 +2,7 @@ package com.thefatrat.application.components;
 
 import com.thefatrat.application.Command;
 import com.thefatrat.application.HelpEmbedBuilder;
+import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Source;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
@@ -35,7 +36,7 @@ public class ModMail extends DirectComponent {
     protected void handleDirect(Message message) {
         String content = message.getContentRaw();
         if (content.length() < 20) {
-            return;
+            throw new BotWarningException("Messages have to be at least 20 characters");
         }
 
         User author = message.getAuthor();

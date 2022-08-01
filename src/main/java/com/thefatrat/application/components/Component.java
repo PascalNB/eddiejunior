@@ -1,5 +1,7 @@
 package com.thefatrat.application.components;
 
+import com.thefatrat.application.exceptions.BotErrorException;
+import com.thefatrat.application.exceptions.BotException;
 import com.thefatrat.application.sources.Source;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 
@@ -15,6 +17,10 @@ public abstract class Component {
         this.source = source;
         this.alwaysEnabled = alwaysEnabled;
         enabled = alwaysEnabled;
+    }
+    
+    protected void componentNotFound(String component) throws BotException {
+        throw new BotErrorException(String.format("Component `%s` does not exist", component));
     }
 
     public boolean isAlwaysEnabled() {

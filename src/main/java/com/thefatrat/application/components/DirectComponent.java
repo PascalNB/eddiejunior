@@ -122,7 +122,7 @@ public abstract class DirectComponent extends Component {
         });
     }
 
-    private MessageChannel parseDestination(Command command, int position) {
+    public static MessageChannel parseDestination(Command command, int position) {
         MessageChannel result;
         List<GuildChannel> list = command.message().getMentions().getChannels();
 

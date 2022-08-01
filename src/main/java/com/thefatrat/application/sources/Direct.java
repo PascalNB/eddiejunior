@@ -1,9 +1,12 @@
 package com.thefatrat.application.sources;
 
 import com.thefatrat.application.Bot;
+import com.thefatrat.application.exceptions.BotException;
+import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.handlers.DirectHandler;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.MessageChannel;
 
 import java.util.List;
 
@@ -13,7 +16,7 @@ public class Direct extends Source {
 
     @Override
     public void receiveMessage(Message message) {
-        new Thread(() -> {
+        Thread thread = new Thread(() -> {
             String author = message.getAuthor().getId();
 
             List<Guild> mutual = message.getAuthor().getMutualGuilds();
@@ -79,12 +82,24 @@ public class Direct extends Source {
                 }
             }
 
-            message.getChannel().sendMessage(":warning: Please select a valid server").queue();
-        }).start();
+            throw new BotWarningException("Please select a valid server");
+        });
+        thread.setUncaughtExceptionHandler(new ChannelExceptionHandler(message.getChannel()));
+        thread.start();
     }
 
-    private void forward(String id, Message message) {
+    private void forward(String id, Message message) throws BotException {
         Bot.getInstance().getServer(id).getDirectHandler().handle(message);
+    }
+
+    private record ChannelExceptionHandler(MessageChannel channel)
+        implements Thread.UncaughtExceptionHandler {
+
+        @Override
+        public void uncaughtException(Thread t, Throwable e) {
+            channel.sendMessage(e.getMessage()).queue();
+        }
+
     }
 
 }

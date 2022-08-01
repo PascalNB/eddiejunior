@@ -2,6 +2,7 @@ package com.thefatrat.application.sources;
 
 import com.thefatrat.application.components.Component;
 import com.thefatrat.application.components.DirectComponent;
+import com.thefatrat.application.exceptions.BotException;
 import com.thefatrat.application.handlers.CommandHandler;
 import com.thefatrat.application.handlers.Handler;
 import com.thefatrat.application.handlers.MessageHandler;
@@ -74,6 +75,6 @@ public abstract class Source {
         }
     }
 
-    public abstract void receiveMessage(Message message);
+    public abstract void receiveMessage(Message message) throws BotException;
 
 }
