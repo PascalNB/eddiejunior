@@ -2,18 +2,26 @@ package com.thefatrat.application.components;
 
 import com.thefatrat.application.Command;
 import com.thefatrat.application.HelpEmbedBuilder;
+import com.thefatrat.application.PermissionChecker;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Source;
+import net.dv8tion.jda.api.entities.Channel;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 // TODO: user timeout
 public class ModMail extends DirectComponent {
 
     public static final String NAME = "Modmail";
 
+    private final Map<String, Long> timeouts = new HashMap<>();
     private final MessageEmbed help;
+    private int timeout = 0;
 
     public ModMail(Source server) {
         super(server, NAME);
@@ -39,12 +47,36 @@ public class ModMail extends DirectComponent {
 
     @Override
     public String getStatus() {
+        String dest = Optional.ofNullable(getDestination())
+            .map(Channel::getAsMention)
+            .orElse(null);
         return String.format("""
                 Enabled: %b
                 Running: %b
                 Destination: %s
                 """,
-            isEnabled(), isRunning() && !isPaused(), getDestination().getAsMention());
+            isEnabled(), isRunning() && !isPaused(), dest);
+    }
+
+    @Override
+    public void register() {
+        super.register();
+
+        getHandler().addListener("timeout", command -> {
+            if (!isEnabled() || command.args().length == 0) {
+                return;
+            }
+
+            try {
+                int timeout = Integer.parseInt(command.args()[0]);
+                this.timeout = timeout;
+                command.message().getChannel().sendMessageFormat(
+                    ":white_check_mark: Timout set to %d seconds", timeout).queue();
+            } catch (NumberFormatException e) {
+                throw new BotWarningException("Not valid number");
+            }
+
+        }, PermissionChecker.IS_ADMIN);
     }
 
     @Override
@@ -55,9 +87,18 @@ public class ModMail extends DirectComponent {
         }
 
         User author = message.getAuthor();
+        if (System.currentTimeMillis() - timeouts.getOrDefault(author.getId(), 0L)
+            >= timeout * 1000L) {
 
-        getDestination().sendMessageFormat(":email: %s `(%s)`:%n```%s```",
-            author.getAsMention(), author.getId(), content).queue();
+            timeouts.put(author.getId(), System.currentTimeMillis());
+            getDestination().sendMessageFormat(":email: %s `(%s)`:%n```%s```",
+                author.getAsMention(), author.getId(), content).queue();
+            message.getChannel().sendMessage("" +
+                ":white_check_mark: Message successfully submitted").queue();
+        } else {
+            throw new BotWarningException(
+                String.format("You can only send a message every %d seconds", timeout));
+        }
     }
 
     @Override

@@ -4,12 +4,14 @@ import com.thefatrat.application.Command;
 import com.thefatrat.application.HelpEmbedBuilder;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Source;
+import net.dv8tion.jda.api.entities.Channel;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public class Feedback extends DirectComponent {
@@ -77,14 +79,16 @@ public class Feedback extends DirectComponent {
 
     @Override
     public String getStatus() {
+        String dest = Optional.ofNullable(getDestination())
+            .map(Channel::getAsMention)
+            .orElse(null);
         return String.format("""
                 Enabled: %b
                 Running: %b
                 Submissions: %d
                 Destination: %s
                 """,
-            isEnabled(), isRunning() && !isPaused(), submissions,
-            getDestination().getAsMention());
+            isEnabled(), isRunning() && !isPaused(), submissions, dest);
     }
 
     @Override

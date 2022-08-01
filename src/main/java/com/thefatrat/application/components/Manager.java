@@ -211,7 +211,7 @@ public class Manager extends Component {
             builder.delete(builder.length() - 2, builder.length());
 
             channel.sendMessageFormat(
-                "Command permissions for `%s` for component `%s` have been granted",
+                ":unlock: Command permissions for `%s` for component `%s` have been granted",
                 builder.toString(), componentString
             ).queue();
 
@@ -233,7 +233,7 @@ public class Manager extends Component {
             if (command.args().length == 1) {
                 getSource().getCommandHandler().getCommand(componentString).removeAllRoles();
                 channel.sendMessageFormat(
-                    "Command permissions for component `%s` have been revoked",
+                    ":lock: Command permissions for component `%s` have been revoked",
                     componentString
                 ).queue();
                 return;
@@ -257,7 +257,7 @@ public class Manager extends Component {
             builder.delete(builder.length() - 2, builder.length());
 
             channel.sendMessageFormat(
-                "Command permissions for `%s` for component `%s` have been revoked",
+                ":lock: Command permissions for `%s` for component `%s` have been revoked",
                 builder.toString(), componentString
             ).queue();
 
