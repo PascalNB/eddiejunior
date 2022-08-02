@@ -11,18 +11,42 @@ import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 
 import javax.security.auth.login.LoginException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
-import java.util.Objects;
+import java.io.*;
 import java.util.Properties;
 
 public class Initializer {
 
+    private static final Initializer instance = new Initializer();
+
+    private final Properties properties = new Properties();
+
+    public static Initializer getInstance() {
+        return instance;
+    }
+
+    private Initializer() {
+        try {
+            File jarPath = new File(Initializer.class.getProtectionDomain()
+                .getCodeSource().getLocation().getPath());
+            String propertiesPath = jarPath.getParentFile().getAbsolutePath();
+            properties.load(new FileInputStream(propertiesPath + "/config.cfg"));
+
+        } catch (FileNotFoundException e) {
+            try (InputStream config = Initializer.class.getClassLoader()
+                .getResourceAsStream("config.cfg")) {
+                properties.load(config);
+            } catch (IOException e2) {
+                throw new UncheckedIOException(e2);
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     public static void main(String[] args) {
         DatabaseAuthenticator.getInstance().authenticate();
 
-        final String token = getToken();
+        final String token = getInstance().getProperty("bot_token");
         final JDA jda;
 
         try {
@@ -41,6 +65,7 @@ public class Initializer {
             throw new RuntimeException(e);
         }
 
+        Bot.getInstance().setJDA(jda);
         Bot.getInstance().setComponents(
             Manager.class,
             ModMail.class,
@@ -54,18 +79,8 @@ public class Initializer {
         }
     }
 
-    public static String getToken() {
-        try (InputStream config = Initializer.class.getClassLoader()
-            .getResourceAsStream("config.cfg")) {
-
-            Properties properties = new Properties();
-            properties.load(config);
-
-            return Objects.requireNonNull(properties.getProperty("bot_token"));
-
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+    public String getProperty(String property) {
+        return properties.getProperty(property);
     }
 
 }

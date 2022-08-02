@@ -5,9 +5,9 @@ import com.thefatrat.application.exceptions.BotException;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.handlers.DirectHandler;
 import com.thefatrat.application.handlers.MessageHandler;
+import com.thefatrat.application.util.Reply;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageChannel;
 
 import java.util.List;
 
@@ -16,13 +16,13 @@ public class Direct extends Source {
     private final DirectHandler handler = new DirectHandler();
 
     @Override
-    public void receiveMessage(Message message) {
+    public void receiveMessage(Message message, Reply reply) {
         Thread thread = new Thread(() -> {
             String author = message.getAuthor().getId();
 
             List<Guild> mutual = message.getAuthor().getMutualGuilds();
             if (mutual.size() == 0) {
-                for (Guild server : message.getJDA().getGuilds()) {
+                for (Guild server : Bot.getInstance().getJDA().getGuilds()) {
                     if (!mutual.contains(server)
                         && server
                         .findMembers(member -> member.getId().equals(author))
@@ -37,7 +37,7 @@ public class Direct extends Source {
                 return;
             }
             if (mutual.size() == 1) {
-                forward(mutual.get(0).getId(), message);
+                forward(mutual.get(0).getId(), message, reply);
                 return;
             }
 
@@ -71,7 +71,7 @@ public class Direct extends Source {
                 if (i >= 0 && i < storedMutual.size()) {
                     Message m = handler.getMessage(author);
                     handler.removeUser(author);
-                    forward(storedMutual.get(i).getId(), m);
+                    forward(storedMutual.get(i).getId(), m, reply);
                     return;
                 }
             } catch (NumberFormatException e) {
@@ -79,7 +79,7 @@ public class Direct extends Source {
                     if (server.getName().trim().equalsIgnoreCase(content)) {
                         Message m = handler.getMessage(author);
                         handler.removeUser(author);
-                        forward(server.getId(), m);
+                        forward(server.getId(), m, reply);
                         return;
                     }
                 }
@@ -87,24 +87,24 @@ public class Direct extends Source {
 
             throw new BotWarningException("Please select a valid server");
         });
-        thread.setUncaughtExceptionHandler(new ChannelExceptionHandler(message.getChannel()));
+        thread.setUncaughtExceptionHandler(new ChannelExceptionHandler(reply));
         thread.start();
     }
 
-    private void forward(String id, Message message) throws BotException {
+    private void forward(String id, Message message, Reply reply) throws BotException {
         MessageHandler handler = Bot.getInstance().getServer(id).getDirectHandler();
         if (handler.size() == 0) {
             throw new BotWarningException("The server does not handle any messages at the moment");
         }
-        handler.handle(message);
+        handler.handle(message, reply);
     }
 
-    private record ChannelExceptionHandler(MessageChannel channel)
+    private record ChannelExceptionHandler(Reply reply)
         implements Thread.UncaughtExceptionHandler {
 
         @Override
         public void uncaughtException(Thread t, Throwable e) {
-            channel.sendMessage(e.getMessage()).queue();
+            reply.sendMessage(e.getMessage());
         }
 
     }

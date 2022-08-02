@@ -2,18 +2,26 @@ package com.thefatrat.application.components;
 
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotException;
-import com.thefatrat.application.sources.Source;
-import net.dv8tion.jda.api.entities.MessageEmbed;
+import com.thefatrat.application.handlers.CommandHandler;
+import com.thefatrat.application.sources.Server;
+import com.thefatrat.application.util.Command;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.Function;
 
 public abstract class Component {
 
-    private final Source source;
+    private final Server source;
     private final String title;
     private final boolean alwaysEnabled;
     private final int color;
     private boolean enabled;
+    private final List<Command> commands = new ArrayList<>();
+    private final CommandHandler subHandler = new CommandHandler();
 
-    public Component(Source source, String title, boolean alwaysEnabled) {
+    public Component(Server source, String title, boolean alwaysEnabled) {
         this.source = source;
         this.title = title;
         this.alwaysEnabled = alwaysEnabled;
@@ -42,7 +50,7 @@ public abstract class Component {
         return enabled;
     }
 
-    public Source getSource() {
+    public Server getServer() {
         return source;
     }
 
@@ -54,14 +62,45 @@ public abstract class Component {
         return title.toLowerCase();
     }
 
-    public abstract MessageEmbed getHelp();
+    public void register() {
+        CommandHandler handler = getServer().getCommandHandler();
 
-    public abstract void register();
+        for (Command command : commands) {
+            handler.addListener(command.getName(), command.getAction(), command.getPermissions());
+
+            for (Command sub : command.getSubcommands()) {
+                subHandler.addListener(sub.getName(), sub.getAction(), sub.getPermissions());
+            }
+        }
+    }
+
+    protected CommandHandler getSubHandler() {
+        return subHandler;
+    }
 
     public abstract String getStatus();
 
     public int getColor() {
         return color;
+    }
+
+    public List<Command> getCommands() {
+        return commands;
+    }
+
+    protected void addSubcommands(Command... subcommands) {
+        for (Command c : commands) {
+            if (Objects.equals(c.getName(), getName())) {
+                for (Command s : subcommands) {
+                    subHandler.addListener(s.getName(), s.getAction(), s.getPermissions());
+                    c.addSubcommand(s);
+                }
+            }
+        }
+    }
+
+    protected void addCommands(Command... commands) {
+        this.commands.addAll(List.of(commands));
     }
 
     public static int getRandomColor(String seed) {
@@ -70,6 +109,15 @@ public abstract class Component {
             hash = seed.charAt(i) + ((hash << 5) - hash);
         }
         return hash & 0x00FFFFFF;
+    }
+
+    public <T> String concatObjects(T[] objects, Function<T, String> toString) {
+        StringBuilder builder = new StringBuilder();
+        for (T o : objects) {
+            builder.append(toString.apply(o)).append(", ");
+        }
+        builder.delete(builder.length() - 2, builder.length());
+        return builder.toString();
     }
 
 }

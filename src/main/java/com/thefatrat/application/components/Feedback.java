@@ -1,13 +1,17 @@
 package com.thefatrat.application.components;
 
-import com.thefatrat.application.Command;
-import com.thefatrat.application.HelpEmbedBuilder;
+import com.thefatrat.application.PermissionChecker;
+import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
-import com.thefatrat.application.sources.Source;
+import com.thefatrat.application.sources.Server;
+import com.thefatrat.application.util.Command;
+import com.thefatrat.application.util.CommandEvent;
+import com.thefatrat.application.util.Reply;
 import net.dv8tion.jda.api.entities.Channel;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 
 import java.util.HashSet;
 import java.util.List;
@@ -21,23 +25,10 @@ public class Feedback extends DirectComponent {
         "[-a-zA-Z\\d+&@#/%=~_|]";
 
     private final Set<String> users = new HashSet<>();
-    private final MessageEmbed help;
     private int submissions = 0;
 
-    public Feedback(Source server) {
+    public Feedback(Server server) {
         super(server, NAME);
-        help = new HelpEmbedBuilder(NAME)
-            .addCommand("feedback start", "start the feedback session")
-            .addCommand("feedback start [channel]",
-                "start the feedback session in the given channel")
-            .addCommand("feedback stop", "stop the current feedback session")
-            .addCommand("feedback destination",
-                "set the destination channel to the current channel")
-            .addCommand("feedback destination [channel]",
-                "set the destination channel to the given channel")
-            .addCommand("feedback reset", "allow submissions for all users again")
-            .addCommand("feedback reset [users]", "allow specific users to submit again")
-            .build(getColor());
     }
 
     @Override
@@ -46,35 +37,44 @@ public class Feedback extends DirectComponent {
     }
 
     @Override
-    public MessageEmbed getHelp() {
-        return help;
-    }
-
-    @Override
     public void register() {
         super.register();
 
-        getHandler().addListener("reset", command -> {
-            if (command.args().length == 0) {
-                users.clear();
-                command.message().getChannel().sendMessage(
-                    ":arrows_counterclockwise: Feedback session reset, users can submit again"
-                ).queue();
-                return;
-            }
+        addSubcommands(new Command("reset", "allow submissions for users again")
+            .addOption(new OptionData(OptionType.STRING, "member", "member id"))
+            .setAction((command, reply) -> {
+                if (!command.getArgs().containsKey("member")) {
+                    users.clear();
+                    reply.sendMessage(
+                        ":arrows_counterclockwise: Feedback session reset, users can submit again"
+                    );
+                    return;
+                }
 
-            for (User user : command.message().getMentions().getUsers()) {
-                users.remove(user.getId());
-            }
-            for (int i = 0, length = command.args().length; i < length; i++) {
-                users.remove(command.args()[i]);
-            }
+                long id;
+                try {
+                    id = command.getArgs().get("member").getAsLong();
+                } catch (NumberFormatException e) {
+                    throw new BotErrorException("Not a valid member id");
+                }
 
-            command.message().getChannel().sendMessage(
-                ":arrows_counterclockwise: Feedback session reset for " +
-                    "the given users, they can submit again"
-            ).queue();
-        });
+                command.getGuild().retrieveMemberById(id)
+                    .onErrorMap(e -> null)
+                    .queue(member -> {
+                        if (member == null) {
+                            reply.sendMessage(new BotErrorException(
+                                "The given member was not found").getMessage());
+                            return;
+                        }
+
+                        users.remove(member.getId());
+
+                        reply.sendMessageFormat(":arrows_counterclockwise: Feedback session " +
+                            "reset for %s, they can submit again", member.getAsMention());
+                    });
+            })
+            .setPermissions(PermissionChecker.IS_ADMIN)
+        );
     }
 
     @Override
@@ -92,7 +92,7 @@ public class Feedback extends DirectComponent {
     }
 
     @Override
-    protected void handleDirect(Message message) {
+    protected void handleDirect(Message message, Reply reply) {
         List<Message.Attachment> attachments = message.getAttachments();
 
         String url = null;
@@ -123,26 +123,26 @@ public class Feedback extends DirectComponent {
         getDestination().sendMessageFormat("%s `(%s)`:%n<%s>",
             author.getAsMention(), author.getId(), url).queue();
         submissions++;
-        message.getChannel()
-            .sendMessage(":white_check_mark: Successfully submitted")
-            .queue();
+        reply.sendMessage(":white_check_mark: Successfully submitted");
     }
 
     @Override
-    protected void start(Command command) {
+    protected void start(CommandEvent command, Reply reply) {
+        super.start(command, reply);
         users.clear();
         submissions = 0;
-        command.message().getChannel().sendMessage(
+        reply.sendMessage(
             ":white_check_mark: Feedback session started"
-        ).queue();
+        );
     }
 
     @Override
-    protected void stop(Command command) {
+    protected void stop(CommandEvent command, Reply reply) {
+        super.stop(command, reply);
         submissions = 0;
-        command.message().getChannel().sendMessage(
+        reply.sendMessage(
             ":stop_sign: Feedback session stopped"
-        ).queue();
+        );
     }
 
     private boolean isUrl(String message) {

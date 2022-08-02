@@ -1,15 +1,17 @@
 package com.thefatrat.application.components;
 
-import com.thefatrat.application.Command;
-import com.thefatrat.application.HelpEmbedBuilder;
 import com.thefatrat.application.PermissionChecker;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
-import com.thefatrat.application.sources.Source;
+import com.thefatrat.application.sources.Server;
+import com.thefatrat.application.util.Command;
+import com.thefatrat.application.util.CommandEvent;
+import com.thefatrat.application.util.Reply;
 import net.dv8tion.jda.api.entities.Channel;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -21,29 +23,15 @@ public class ModMail extends DirectComponent {
     public static final String NAME = "Modmail";
 
     private final Map<String, Long> timeouts = new HashMap<>();
-    private final MessageEmbed help;
-    private int timeout = 0;
+    private long timeout = 0;
 
-    public ModMail(Source server) {
+    public ModMail(Server server) {
         super(server, NAME);
-        // TODO
-        help = new HelpEmbedBuilder(NAME)
-            .addCommand("modmail start", "")
-            .addCommand("modmail start [channel]", "")
-            .addCommand("modmail stop", "")
-            .addCommand("modmail destination", "")
-            .addCommand("modmail destination [channel]", "")
-            .build(getColor());
     }
 
     @Override
     public int getColor() {
         return 0xd6943e;
-    }
-
-    @Override
-    public MessageEmbed getHelp() {
-        return help;
     }
 
     @Override
@@ -63,25 +51,22 @@ public class ModMail extends DirectComponent {
     public void register() {
         super.register();
 
-        getHandler().addListener("timeout", command -> {
-            if (!isEnabled() || command.args().length == 0) {
-                return;
-            }
-
-            try {
-                int timeout = Integer.parseInt(command.args()[0]);
+        addSubcommands(new Command("timeout", "sets the timeout")
+            .addOption(new OptionData(OptionType.INTEGER, "timeout", "timeout in ms", true))
+            .setAction((command, reply) -> {
+                long timeout = command.getArgs().get("timeout").getAsInt();
+                if (timeout < 0) {
+                    throw new BotErrorException("The timeout should be 0 or larger");
+                }
                 this.timeout = timeout;
-                command.message().getChannel().sendMessageFormat(
-                    ":white_check_mark: Timout set to %d seconds", timeout).queue();
-            } catch (NumberFormatException e) {
-                throw new BotErrorException("Not valid number");
-            }
-
-        }, PermissionChecker.IS_ADMIN);
+                reply.sendMessageFormat(
+                    ":white_check_mark: Timout set to %d seconds", timeout);
+            })
+            .setPermissions(PermissionChecker.IS_ADMIN));
     }
 
     @Override
-    protected void handleDirect(Message message) {
+    protected void handleDirect(Message message, Reply reply) {
         String content = message.getContentRaw();
         if (content.length() < 20) {
             throw new BotWarningException("Messages have to be at least 20 characters");
@@ -103,19 +88,21 @@ public class ModMail extends DirectComponent {
     }
 
     @Override
-    protected void stop(Command command) {
-        command.message().getChannel().sendMessageFormat(
+    protected void stop(CommandEvent command, Reply reply) {
+        super.stop(command, reply);
+        reply.sendMessageFormat(
             ":stop_sign: Mod mail service stopped",
             getDestination().getId()
-        ).queue();
+        );
     }
 
     @Override
-    protected void start(Command command) {
-        command.message().getChannel().sendMessageFormat(
+    protected void start(CommandEvent command, Reply reply) {
+        super.start(command, reply);
+        reply.sendMessageFormat(
             ":white_check_mark: Mod mail service started",
             getDestination().getId()
-        ).queue();
+        );
     }
 
 }

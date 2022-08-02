@@ -1,9 +1,10 @@
 package com.thefatrat.application.handlers;
 
-import com.thefatrat.application.Command;
 import com.thefatrat.application.PermissionChecker;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotException;
+import com.thefatrat.application.util.CommandEvent;
+import com.thefatrat.application.util.Reply;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
 
@@ -11,14 +12,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 
-public class CommandHandler implements Handler<Command> {
+public class CommandHandler implements Handler<CommandEvent> {
 
     private final Map<String, ProtectedCommand> map = new HashMap<>();
 
-    public void addListener(String key, Consumer<Command> listener, Predicate<Member> predicate) {
+    public void addListener(String key, BiConsumer<CommandEvent, Reply> listener,
+        Predicate<Member> predicate) {
         ProtectedCommand command = new ProtectedCommand(listener, predicate);
         map.put(key.toLowerCase(), command);
     }
@@ -27,7 +29,7 @@ public class CommandHandler implements Handler<Command> {
         return map.get(key.toLowerCase());
     }
 
-    public void addListener(String key, Consumer<Command> listener) {
+    public void addListener(String key, BiConsumer<CommandEvent, Reply> listener) {
         map.put(key.toLowerCase(), new ProtectedCommand(listener));
     }
 
@@ -36,13 +38,13 @@ public class CommandHandler implements Handler<Command> {
     }
 
     @Override
-    public void handle(Command command) throws BotException {
-        ProtectedCommand listener = map.get(command.command());
+    public void handle(CommandEvent command, Reply reply) throws BotException {
+        ProtectedCommand listener = map.get(command.getCommand());
         if (listener == null) {
             return;
         }
-        if (listener.isAllowed(command.member())) {
-            listener.accept(command);
+        if (listener.isAllowed(command.getMember())) {
+            listener.accept(command, reply);
         } else {
             throw new BotErrorException("You don't have permission to use this command");
         }
@@ -50,25 +52,26 @@ public class CommandHandler implements Handler<Command> {
 
     public static class ProtectedCommand {
 
-        private final Consumer<Command> consumer;
+        private final BiConsumer<CommandEvent, Reply> listener;
         private final List<String> roles = new ArrayList<>();
         private final Predicate<Member> startPredicate;
         private Predicate<Member> predicate = __ -> false;
 
-        private ProtectedCommand(Consumer<Command> consumer, Predicate<Member> allowed) {
-            this.consumer = consumer;
+        private ProtectedCommand(BiConsumer<CommandEvent, Reply> listener,
+            Predicate<Member> allowed) {
+            this.listener = listener;
             this.startPredicate = allowed;
             setPredicate();
         }
 
-        private ProtectedCommand(Consumer<Command> consumer) {
-            this.consumer = consumer;
+        private ProtectedCommand(BiConsumer<CommandEvent, Reply> listener) {
+            this.listener = listener;
             startPredicate = __ -> true;
             setPredicate();
         }
 
-        public void accept(Command command) {
-            consumer.accept(command);
+        public void accept(CommandEvent command, Reply reply) {
+            listener.accept(command, reply);
         }
 
         public boolean isAllowed(Member member) {
