@@ -74,11 +74,10 @@ public class Server extends Source {
                 if (instance instanceof DirectComponent direct) {
                     directComponents.add(direct);
                 }
+                Guild guild = Objects.requireNonNull(
+                    Bot.getInstance().getJDA().getGuildById(id));
                 for (Command command : instance.getCommands()) {
-                    Guild guild = Objects.requireNonNull(
-                        Bot.getInstance().getJDA().getGuildById(id));
-                    guild
-                        .upsertCommand(command.getName(), command.getDescription())
+                    guild.upsertCommand(command.getName(), command.getDescription())
                         .setDefaultPermissions(DefaultMemberPermissions.DISABLED)
                         .addOptions(command.getOptions())
                         .addSubcommands(command.getSubcommandsData())

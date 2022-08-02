@@ -10,6 +10,7 @@ import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 
+// TODO: slash command permissions
 public class Manager extends Component {
 
     public static final String NAME = "Default";
