@@ -6,62 +6,130 @@ import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Command;
 import com.thefatrat.application.util.CommandEvent;
 import com.thefatrat.application.util.Reply;
+import com.thefatrat.application.util.URLChecker;
 import net.dv8tion.jda.api.entities.Channel;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.net.URISyntaxException;
+import java.util.*;
 
 public class Feedback extends DirectComponent {
 
     public static final String NAME = "Feedback";
-    private static final String URL_REGEX = "^(https?|ftp|file)://[-a-zA-Z\\d+&@#/%?=~_|!:,.;]*" +
-        "[-a-zA-Z\\d+&@#/%=~_|]";
 
+    private final Set<String> domains = new HashSet<>();
     private final Set<String> users = new HashSet<>();
     private int submissions = 0;
 
     public Feedback(Server server) {
         super(server, NAME);
 
-        addSubcommands(new Command("reset", "allow submissions for users again")
-            .addOption(new OptionData(OptionType.STRING, "member", "member id"))
-            .setAction((command, reply) -> {
-                if (!command.getArgs().containsKey("member")) {
-                    users.clear();
-                    reply.sendMessage(
-                        ":arrows_counterclockwise: Feedback session reset, users can submit again"
-                    );
-                    return;
-                }
+        addSubcommands(
+            new Command("reset", "allow submissions for users again")
+                .addOption(new OptionData(OptionType.STRING, "member", "member id"))
+                .setAction((command, reply) -> {
+                    if (!command.getArgs().containsKey("member")) {
+                        users.clear();
+                        reply.sendMessage(
+                            ":arrows_counterclockwise: Feedback session reset, users can submit again"
+                        );
+                        return;
+                    }
 
-                long id;
-                try {
-                    id = command.getArgs().get("member").getAsLong();
-                } catch (NumberFormatException e) {
-                    throw new BotErrorException("Not a valid member id");
-                }
+                    long id;
+                    try {
+                        id = command.getArgs().get("member").getAsLong();
+                    } catch (NumberFormatException e) {
+                        throw new BotErrorException("Not a valid member id");
+                    }
 
-                command.getGuild().retrieveMemberById(id)
-                    .onErrorMap(e -> null)
-                    .queue(member -> {
-                        if (member == null) {
-                            reply.sendMessage(new BotErrorException(
-                                "The given member was not found").getMessage());
-                            return;
+                    command.getGuild().retrieveMemberById(id)
+                        .onErrorMap(e -> null)
+                        .queue(member -> {
+                            if (member == null) {
+                                reply.sendMessage(new BotErrorException(
+                                    "The given member was not found").getMessage());
+                                return;
+                            }
+
+                            users.remove(member.getId());
+
+                            reply.sendMessageFormat(":arrows_counterclockwise: Feedback session " +
+                                "reset for %s, they can submit again", member.getAsMention());
+                        });
+                }),
+
+            new Command("showdomains", "show the domain whitelist")
+                .setAction((command, reply) -> {
+                    if (domains.isEmpty()) {
+                        throw new BotWarningException("The domain whitelist is empty");
+                    }
+
+                    reply.sendMessageFormat(":page_facing_up: Current whitelist:%s",
+                        concatObjects(domains.toArray(String[]::new), s -> "\n`" + s + "`"));
+                }),
+
+            new Command("domains", "manage the domain whitelist for feedback submissions")
+                .addOption(new OptionData(OptionType.STRING, "action", "action", true)
+                    .addChoice("add", "true")
+                    .addChoice("remove", "false")
+                )
+                .addOption(new OptionData(OptionType.STRING, "domains",
+                    "domains seperated by comma", true))
+                .setAction((command, reply) -> {
+                    boolean add = Boolean.parseBoolean(
+                        command.getArgs().get("action").getAsString());
+
+                    String[] domains = command.getArgs().get("domains").getAsString()
+                        .split(", ?");
+                    for (String domain : domains) {
+                        if (!URLChecker.isDomain(domain)) {
+                            throw new BotErrorException(String.format(
+                                "`%s` is not a valid domain", domain));
                         }
+                    }
 
-                        users.remove(member.getId());
+                    List<String> changed = new ArrayList<>();
 
-                        reply.sendMessageFormat(":arrows_counterclockwise: Feedback session " +
-                            "reset for %s, they can submit again", member.getAsMention());
-                    });
-            })
+                    String msg;
+
+                    if (add) {
+                        msg = "added to";
+                        for (String domain : domains) {
+                            if (this.domains.contains(domain)) {
+                                reply.sendMessage(new BotWarningException(String.format(
+                                    "Domain %s is already in the domain whitelist", domain))
+                                    .getMessage());
+                                continue;
+                            }
+                            this.domains.add(domain);
+                            changed.add(domain);
+                        }
+                    } else {
+                        msg = "removed from";
+                        for (String domain : domains) {
+                            if (!this.domains.contains(domain)) {
+                                reply.sendMessage(new BotWarningException(String.format(
+                                    "Domain %s is not in the domain whitelist", domain))
+                                    .getMessage());
+                                continue;
+                            }
+                            this.domains.remove(domain);
+                            changed.add(domain);
+                        }
+                    }
+
+                    if (changed.isEmpty()) {
+                        return;
+                    }
+
+                    reply.sendMessageFormat(":white_check_mark: " +
+                            "Domain%s %s\n%s the whitelist", changed.size() == 1 ? "" : "s",
+                        concatObjects(changed.toArray(), s -> "\n`" + s + "`"), msg);
+                })
         );
     }
 
@@ -89,14 +157,14 @@ public class Feedback extends DirectComponent {
         List<Message.Attachment> attachments = message.getAttachments();
 
         String url = null;
-        if (attachments.size() > 0) {
+        if (!attachments.isEmpty()) {
             url = attachments.get(0).getUrl();
 
         } else {
             String[] content = message.getContentRaw().split("\\s+");
 
             for (String part : content) {
-                if (isUrl(part)) {
+                if (URLChecker.isUrl(part)) {
                     url = part;
                     break;
                 }
@@ -110,6 +178,15 @@ public class Feedback extends DirectComponent {
 
         if (users.contains(author.getId())) {
             throw new BotWarningException("You can only submit once");
+        }
+
+        try {
+            if (!URLChecker.isFromDomains(url, domains)) {
+                throw new BotWarningException("The server does not accept links from the given " +
+                    "source");
+            }
+        } catch (URISyntaxException e) {
+            throw new BotWarningException("Please send a valid file or link");
         }
 
         users.add(author.getId());
@@ -136,10 +213,6 @@ public class Feedback extends DirectComponent {
         reply.sendMessage(
             ":stop_sign: Feedback session stopped"
         );
-    }
-
-    private boolean isUrl(String message) {
-        return message.matches(URL_REGEX);
     }
 
 }

@@ -14,7 +14,7 @@ public class HelpBuilder {
     public HelpBuilder(String title, List<Command> commands) {
         this.title = title;
         commands.forEach(command -> {
-            if (command.getSubcommands().size() == 0) {
+            if (command.getSubcommands().isEmpty()) {
                 this.commands.add(new HelpCommand(command.getName(), command.getDescription()));
                 return;
             }

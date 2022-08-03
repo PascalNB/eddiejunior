@@ -109,16 +109,16 @@ public class Server extends Source {
                 this.components.put(instance.getName(), instance);
             }
 
-            Objects.requireNonNull(Bot.getInstance().getJDA().getGuildById(id))
-                .updateCommands()
-                .addCommands(
-                    this.components.get(Manager.NAME.toLowerCase()).getCommands().stream()
-                        .map(command -> Commands.slash(command.getName(), command.getDescription())
-                            .setDefaultPermissions(permissions)
-                            .addOptions(command.getOptions())
-                            .addSubcommands(command.getSubcommandsData())
-                        )
-                        .toArray(CommandData[]::new)
+            Component manager = getComponent(Manager.NAME.toLowerCase());
+
+            Objects.requireNonNull(Bot.getInstance().getJDA().getGuildById(id)).updateCommands()
+                .addCommands(manager.getCommands().stream()
+                    .map(command -> Commands.slash(command.getName(), command.getDescription())
+                        .setDefaultPermissions(permissions)
+                        .addOptions(command.getOptions())
+                        .addSubcommands(command.getSubcommandsData())
+                    )
+                    .toArray(CommandData[]::new)
                 )
                 .queue(list -> list.forEach(command ->
                     commandIds.put(command.getName(), command.getId())

@@ -21,19 +21,19 @@ public class Direct extends Source {
             String author = message.getAuthor().getId();
 
             List<Guild> mutual = message.getAuthor().getMutualGuilds();
-            if (mutual.size() == 0) {
+            if (mutual.isEmpty()) {
                 for (Guild server : Bot.getInstance().getJDA().getGuilds()) {
                     if (!mutual.contains(server)
-                        && server
+                        && !server
                         .findMembers(member -> member.getId().equals(author))
                         .get()
-                        .size() != 0) {
+                        .isEmpty()) {
                         mutual.add(server);
                     }
                 }
             }
 
-            if (mutual.size() == 0) {
+            if (mutual.isEmpty()) {
                 return;
             }
             if (mutual.size() == 1) {

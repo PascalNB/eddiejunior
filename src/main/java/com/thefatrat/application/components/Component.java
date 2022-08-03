@@ -8,9 +8,7 @@ import com.thefatrat.application.util.Command;
 import com.thefatrat.application.util.HelpBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Function;
 
 public abstract class Component {
@@ -120,7 +118,23 @@ public abstract class Component {
         return hash & 0x00FFFFFF;
     }
 
+    public static <T, V> List<T> fillAbsent(Collection<T> expected, Collection<V> actual,
+        Function<V, T> keygen, Function<V, T> valgen) {
+        Map<T, T> found = new HashMap<>();
+        for (V v : actual) {
+            found.put(keygen.apply(v), valgen.apply(v));
+        }
+        List<T> result = new ArrayList<>();
+        for (T t : expected) {
+            result.add(found.getOrDefault(t, t));
+        }
+        return result;
+    }
+
     public static <T> String concatObjects(T[] objects, Function<T, String> toString) {
+        if (objects.length == 0) {
+            return "";
+        }
         StringBuilder builder = new StringBuilder();
         for (T o : objects) {
             builder.append(toString.apply(o)).append(", ");

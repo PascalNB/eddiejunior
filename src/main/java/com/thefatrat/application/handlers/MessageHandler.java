@@ -26,7 +26,7 @@ public class MessageHandler implements Handler<Message> {
 
     @Override
     public void handle(Message message, Reply reply) throws BotException {
-        if (list.size() == 0) {
+        if (list.isEmpty()) {
             return;
         }
 

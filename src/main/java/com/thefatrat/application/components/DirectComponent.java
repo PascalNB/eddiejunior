@@ -116,28 +116,34 @@ public abstract class DirectComponent extends Component {
                 )
                 .addSubcommand(new Command("showblacklist", "shows the current blacklist")
                     .setAction((command, reply) -> {
-                        if (blacklist.size() == 0) {
-                            throw new BotWarningException(
-                                "No users are added to the blacklist");
+                        if (blacklist.isEmpty()) {
+                            throw new BotWarningException("No users are added to the blacklist");
                         }
 
-                        command.getGuild().retrieveMembersByIds(
-                            blacklist.stream().map(Long::parseLong).collect(Collectors.toList())
-                        ).onSuccess(list ->
-                            reply.sendMessageFormat(
-                                ":page_facing_up: current blacklist:\n%s",
-                                concatObjects(list.toArray(Member[]::new),
-                                    IMentionable::getAsMention)
+                        command.getGuild()
+                            .retrieveMembersByIds(
+                                blacklist.stream().map(Long::parseLong).collect(Collectors.toList())
                             )
-                        );
+                            .onSuccess(list -> {
+                                String[] strings = fillAbsent(blacklist, list,
+                                    ISnowflake::getId, IMentionable::getAsMention)
+                                    .toArray(String[]::new);
+                                reply.sendMessageFormat(
+                                    ":page_facing_up: Current blacklist:%s",
+                                    concatObjects(strings, m -> "\n" + m)
+                                );
+                            });
                     })
                 )
                 .addSubcommand(new Command("blacklist", "adds a user to the blacklist")
-                    .addOption(new OptionData(OptionType.BOOLEAN, "add",
-                        "true -> add | false -> remove", true))
+                    .addOption(new OptionData(OptionType.STRING, "action", "action", true)
+                        .addChoice("add", "true")
+                        .addChoice("remove", "false")
+                    )
                     .addOption(new OptionData(OptionType.STRING, "member", "member id", true))
                     .setAction((command, reply) -> {
-                        boolean add = command.getArgs().get("add").getAsBoolean();
+                        boolean add = Boolean.parseBoolean(
+                            command.getArgs().get("action").getAsString());
                         String msg;
 
                         if (add) {
@@ -157,8 +163,16 @@ public abstract class DirectComponent extends Component {
                             .onErrorMap(error -> null)
                             .queue(member -> {
                                 if (member == null) {
-                                    reply.sendMessage(new BotErrorException(
-                                        "The given member was not found").getMessage());
+                                    String idString = Long.toString(id);
+                                    if (add || !blacklist.contains(idString)) {
+                                        reply.sendMessage(new BotErrorException(
+                                            "The given member was not found").getMessage());
+                                    } else {
+                                        blacklist.remove(idString);
+                                        reply.sendMessageFormat(":white_check_mark: " +
+                                            "Member with id `%s` has been removed from the " +
+                                            "blacklist", idString);
+                                    }
                                     return;
                                 }
                                 User user = member.getUser();
