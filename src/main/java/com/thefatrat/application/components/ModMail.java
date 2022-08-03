@@ -26,6 +26,19 @@ public class ModMail extends DirectComponent {
 
     public ModMail(Server server) {
         super(server, NAME);
+
+        addSubcommands(new Command("timeout", "sets the timeout")
+            .addOption(new OptionData(OptionType.INTEGER, "timeout", "timeout in ms", true))
+            .setAction((command, reply) -> {
+                long timeout = command.getArgs().get("timeout").getAsInt();
+                if (timeout < 0) {
+                    throw new BotErrorException("The timeout should be 0 or larger");
+                }
+                this.timeout = timeout;
+                reply.sendMessageFormat(
+                    ":white_check_mark: Timout set to %d seconds", timeout);
+            })
+        );
     }
 
     @Override
@@ -44,24 +57,6 @@ public class ModMail extends DirectComponent {
                 Destination: %s
                 """,
             isEnabled(), isRunning() && !isPaused(), dest);
-    }
-
-    @Override
-    public void register() {
-        super.register();
-
-        addSubcommands(new Command("timeout", "sets the timeout")
-            .addOption(new OptionData(OptionType.INTEGER, "timeout", "timeout in ms", true))
-            .setAction((command, reply) -> {
-                long timeout = command.getArgs().get("timeout").getAsInt();
-                if (timeout < 0) {
-                    throw new BotErrorException("The timeout should be 0 or larger");
-                }
-                this.timeout = timeout;
-                reply.sendMessageFormat(
-                    ":white_check_mark: Timout set to %d seconds", timeout);
-            })
-        );
     }
 
     @Override

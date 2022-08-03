@@ -28,16 +28,6 @@ public class Feedback extends DirectComponent {
 
     public Feedback(Server server) {
         super(server, NAME);
-    }
-
-    @Override
-    public int getColor() {
-        return 0x308acb;
-    }
-
-    @Override
-    public void register() {
-        super.register();
 
         addSubcommands(new Command("reset", "allow submissions for users again")
             .addOption(new OptionData(OptionType.STRING, "member", "member id"))
@@ -73,6 +63,11 @@ public class Feedback extends DirectComponent {
                     });
             })
         );
+    }
+
+    @Override
+    public int getColor() {
+        return 0x308acb;
     }
 
     @Override

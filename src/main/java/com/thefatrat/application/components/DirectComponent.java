@@ -39,7 +39,9 @@ public abstract class DirectComponent extends Component {
             new Command(getName(), "component command")
                 .setAction((command, reply) -> getSubHandler().handle(command.toSub(), reply))
                 .addSubcommand(new Command("start", "starts the component")
-                    .addOption(new OptionData(OptionType.CHANNEL, "channel", "channel destination"))
+                    .addOption(new OptionData(OptionType.CHANNEL, "channel", "channel destination")
+                        .setChannelTypes(ChannelType.TEXT)
+                    )
                     .setAction((command, reply) -> {
                         MessageChannel parsedDestination = Optional.ofNullable(
                                 command.getArgs().get("channel"))
@@ -93,7 +95,9 @@ public abstract class DirectComponent extends Component {
                 )
                 .addSubcommand(new Command("destination", "sets the destination channel")
                     .addOption(new OptionData(OptionType.CHANNEL, "channel",
-                        "destination channel", false))
+                        "destination channel", false)
+                        .setChannelTypes(ChannelType.TEXT)
+                    )
                     .setAction((command, reply) -> {
                         MessageChannel newDestination = Optional.ofNullable(
                                 command.getArgs().get("channel"))
@@ -176,11 +180,6 @@ public abstract class DirectComponent extends Component {
     @Override
     public void disable() {
         super.disable();
-    }
-
-    @Override
-    public void register() {
-        super.register();
     }
 
     public Set<String> getBlacklist() {

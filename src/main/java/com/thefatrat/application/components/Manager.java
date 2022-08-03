@@ -16,6 +16,24 @@ public class Manager extends Component {
         super(server, NAME, true);
 
         addCommands(
+            new Command("help", "show the available commands")
+                .addOption(new OptionData(OptionType.STRING, "component", "component name", false))
+                .setAction((command, reply) -> {
+                    if (command.getArgs().containsKey("component")) {
+                        String componentString = command.getArgs().get("component").getAsString();
+                        Component component = getServer().getComponent(componentString);
+
+                        if (component == null) {
+                            componentNotFound(componentString);
+                            return;
+                        }
+
+                        reply.sendEmbed(component.getHelp());
+                    } else {
+                        reply.sendEmbed(getHelp());
+                    }
+                }),
+
             new Command("ping", "check the RTT of the connection in milliseconds")
                 .setAction((command, reply) -> {
                     final long start = System.currentTimeMillis();

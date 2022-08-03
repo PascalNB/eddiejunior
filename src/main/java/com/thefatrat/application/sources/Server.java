@@ -14,6 +14,8 @@ import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
+import net.dv8tion.jda.api.interactions.commands.build.CommandData;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
@@ -28,6 +30,11 @@ public class Server extends Source {
     private final MessageHandler directHandler = new MessageHandler();
     private final Map<String, Component> components = new HashMap<>();
     private final List<DirectComponent> directComponents = new ArrayList<>();
+    private final DefaultMemberPermissions permissions = DefaultMemberPermissions.enabledFor(
+        Permission.ADMINISTRATOR,
+        Permission.MANAGE_SERVER,
+        Permission.USE_APPLICATION_COMMANDS
+    );
 
     public Server(String id) {
         this.id = id;
@@ -62,11 +69,7 @@ public class Server extends Source {
         if (enable) {
             for (Command command : component.getCommands()) {
                 guild.upsertCommand(command.getName(), command.getDescription())
-                    .setDefaultPermissions(DefaultMemberPermissions.enabledFor(
-                        Permission.ADMINISTRATOR,
-                        Permission.MANAGE_SERVER,
-                        Permission.USE_APPLICATION_COMMANDS
-                    ))
+                    .setDefaultPermissions(permissions)
                     .addOptions(command.getOptions())
                     .addSubcommands(command.getSubcommandsData())
                     .queue(c ->
@@ -102,26 +105,24 @@ public class Server extends Source {
                 if (instance instanceof DirectComponent direct) {
                     directComponents.add(direct);
                 }
-                Guild guild = Objects.requireNonNull(
-                    Bot.getInstance().getJDA().getGuildById(id));
 
-                if (instance instanceof Manager) {
-                    for (Command command : instance.getCommands()) {
-                        guild.upsertCommand(command.getName(), command.getDescription())
-                            .setDefaultPermissions(DefaultMemberPermissions.enabledFor(
-                                Permission.ADMINISTRATOR,
-                                Permission.MANAGE_SERVER,
-                                Permission.USE_APPLICATION_COMMANDS
-                            ))
-                            .addOptions(command.getOptions())
-                            .addSubcommands(command.getSubcommandsData())
-                            .queue(c ->
-                                commandIds.put(command.getName(), c.getId())
-                            );
-                    }
-                }
                 this.components.put(instance.getName(), instance);
             }
+
+            Objects.requireNonNull(Bot.getInstance().getJDA().getGuildById(id))
+                .updateCommands()
+                .addCommands(
+                    this.components.get(Manager.NAME.toLowerCase()).getCommands().stream()
+                        .map(command -> Commands.slash(command.getName(), command.getDescription())
+                            .setDefaultPermissions(permissions)
+                            .addOptions(command.getOptions())
+                            .addSubcommands(command.getSubcommandsData())
+                        )
+                        .toArray(CommandData[]::new)
+                )
+                .queue(list -> list.forEach(command ->
+                    commandIds.put(command.getName(), command.getId())
+                ));
         } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
                  IllegalAccessException e) {
             throw new RuntimeException(e);

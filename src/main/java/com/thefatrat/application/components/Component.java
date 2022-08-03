@@ -5,6 +5,8 @@ import com.thefatrat.application.exceptions.BotException;
 import com.thefatrat.application.handlers.CommandHandler;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Command;
+import com.thefatrat.application.util.HelpBuilder;
+import net.dv8tion.jda.api.entities.MessageEmbed;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,6 +22,7 @@ public abstract class Component {
     private boolean enabled;
     private final List<Command> commands = new ArrayList<>();
     private final CommandHandler subHandler = new CommandHandler();
+    private MessageEmbed help = null;
 
     public Component(Server source, String title, boolean alwaysEnabled) {
         this.source = source;
@@ -29,7 +32,7 @@ public abstract class Component {
         color = getRandomColor(title);
     }
 
-    protected void componentNotFound(String component) throws BotException {
+    protected final void componentNotFound(String component) throws BotException {
         throw new BotErrorException(String.format("Component `%s` does not exist", component));
     }
 
@@ -62,7 +65,7 @@ public abstract class Component {
         return title.toLowerCase();
     }
 
-    public void register() {
+    public final void register() {
         CommandHandler handler = getServer().getCommandHandler();
 
         for (Command command : commands) {
@@ -72,6 +75,12 @@ public abstract class Component {
                 subHandler.addListener(sub.getName(), sub.getAction());
             }
         }
+
+        help = new HelpBuilder(getTitle(), getCommands()).build(getColor());
+    }
+
+    public MessageEmbed getHelp() {
+        return help;
     }
 
     protected CommandHandler getSubHandler() {
@@ -111,7 +120,7 @@ public abstract class Component {
         return hash & 0x00FFFFFF;
     }
 
-    public <T> String concatObjects(T[] objects, Function<T, String> toString) {
+    public static <T> String concatObjects(T[] objects, Function<T, String> toString) {
         StringBuilder builder = new StringBuilder();
         for (T o : objects) {
             builder.append(toString.apply(o)).append(", ");
