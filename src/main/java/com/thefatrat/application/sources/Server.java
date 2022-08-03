@@ -3,12 +3,14 @@ package com.thefatrat.application.sources;
 import com.thefatrat.application.Bot;
 import com.thefatrat.application.components.Component;
 import com.thefatrat.application.components.DirectComponent;
+import com.thefatrat.application.components.Manager;
 import com.thefatrat.application.exceptions.BotException;
 import com.thefatrat.application.handlers.CommandHandler;
 import com.thefatrat.application.handlers.MessageHandler;
 import com.thefatrat.application.util.Command;
 import com.thefatrat.application.util.CommandEvent;
 import com.thefatrat.application.util.Reply;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
@@ -16,10 +18,12 @@ import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Server extends Source {
 
     private final String id;
+    private final Map<String, String> commandIds = new HashMap<>();
     private final CommandHandler commandHandler = new CommandHandler();
     private final MessageHandler directHandler = new MessageHandler();
     private final Map<String, Component> components = new HashMap<>();
@@ -52,10 +56,34 @@ public class Server extends Source {
         if (component == null || component.isAlwaysEnabled()) {
             return false;
         }
+        Guild guild = Objects.requireNonNull(
+            Bot.getInstance().getJDA().getGuildById(id));
+
         if (enable) {
+            for (Command command : component.getCommands()) {
+                guild.upsertCommand(command.getName(), command.getDescription())
+                    .setDefaultPermissions(DefaultMemberPermissions.enabledFor(
+                        Permission.ADMINISTRATOR,
+                        Permission.MANAGE_SERVER,
+                        Permission.USE_APPLICATION_COMMANDS
+                    ))
+                    .addOptions(command.getOptions())
+                    .addSubcommands(command.getSubcommandsData())
+                    .queue(c ->
+                        commandIds.put(command.getName(), c.getId())
+                    );
+            }
             component.enable();
         } else {
             component.disable();
+            component.getCommands().stream()
+                .flatMap(command -> {
+                    String id = commandIds.remove(command.getName());
+                    return Stream.ofNullable(id);
+                })
+                .forEach(id ->
+                    guild.deleteCommandById(id).queue()
+                );
         }
         return true;
     }
@@ -76,12 +104,21 @@ public class Server extends Source {
                 }
                 Guild guild = Objects.requireNonNull(
                     Bot.getInstance().getJDA().getGuildById(id));
-                for (Command command : instance.getCommands()) {
-                    guild.upsertCommand(command.getName(), command.getDescription())
-                        .setDefaultPermissions(DefaultMemberPermissions.DISABLED)
-                        .addOptions(command.getOptions())
-                        .addSubcommands(command.getSubcommandsData())
-                        .queue();
+
+                if (instance instanceof Manager) {
+                    for (Command command : instance.getCommands()) {
+                        guild.upsertCommand(command.getName(), command.getDescription())
+                            .setDefaultPermissions(DefaultMemberPermissions.enabledFor(
+                                Permission.ADMINISTRATOR,
+                                Permission.MANAGE_SERVER,
+                                Permission.USE_APPLICATION_COMMANDS
+                            ))
+                            .addOptions(command.getOptions())
+                            .addSubcommands(command.getSubcommandsData())
+                            .queue(c ->
+                                commandIds.put(command.getName(), c.getId())
+                            );
+                    }
                 }
                 this.components.put(instance.getName(), instance);
             }

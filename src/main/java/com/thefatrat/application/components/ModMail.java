@@ -1,6 +1,5 @@
 package com.thefatrat.application.components;
 
-import com.thefatrat.application.PermissionChecker;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Server;
@@ -62,7 +61,7 @@ public class ModMail extends DirectComponent {
                 reply.sendMessageFormat(
                     ":white_check_mark: Timout set to %d seconds", timeout);
             })
-            .setPermissions(PermissionChecker.IS_ADMIN));
+        );
     }
 
     @Override

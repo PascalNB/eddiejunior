@@ -1,7 +1,6 @@
 package com.thefatrat.application.components;
 
 import com.thefatrat.application.Bot;
-import com.thefatrat.application.PermissionChecker;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Server;
@@ -88,11 +87,9 @@ public abstract class DirectComponent extends Component {
 
                         start(command, reply);
                     })
-                    .setPermissions(PermissionChecker.IS_ADMIN)
                 )
                 .addSubcommand(new Command("stop", "stops the component")
                     .setAction(this::stop)
-                    .setPermissions(PermissionChecker.IS_ADMIN)
                 )
                 .addSubcommand(new Command("destination", "sets the destination channel")
                     .addOption(new OptionData(OptionType.CHANNEL, "channel",
@@ -112,7 +109,6 @@ public abstract class DirectComponent extends Component {
 
                         reply.sendMessage(":x: The given destination channel was not found.");
                     })
-                    .setPermissions(PermissionChecker.IS_ADMIN)
                 )
                 .addSubcommand(new Command("showblacklist", "shows the current blacklist")
                     .setAction((command, reply) -> {
@@ -131,7 +127,6 @@ public abstract class DirectComponent extends Component {
                             )
                         );
                     })
-                    .setPermissions(PermissionChecker.IS_ADMIN)
                 )
                 .addSubcommand(new Command("blacklist", "adds a user to the blacklist")
                     .addOption(new OptionData(OptionType.BOOLEAN, "add",
@@ -174,7 +169,6 @@ public abstract class DirectComponent extends Component {
                                     user.getAsMention(), msg);
                             });
                     })
-                    .setPermissions(PermissionChecker.IS_ADMIN)
                 )
         );
     }

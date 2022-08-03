@@ -1,6 +1,5 @@
 package com.thefatrat.application.components;
 
-import com.thefatrat.application.PermissionChecker;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Server;
@@ -73,7 +72,6 @@ public class Feedback extends DirectComponent {
                             "reset for %s, they can submit again", member.getAsMention());
                     });
             })
-            .setPermissions(PermissionChecker.IS_ADMIN)
         );
     }
 

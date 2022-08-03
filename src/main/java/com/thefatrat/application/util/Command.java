@@ -1,13 +1,11 @@
 package com.thefatrat.application.util;
 
-import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class Command {
@@ -17,20 +15,10 @@ public class Command {
     private BiConsumer<CommandEvent, Reply> action = (__, ___) -> {};
     private final List<OptionData> options = new ArrayList<>();
     private final List<Command> subcommands = new ArrayList<>();
-    private Predicate<Member> permissions = __ -> true;
 
     public Command(String name, String description) {
         this.name = name;
         this.description = description;
-    }
-
-    public Command setPermissions(Predicate<Member> permissions) {
-        this.permissions = permissions;
-        return this;
-    }
-
-    public Predicate<Member> getPermissions() {
-        return permissions;
     }
 
     public Command addSubcommand(Command command) {

@@ -1,16 +1,13 @@
 package com.thefatrat.application.components;
 
 import com.thefatrat.application.Bot;
-import com.thefatrat.application.PermissionChecker;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Command;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
-import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 
-// TODO: slash command permissions
 public class Manager extends Component {
 
     public static final String NAME = "Default";
@@ -42,8 +39,7 @@ public class Manager extends Component {
                     } else {
                         componentNotFound(component);
                     }
-                })
-                .setPermissions(PermissionChecker.IS_ADMIN),
+                }),
 
             new Command("disable", "disable a specific component by name")
                 .addOption(new OptionData(OptionType.STRING, "component", "component name", true))
@@ -62,8 +58,7 @@ public class Manager extends Component {
                     } else {
                         componentNotFound(component);
                     }
-                })
-                .setPermissions(PermissionChecker.IS_ADMIN),
+                }),
 
             new Command("components", "shows a list of all the components")
                 .setAction((command, reply) -> {
@@ -89,64 +84,7 @@ public class Manager extends Component {
                         }
                     }
                     reply.sendMessage(builder.toString());
-                })
-                .setPermissions(PermissionChecker.IS_ADMIN),
-
-            new Command("permission", "allow the given roles to manage the given component")
-                .addOption(new OptionData(OptionType.STRING, "component", "component name", true))
-                .addOption(new OptionData(OptionType.ROLE, "role", "role", true))
-                .setAction((command, reply) -> {
-                    String componentString = command.getArgs().get("component").getAsString();
-                    Component component = getServer().getComponent(componentString);
-
-                    if (component == null || component == this) {
-                        componentNotFound(componentString);
-                        return;
-                    }
-
-                    Role role = command.getArgs().get("role").getAsRole();
-
-                    getServer().getCommandHandler().getCommand(componentString).addRoles(role);
-
-                    reply.sendMessageFormat(":unlock: Command permissions for `%s (%s)` for " +
-                            "component `%s` have been granted",
-                        role.getName(), role.getId(), componentString
-                    );
-                })
-                .setPermissions(PermissionChecker.IS_ADMIN),
-
-            new Command("revoke", "revoke all roles from managing the given component")
-                .addOption(new OptionData(OptionType.STRING, "component", "component name", true))
-                .addOption(new OptionData(OptionType.ROLE, "role", "role", false))
-                .setAction((command, reply) -> {
-
-                    String componentString = command.getArgs().get("component").getAsString();
-                    Component component = getServer().getComponent(componentString);
-
-                    if (component == null || component == this) {
-                        componentNotFound(componentString);
-                    }
-
-                    if (!command.getArgs().containsKey("role")) {
-                        getServer().getCommandHandler().getCommand(
-                            componentString).removeAllRoles();
-                        reply.sendMessageFormat(
-                            ":lock: Command permissions for component `%s` have been revoked",
-                            componentString
-                        );
-                        return;
-                    }
-
-                    Role role = command.getArgs().get("role").getAsRole();
-
-                    getServer().getCommandHandler().getCommand(componentString).removeRoles(role);
-
-                    reply.sendMessageFormat(":lock: Command permissions for `%s (%s)` for " +
-                            "component `%s` have been revoked",
-                        role.getName(), role.getId(), componentString
-                    );
-                })
-                .setPermissions(PermissionChecker.IS_ADMIN),
+                }),
 
             new Command("status", "shows the current status of the bot")
                 .addOption(new OptionData(OptionType.STRING, "component", "component name", false))
@@ -174,7 +112,6 @@ public class Manager extends Component {
 
                     reply.sendEmbed(embed);
                 })
-                .setPermissions(PermissionChecker.IS_ADMIN)
         );
     }
 

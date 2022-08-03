@@ -66,10 +66,10 @@ public abstract class Component {
         CommandHandler handler = getServer().getCommandHandler();
 
         for (Command command : commands) {
-            handler.addListener(command.getName(), command.getAction(), command.getPermissions());
+            handler.addListener(command.getName(), command.getAction());
 
             for (Command sub : command.getSubcommands()) {
-                subHandler.addListener(sub.getName(), sub.getAction(), sub.getPermissions());
+                subHandler.addListener(sub.getName(), sub.getAction());
             }
         }
     }
@@ -92,7 +92,7 @@ public abstract class Component {
         for (Command c : commands) {
             if (Objects.equals(c.getName(), getName())) {
                 for (Command s : subcommands) {
-                    subHandler.addListener(s.getName(), s.getAction(), s.getPermissions());
+                    subHandler.addListener(s.getName(), s.getAction());
                     c.addSubcommand(s);
                 }
             }
