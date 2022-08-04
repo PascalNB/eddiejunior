@@ -21,14 +21,14 @@ public final class URLChecker {
         return message.matches(URL_REGEX);
     }
 
-    public static boolean isFromDomains(String url, Collection<String> domains)
+    public static String isFromDomains(String url, Collection<String> domains)
     throws URISyntaxException {
         URI uri = new URI(url);
         String host = uri.getHost();
         String[] split = host.split("\\.");
         String domain = String.join(".",
             Arrays.copyOfRange(split, split.length - 2, split.length));
-        return domains.contains(domain);
+        return domains.contains(domain) ? domain : null;
     }
 
 }

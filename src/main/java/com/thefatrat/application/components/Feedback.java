@@ -21,15 +21,17 @@ public class Feedback extends DirectComponent {
     public static final String NAME = "Feedback";
 
     private final Set<String> domains = new HashSet<>();
+    private final Set<String> filetypes = new HashSet<>();
     private final Set<String> users = new HashSet<>();
     private int submissions = 0;
 
     public Feedback(Server server) {
         super(server, NAME);
 
-        new Thread(() ->
-            domains.addAll(getDatabaseManager().getSettings("domains"))
-        ).start();
+        new Thread(() -> {
+            domains.addAll(getDatabaseManager().getSettings("domains"));
+            filetypes.addAll(getDatabaseManager().getSettings("filetypes"));
+        }).start();
 
         addSubcommands(
             new Command("reset", "allow submissions for users again")
@@ -106,7 +108,7 @@ public class Feedback extends DirectComponent {
                     boolean add = "add".equals(action);
 
                     String[] domains = command.getArgs().get("domains").getAsString()
-                        .split(", ?");
+                        .toLowerCase().split(", ?");
                     for (String domain : domains) {
                         if (!URLChecker.isDomain(domain)) {
                             throw new BotErrorException(String.format(
@@ -152,6 +154,96 @@ public class Feedback extends DirectComponent {
 
                     reply.sendMessageFormat(":white_check_mark: " +
                             "Domain%s %s\n%s the whitelist", changed.size() == 1 ? "" : "s",
+                        concatObjects(changed.toArray(), s -> "\n`" + s + "`"), msg);
+                }),
+
+            new Command("filetypes", "manage discordapp filetypes filter, " +
+                "filetypes only work if discordapp.com is whitelisted")
+                .addOption(new OptionData(OptionType.STRING, "action", "action", true)
+                    .addChoice("add", "add")
+                    .addChoice("remove", "remove")
+                    .addChoice("show", "show")
+                    .addChoice("clear", "clear")
+                )
+                .addOption(new OptionData(OptionType.STRING, "filetypes",
+                    "filetypes seperated by comma", false))
+                .setAction((command, reply) -> {
+                    String action = command.getArgs().get("action").getAsString();
+                    if (!command.getArgs().containsKey("filetypes")
+                        && ("add".equals(action) || "remove".equals(action))) {
+                        throw new BotErrorException("Please specify the filetypes");
+                    }
+
+                    if ("show".equals(action)) {
+                        if (filetypes.isEmpty()) {
+                            throw new BotWarningException("The filetype list is empty");
+                        }
+
+                        reply.sendMessageFormat(":page_facing_up: Current filetypes:%s",
+                            concatObjects(filetypes.toArray(String[]::new), s -> "\n`" + s + "`"));
+                        return;
+                    }
+
+                    if ("clear".equals(action)) {
+                        if (filetypes.isEmpty()) {
+                            throw new BotWarningException("The filetype list is already empty");
+                        }
+
+                        filetypes.clear();
+                        getDatabaseManager().removeSetting("filetypes");
+                        reply.sendMessage(":white_check_mark: Filetype list cleared");
+                        return;
+                    }
+
+                    boolean add = "add".equals(action);
+
+                    String[] filetypes = command.getArgs().get("filetypes").getAsString()
+                        .toLowerCase().split(", ?");
+                    for (String filetype : filetypes) {
+                        if (!filetype.matches("^[a-z\\d]+$")) {
+                            throw new BotErrorException(String.format(
+                                "`%s` is not a valid filetype", filetype));
+                        }
+                    }
+
+                    List<String> changed = new ArrayList<>();
+
+                    String msg;
+
+                    if (add) {
+                        msg = "added to";
+                        for (String filetype : filetypes) {
+                            if (this.filetypes.contains(filetype)) {
+                                reply.sendMessage(new BotWarningException(String.format(
+                                    "Filetype %s is already in the filetype list", filetype))
+                                    .getMessage());
+                                continue;
+                            }
+                            getDatabaseManager().setSetting("filetypes", filetype);
+                            this.filetypes.add(filetype);
+                            changed.add(filetype);
+                        }
+                    } else {
+                        msg = "removed from";
+                        for (String filetype : filetypes) {
+                            if (!this.filetypes.contains(filetype)) {
+                                reply.sendMessage(new BotWarningException(String.format(
+                                    "Filetype %s is not in the filetype list", filetype))
+                                    .getMessage());
+                                continue;
+                            }
+                            getDatabaseManager().removeSetting("filetypes", filetype);
+                            this.filetypes.remove(filetype);
+                            changed.add(filetype);
+                        }
+                    }
+
+                    if (changed.isEmpty()) {
+                        return;
+                    }
+
+                    reply.sendMessageFormat(":white_check_mark: " +
+                            "Filetype%s %s\n%s the filetype list", changed.size() == 1 ? "" : "s",
                         concatObjects(changed.toArray(), s -> "\n`" + s + "`"), msg);
                 })
         );
@@ -204,13 +296,29 @@ public class Feedback extends DirectComponent {
             throw new BotWarningException("You can only submit once");
         }
 
-        try {
-            if (!URLChecker.isFromDomains(url, domains)) {
-                throw new BotWarningException("The server does not accept links from the given " +
-                    "source");
+        if (!domains.isEmpty()) {
+            try {
+                String domain = URLChecker.isFromDomains(url, domains);
+                if (domain == null) {
+                    throw new BotWarningException(
+                        "The server does not accept links from the given source");
+                }
+                if ("discordapp.com".equals(domain) && !filetypes.isEmpty()) {
+                    boolean allowed = false;
+                    for (String filetype : filetypes) {
+                        if (url.endsWith("." + filetype)) {
+                            allowed = true;
+                            break;
+                        }
+                    }
+                    if (!allowed) {
+                        throw new BotWarningException(
+                            "The server does not accept the given file type");
+                    }
+                }
+            } catch (URISyntaxException e) {
+                throw new BotWarningException("Please send a valid file or link");
             }
-        } catch (URISyntaxException e) {
-            throw new BotWarningException("Please send a valid file or link");
         }
 
         users.add(author.getId());
