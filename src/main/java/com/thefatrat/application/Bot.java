@@ -106,11 +106,14 @@ public class Bot extends ListenerAdapter {
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
         if (event.getUser().isBot() || event.getUser().isSystem()) {
+            event.reply("Only slash commands by users allowed").queue();
             return;
         }
         if (!event.isFromGuild()) {
+            event.reply("Slash commands only allowed in servers").queue();
             return;
         }
+
         Objects.requireNonNull(event.getGuild());
         event.deferReply(false).queue(hook -> {
             Member member = event.getGuild().getMember(event.getUser());
