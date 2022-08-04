@@ -1,14 +1,19 @@
 package com.thefatrat.application;
 
 import com.thefatrat.database.Database;
+import com.thefatrat.database.DatabaseException;
 import com.thefatrat.database.Query;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class DatabaseManager {
+
+    private static final Queue<Runnable> errorQueue = new LinkedBlockingQueue<>();
 
     private static final String GET_COMPONENT_ENABLED =
         "SELECT enabled FROM component WHERE server_id=? AND component_name=?;";
@@ -38,28 +43,59 @@ public class DatabaseManager {
         this.component = component;
     }
 
+    private void execute(Runnable runnable) {
+        try {
+            new Thread(runnable).start();
+        } catch (DatabaseException e) {
+            errorQueue.add(runnable);
+        }
+    }
+
+    private void resolveErrors() {
+        if (errorQueue.isEmpty()) {
+            return;
+        }
+        new Thread(() -> {
+            Runnable runnable = errorQueue.poll();
+            try {
+                while (runnable != null) {
+                    runnable.run();
+                    runnable = errorQueue.poll();
+                }
+            } catch (DatabaseException e) {
+                errorQueue.add(runnable);
+            }
+        }).start();
+    }
+
     public void removeSetting(String setting) {
-        new Thread(() ->
+        Runnable runnable = () -> {
             Database.getInstance().connect()
                 .executeStatement(Query.of(REMOVE_SETTING), server, component, setting)
-                .close()
-        ).start();
+                .close();
+            resolveErrors();
+        };
+        execute(runnable);
     }
 
     public void removeSetting(String setting, String value) {
-        new Thread(() ->
+        Runnable runnable = () -> {
             Database.getInstance().connect()
                 .executeStatement(Query.of(REMOVE_SETTING_VALUE), server, component, setting, value)
-                .close()
-        ).start();
+                .close();
+            resolveErrors();
+        };
+        execute(runnable);
     }
 
     public void setSetting(String setting, String value) {
-        new Thread(() ->
+        Runnable runnable = () -> {
             Database.getInstance().connect()
                 .executeStatement(Query.of(ADD_SETTING), server, component, setting, value, value)
-                .close()
-        ).start();
+                .close();
+            resolveErrors();
+        };
+        execute(runnable);
     }
 
     public String getSetting(String setting) {
@@ -100,11 +136,13 @@ public class DatabaseManager {
     }
 
     public void toggleComponent(boolean enable) {
-        new Thread(() ->
+        Runnable runnable = () -> {
             Database.getInstance().connect()
                 .executeStatement(Query.of(TOGGLE_COMPONENT), server, component, enable, enable)
-                .close()
-        ).start();
+                .close();
+            resolveErrors();
+        };
+        execute(runnable);
     }
 
 }
