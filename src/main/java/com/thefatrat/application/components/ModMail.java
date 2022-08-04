@@ -16,7 +16,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-// TODO: user timeout
 public class ModMail extends DirectComponent {
 
     public static final String NAME = "Modmail";
@@ -27,6 +26,12 @@ public class ModMail extends DirectComponent {
     public ModMail(Server server) {
         super(server, NAME);
 
+        new Thread(() ->
+            timeout = Integer.parseInt(
+                getDatabaseManager().getSettingOr("timeout", "0")
+            )
+        ).start();
+
         addSubcommands(new Command("timeout", "sets the timeout")
             .addOption(new OptionData(OptionType.INTEGER, "timeout", "timeout in ms", true))
             .setAction((command, reply) -> {
@@ -35,6 +40,7 @@ public class ModMail extends DirectComponent {
                     throw new BotErrorException("The timeout should be 0 or larger");
                 }
                 this.timeout = timeout;
+                getDatabaseManager().setSetting("timeout", Long.toString(timeout));
                 reply.sendMessageFormat(
                     ":white_check_mark: Timout set to %d seconds", timeout);
             })
@@ -55,8 +61,9 @@ public class ModMail extends DirectComponent {
                 Enabled: %b
                 Running: %b
                 Destination: %s
+                Timeout: %d
                 """,
-            isEnabled(), isRunning() && !isPaused(), dest);
+            isEnabled(), isRunning() && !isPaused(), dest, timeout);
     }
 
     @Override

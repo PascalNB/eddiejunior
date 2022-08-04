@@ -17,14 +17,15 @@ import net.dv8tion.jda.api.events.guild.GuildReadyEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -111,46 +112,56 @@ public class Bot extends ListenerAdapter {
             return;
         }
         Objects.requireNonNull(event.getGuild());
-        Member member = event.getGuild().getMember(event.getUser());
-        if (member == null) {
-            member = event.getGuild().retrieveMember(event.getUser()).complete();
-        }
-        String id = event.getGuild().getId();
+        event.deferReply(false).queue(hook -> {
+            Member member = event.getGuild().getMember(event.getUser());
+            if (member == null) {
+                member = event.getGuild().retrieveMember(event.getUser()).complete();
+            }
+            String id = event.getGuild().getId();
 
-        Map<String, OptionMapping> options = event.getOptions().stream()
-            .collect(Collectors.toMap(OptionMapping::getName, Function.identity()));
+            Map<String, OptionMapping> options = event.getOptions().stream()
+                .collect(Collectors.toMap(OptionMapping::getName, Function.identity()));
 
-        Reply reply = new Reply() {
+            Reply reply = new Reply() {
 
-            private Consumer<String> sendMessage = __ -> {};
-            private boolean replied = false;
+                private final CountDownLatch latch = new CountDownLatch(1);
+                private BiConsumer<String, Consumer<Message>> sendMessage = (s, c) -> {};
+                private boolean replied = false;
 
-            @Override
-            public void sendMessage(String message, Consumer<InteractionHook> callback) {
-                if (replied) {
-                    sendMessage.accept(message);
-                    return;
+                @Override
+                public void sendMessage(String message, Consumer<Message> callback) {
+                    if (replied) {
+                        try {
+                            latch.await();
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                        sendMessage.accept(message, callback);
+                        return;
+                    }
+                    hook.editOriginal(message).queue(callback.andThen(m -> {
+                        sendMessage = (s, c) -> m.getChannel().sendMessage(s).queue(c);
+                        latch.countDown();
+                    }));
+                    replied = true;
                 }
-                event.reply(message).queue(callback);
-                sendMessage = m -> event.getMessageChannel().sendMessage(m).queue();
-                replied = true;
+
+                @Override
+                public void sendEmbed(MessageEmbed embed) {
+                    replied = true;
+                    hook.editOriginalEmbeds(embed).queue();
+                }
+            };
+
+            CommandEvent commandEvent = new CommandEvent(event.getName(), event.getSubcommandName(),
+                options, event.getGuild(), event.getChannel(), member);
+
+            try {
+                ((Server) sources.get(id)).receiveCommand(commandEvent, reply);
+            } catch (BotException e) {
+                reply.sendMessage(e.getMessage());
             }
-
-            @Override
-            public void sendEmbed(MessageEmbed embed) {
-                replied = true;
-                event.replyEmbeds(embed).queue();
-            }
-        };
-
-        CommandEvent commandEvent = new CommandEvent(event.getName(), event.getSubcommandName(),
-            options, event.getGuild(), event.getChannel(), member);
-
-        try {
-            ((Server) sources.get(id)).receiveCommand(commandEvent, reply);
-        } catch (BotException e) {
-            reply.sendMessage(e.getMessage());
-        }
+        });
     }
 
     @Override
@@ -162,7 +173,7 @@ public class Bot extends ListenerAdapter {
 
         Reply reply = new Reply() {
             @Override
-            public void sendMessage(String message, Consumer<InteractionHook> callback) {
+            public void sendMessage(String message, Consumer<Message> callback) {
                 event.getChannel().sendMessage(message).queue();
             }
 

@@ -40,48 +40,58 @@ public class Manager extends Component {
                     String content = "pong :ping_pong:";
                     reply.sendMessage(content, message -> {
                         long time = System.currentTimeMillis() - start;
-                        message.editOriginalFormat("%s %d ms", content, time).queue();
+                        message.editMessageFormat("%s %d ms", content, time).queue();
                     });
                 }),
 
             new Command("enable", "enable a specific component by name")
                 .addOption(new OptionData(OptionType.STRING, "component", "component name", true))
                 .setAction((command, reply) -> {
-                    String component = command.getArgs().get("component").getAsString();
+                    String componentString = command.getArgs().get("component").getAsString();
+                    Component component = getServer().getComponent(componentString);
 
-                    if (getServer().toggleComponent(component, true)) {
-                        reply.sendMessageFormat(
-                            ":ballot_box_with_check: Component `%s` enabled",
-                            component
-                        );
-                    } else {
-                        componentNotFound(component);
+                    if (component == null) {
+                        componentNotFound(componentString);
+                        return;
                     }
+                    component.getDatabaseManager().toggleComponent(true);
+                    getServer().toggleComponent(component, true);
+
+                    reply.sendMessageFormat(
+                        ":ballot_box_with_check: Component `%s` enabled",
+                        componentString
+                    );
                 }),
 
             new Command("disable", "disable a specific component by name")
                 .addOption(new OptionData(OptionType.STRING, "component", "component name", true))
                 .setAction((command, reply) -> {
-                    String component = command.getArgs().get("component").getAsString();
+                    String componentString = command.getArgs().get("component").getAsString();
 
-                    Component component1 = getServer().getComponent(component);
-                    if (component1 instanceof DirectComponent direct) {
+                    Component component = getServer().getComponent(componentString);
+                    if (component == null) {
+                        componentNotFound(componentString);
+                        return;
+                    }
+
+                    if (component instanceof DirectComponent direct) {
                         if (direct.isRunning()) {
                             direct.stop(command, reply);
                         }
                     }
 
-                    if (getServer().toggleComponent(component, false)) {
-                        reply.sendMessageFormat(":no_entry: Component `%s` disabled", component);
-                    } else {
-                        componentNotFound(component);
-                    }
+                    component.getDatabaseManager().toggleComponent(false);
+                    getServer().toggleComponent(component, false);
+
+                    reply.sendMessageFormat(":no_entry: Component `%s` disabled",
+                        componentString);
+
                 }),
 
             new Command("components", "shows a list of all the components")
                 .setAction((command, reply) -> {
                     StringBuilder builder = new StringBuilder()
-                        .append("All components:");
+                        .append(":page_facing_up: All components:");
                     for (Component component : getServer().getComponents()) {
                         builder.append("\n- ").append(component.getTitle());
 

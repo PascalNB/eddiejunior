@@ -27,6 +27,10 @@ public class Feedback extends DirectComponent {
     public Feedback(Server server) {
         super(server, NAME);
 
+        new Thread(() ->
+            domains.addAll(getDatabaseManager().getSettings("domains"))
+        ).start();
+
         addSubcommands(
             new Command("reset", "allow submissions for users again")
                 .addOption(new OptionData(OptionType.STRING, "member", "member id"))
@@ -62,26 +66,44 @@ public class Feedback extends DirectComponent {
                         });
                 }),
 
-            new Command("showdomains", "show the domain whitelist")
-                .setAction((command, reply) -> {
-                    if (domains.isEmpty()) {
-                        throw new BotWarningException("The domain whitelist is empty");
-                    }
-
-                    reply.sendMessageFormat(":page_facing_up: Current whitelist:%s",
-                        concatObjects(domains.toArray(String[]::new), s -> "\n`" + s + "`"));
-                }),
-
             new Command("domains", "manage the domain whitelist for feedback submissions")
                 .addOption(new OptionData(OptionType.STRING, "action", "action", true)
-                    .addChoice("add", "true")
-                    .addChoice("remove", "false")
+                    .addChoice("add", "add")
+                    .addChoice("remove", "remove")
+                    .addChoice("clear", "clear")
+                    .addChoice("show", "show")
                 )
                 .addOption(new OptionData(OptionType.STRING, "domains",
-                    "domains seperated by comma", true))
+                    "domains seperated by comma", false))
                 .setAction((command, reply) -> {
-                    boolean add = Boolean.parseBoolean(
-                        command.getArgs().get("action").getAsString());
+                    String action = command.getArgs().get("action").getAsString();
+                    if (!command.getArgs().containsKey("domains")
+                        && ("add".equals(action) || "remove".equals(action))) {
+                        throw new BotErrorException("Please specify the domains");
+                    }
+
+                    if ("show".equals(action)) {
+                        if (domains.isEmpty()) {
+                            throw new BotWarningException("The domain whitelist is empty");
+                        }
+
+                        reply.sendMessageFormat(":page_facing_up: Current whitelist:%s",
+                            concatObjects(domains.toArray(String[]::new), s -> "\n`" + s + "`"));
+                        return;
+                    }
+
+                    if ("clear".equals(action)) {
+                        if (domains.isEmpty()) {
+                            throw new BotWarningException("The domain whitelist is already empty");
+                        }
+
+                        domains.clear();
+                        getDatabaseManager().removeSetting("domains");
+                        reply.sendMessage(":white_check_mark: Domain whitelist cleared");
+                        return;
+                    }
+
+                    boolean add = "add".equals(action);
 
                     String[] domains = command.getArgs().get("domains").getAsString()
                         .split(", ?");
@@ -105,6 +127,7 @@ public class Feedback extends DirectComponent {
                                     .getMessage());
                                 continue;
                             }
+                            getDatabaseManager().setSetting("domains", domain);
                             this.domains.add(domain);
                             changed.add(domain);
                         }
@@ -117,6 +140,7 @@ public class Feedback extends DirectComponent {
                                     .getMessage());
                                 continue;
                             }
+                            getDatabaseManager().removeSetting("domains", domain);
                             this.domains.remove(domain);
                             changed.add(domain);
                         }

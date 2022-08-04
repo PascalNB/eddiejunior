@@ -1,5 +1,6 @@
 package com.thefatrat.application.components;
 
+import com.thefatrat.application.DatabaseManager;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotException;
 import com.thefatrat.application.handlers.CommandHandler;
@@ -18,6 +19,7 @@ public abstract class Component {
     private final boolean alwaysEnabled;
     private final int color;
     private boolean enabled;
+    private final DatabaseManager databaseManager;
     private final List<Command> commands = new ArrayList<>();
     private final CommandHandler subHandler = new CommandHandler();
     private MessageEmbed help = null;
@@ -28,6 +30,7 @@ public abstract class Component {
         this.alwaysEnabled = alwaysEnabled;
         enabled = alwaysEnabled;
         color = getRandomColor(title);
+        databaseManager = new DatabaseManager(source.getId(), getName());
     }
 
     protected final void componentNotFound(String component) throws BotException {
@@ -108,6 +111,10 @@ public abstract class Component {
 
     protected void addCommands(Command... commands) {
         this.commands.addAll(List.of(commands));
+    }
+
+    public DatabaseManager getDatabaseManager() {
+        return databaseManager;
     }
 
     public static int getRandomColor(String seed) {

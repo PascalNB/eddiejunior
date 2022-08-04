@@ -35,6 +35,11 @@ public abstract class DirectComponent extends Component {
     public DirectComponent(Server server, String name) {
         super(server, name, false);
 
+        new Thread(() -> {
+            destination = getDatabaseManager().getSetting("destination");
+            blacklist.addAll(getDatabaseManager().getSettings("blacklist"));
+        }).start();
+
         addCommands(
             new Command(getName(), "component command")
                 .setAction((command, reply) -> getSubHandler().handle(command.toSub(), reply))
@@ -101,8 +106,8 @@ public abstract class DirectComponent extends Component {
                     .setAction((command, reply) -> {
                         MessageChannel newDestination = Optional.ofNullable(
                                 command.getArgs().get("channel"))
-                            .map(option -> command.getGuild().getChannelById(MessageChannel.class,
-                                option.getAsChannel().getId())
+                            .map(option -> command.getGuild()
+                                .getChannelById(MessageChannel.class, option.getAsChannel().getId())
                             )
                             .orElse(command.getChannel());
 
@@ -110,40 +115,57 @@ public abstract class DirectComponent extends Component {
 
                         reply.sendMessageFormat(":gear: Destination set to %s `(%s)`%n",
                             getDestination().getAsMention(), getDestination().getId());
-
-                        reply.sendMessage(":x: The given destination channel was not found.");
                     })
                 )
-                .addSubcommand(new Command("showblacklist", "shows the current blacklist")
+                .addSubcommand(new Command("blacklist", "manages the blacklist")
+                    .addOption(new OptionData(OptionType.STRING, "action", "action", true)
+                        .addChoice("add", "add")
+                        .addChoice("remove", "remove")
+                        .addChoice("show", "show")
+                        .addChoice("clear", "clear")
+                    )
+                    .addOption(new OptionData(OptionType.STRING, "member", "member id", false))
                     .setAction((command, reply) -> {
-                        if (blacklist.isEmpty()) {
-                            throw new BotWarningException("No users are added to the blacklist");
+                        String action = command.getArgs().get("action").getAsString();
+                        if (!command.getArgs().containsKey("member")
+                            && ("add".equals(action) || "remove".equals(action))) {
+                            throw new BotErrorException("Please specify the member id");
                         }
 
-                        command.getGuild()
-                            .retrieveMembersByIds(
-                                blacklist.stream().map(Long::parseLong).collect(Collectors.toList())
-                            )
-                            .onSuccess(list -> {
-                                String[] strings = fillAbsent(blacklist, list,
-                                    ISnowflake::getId, IMentionable::getAsMention)
-                                    .toArray(String[]::new);
-                                reply.sendMessageFormat(
-                                    ":page_facing_up: Current blacklist:%s",
-                                    concatObjects(strings, m -> "\n" + m)
-                                );
-                            });
-                    })
-                )
-                .addSubcommand(new Command("blacklist", "adds a user to the blacklist")
-                    .addOption(new OptionData(OptionType.STRING, "action", "action", true)
-                        .addChoice("add", "true")
-                        .addChoice("remove", "false")
-                    )
-                    .addOption(new OptionData(OptionType.STRING, "member", "member id", true))
-                    .setAction((command, reply) -> {
-                        boolean add = Boolean.parseBoolean(
-                            command.getArgs().get("action").getAsString());
+                        if ("show".equals(action)) {
+                            if (blacklist.isEmpty()) {
+                                throw new BotWarningException(
+                                    "No users are added to the blacklist");
+                            }
+
+                            command.getGuild()
+                                .retrieveMembersByIds(blacklist.stream()
+                                    .map(Long::parseLong).collect(Collectors.toList())
+                                )
+                                .onSuccess(list -> {
+                                    String[] strings = fillAbsent(blacklist, list,
+                                        ISnowflake::getId, IMentionable::getAsMention)
+                                        .toArray(String[]::new);
+                                    reply.sendMessageFormat(
+                                        ":page_facing_up: Current blacklist:%s",
+                                        concatObjects(strings, m -> "\n" + m)
+                                    );
+                                });
+                            return;
+                        }
+
+                        if ("clear".equals(action)) {
+                            if (blacklist.isEmpty()) {
+                                throw new BotWarningException("The blacklist is already empty");
+                            }
+
+                            blacklist.clear();
+                            getDatabaseManager().removeSetting("blacklist");
+                            reply.sendMessage(":white_check_mark: Blacklist cleared");
+                            return;
+                        }
+
+                        boolean add = "add".equals(action);
                         String msg;
 
                         if (add) {
@@ -159,36 +181,57 @@ public abstract class DirectComponent extends Component {
                             throw new BotErrorException("Not a valid member id");
                         }
 
+                        Member member = command.getGuild().getMemberById(id);
+                        if (member != null) {
+                            blacklist(member, id, add, msg, reply);
+                            return;
+                        }
+
                         command.getGuild().retrieveMemberById(id)
                             .onErrorMap(error -> null)
-                            .queue(member -> {
-                                if (member == null) {
-                                    String idString = Long.toString(id);
-                                    if (add || !blacklist.contains(idString)) {
-                                        reply.sendMessage(new BotErrorException(
-                                            "The given member was not found").getMessage());
-                                    } else {
-                                        blacklist.remove(idString);
-                                        reply.sendMessageFormat(":white_check_mark: " +
-                                            "Member with id `%s` has been removed from the " +
-                                            "blacklist", idString);
-                                    }
-                                    return;
-                                }
-                                User user = member.getUser();
-
-                                if (add) {
-                                    blacklist.add(user.getId());
-                                } else {
-                                    blacklist.remove(user.getId());
-                                }
-
-                                reply.sendMessageFormat(":white_check_mark: %s %s the blacklist",
-                                    user.getAsMention(), msg);
-                            });
+                            .queue(m -> blacklist(m, id, add, msg, reply));
                     })
                 )
         );
+    }
+
+    private void blacklist(Member member, long id, boolean add, String msg, Reply reply) {
+        if (member == null) {
+            String idString = Long.toString(id);
+            if (add || !blacklist.contains(idString)) {
+                reply.sendMessage(new BotErrorException(
+                    "The given member was not found").getMessage());
+            } else {
+                blacklist.remove(idString);
+                reply.sendMessageFormat(":white_check_mark: " +
+                    "Member with id `%s` has been removed from the " +
+                    "blacklist", idString);
+            }
+            return;
+        }
+        User user = member.getUser();
+        String userId = user.getId();
+
+        if (add) {
+            if (blacklist.contains(userId)) {
+                throw new BotWarningException(String.format("%s is already on the blacklist",
+                    member.getAsMention()));
+            }
+
+            blacklist.add(userId);
+            getDatabaseManager().setSetting("blacklist", userId);
+        } else {
+            if (!blacklist.contains(userId)) {
+                throw new BotWarningException(String.format("%s is not on the blacklist",
+                    member.getAsMention()));
+            }
+
+            blacklist.remove(userId);
+            getDatabaseManager().removeSetting("blacklist", userId);
+        }
+
+        reply.sendMessageFormat(":white_check_mark: %s %s the blacklist",
+            user.getAsMention(), msg);
     }
 
     @Override
@@ -216,6 +259,7 @@ public abstract class DirectComponent extends Component {
 
     public void setDestination(String destination) {
         this.destination = destination;
+        getDatabaseManager().setSetting("destination", destination);
     }
 
     public MessageChannel getDestination() {

@@ -58,11 +58,7 @@ public class Server extends Source {
         return directComponents;
     }
 
-    public boolean toggleComponent(String componentName, boolean enable) {
-        Component component = components.get(componentName);
-        if (component == null || component.isAlwaysEnabled()) {
-            return false;
-        }
+    public void toggleComponent(Component component, boolean enable) {
         Guild guild = Objects.requireNonNull(
             Bot.getInstance().getJDA().getGuildById(id));
 
@@ -88,6 +84,14 @@ public class Server extends Source {
                     guild.deleteCommandById(id).queue()
                 );
         }
+    }
+
+    public boolean toggleComponent(String componentName, boolean enable) {
+        Component component = components.get(componentName);
+        if (component == null || component.isAlwaysEnabled()) {
+            return false;
+        }
+        toggleComponent(component, enable);
         return true;
     }
 
@@ -107,22 +111,28 @@ public class Server extends Source {
                 }
 
                 this.components.put(instance.getName(), instance);
+
+                if (instance instanceof Manager manager) {
+                    Objects.requireNonNull(Bot.getInstance().getJDA().getGuildById(id))
+                        .updateCommands()
+                        .addCommands(manager.getCommands().stream()
+                            .map(command ->
+                                Commands.slash(command.getName(), command.getDescription())
+                                    .setDefaultPermissions(permissions)
+                                    .addOptions(command.getOptions())
+                                    .addSubcommands(command.getSubcommandsData())
+                            )
+                            .toArray(CommandData[]::new)
+                        )
+                        .queue(list -> list.forEach(command ->
+                            commandIds.put(command.getName(), command.getId())
+                        ));
+                } else if (instance.getDatabaseManager().isComponentEnabled()) {
+                    toggleComponent(instance, true);
+                }
+
             }
 
-            Component manager = getComponent(Manager.NAME.toLowerCase());
-
-            Objects.requireNonNull(Bot.getInstance().getJDA().getGuildById(id)).updateCommands()
-                .addCommands(manager.getCommands().stream()
-                    .map(command -> Commands.slash(command.getName(), command.getDescription())
-                        .setDefaultPermissions(permissions)
-                        .addOptions(command.getOptions())
-                        .addSubcommands(command.getSubcommandsData())
-                    )
-                    .toArray(CommandData[]::new)
-                )
-                .queue(list -> list.forEach(command ->
-                    commandIds.put(command.getName(), command.getId())
-                ));
         } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
                  IllegalAccessException e) {
             throw new RuntimeException(e);
