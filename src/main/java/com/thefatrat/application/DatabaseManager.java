@@ -13,8 +13,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class DatabaseManager {
 
-    private static final Queue<Runnable> errorQueue = new LinkedBlockingQueue<>();
-
     private static final String GET_COMPONENT_ENABLED =
         "SELECT enabled FROM component WHERE server_id=? AND component_name=?;";
 
@@ -35,6 +33,7 @@ public class DatabaseManager {
     private static final String REMOVE_SETTING_VALUE =
         "DELETE FROM setting WHERE server_id=? AND component_name=? AND name=? AND value=?;";
 
+    private final Queue<Runnable> errorQueue = new LinkedBlockingQueue<>();
     private final String server;
     private final String component;
 
