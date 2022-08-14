@@ -4,9 +4,11 @@ import com.thefatrat.application.Bot;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Server;
+import com.thefatrat.application.util.Colors;
 import com.thefatrat.application.util.Command;
 import com.thefatrat.application.util.CommandEvent;
 import com.thefatrat.application.util.Reply;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
@@ -40,158 +42,158 @@ public abstract class DirectComponent extends Component {
             blacklist.addAll(getDatabaseManager().getSettings("blacklist"));
         }).start();
 
-        addCommands(
-            new Command(getName(), "component command")
-                .setAction((command, reply) -> getSubHandler().handle(command.toSub(), reply))
-                .addSubcommand(new Command("start", "starts the component")
-                    .addOption(new OptionData(OptionType.CHANNEL, "channel", "channel destination")
-                        .setChannelTypes(ChannelType.TEXT)
-                    )
-                    .setAction((command, reply) -> {
-                        MessageChannel parsedDestination = Optional.ofNullable(
-                                command.getArgs().get("channel"))
-                            .map(option -> command.getGuild().getChannelById(MessageChannel.class,
-                                option.getAsChannel().getId())
-                            )
-                            .orElse(command.getChannel());
-                        MessageChannel newDestination;
-
-                        if (parsedDestination != null) {
-                            newDestination = parsedDestination;
-                        } else {
-                            newDestination = getDestination() == null
-                                ? command.getChannel()
-                                : getDestination();
-                        }
-
-                        if (getDestination() == null ||
-                            !newDestination.getId().equals(getDestination().getId())) {
-                            setDestination(newDestination.getId());
-
-                            reply.sendMessageFormat(
-                                ":gear: Destination set to %s `(%s)`%n",
-                                getDestination().getAsMention(), getDestination().getId()
-                            );
-                        }
-
-                        List<DirectComponent> pausedComponents = new ArrayList<>();
-                        for (DirectComponent component : getServer().getDirectComponents()) {
-                            if (component != this && component.isRunning() &&
-                                !component.isPaused()) {
-                                component.setPaused(true);
-                                pausedComponents.add(component);
-                            }
-                        }
-                        if (pausedComponents.size() > 0) {
-                            StringBuilder builder = new StringBuilder()
-                                .append(":pause_button: The following components were paused:");
-                            for (Component component : pausedComponents) {
-                                builder.append(" ").append(component.getTitle()).append(",");
-                            }
-                            builder.deleteCharAt(builder.length() - 1);
-                            reply.sendMessage(builder.toString());
-                        }
-
-                        start(command, reply);
-                    })
+        addCommands(new Command(getName(), "component command")
+            .setAction((command, reply) -> getSubHandler().handle(command.toSub(), reply))
+            .addSubcommand(new Command("start", "starts the component")
+                .addOption(new OptionData(OptionType.CHANNEL, "channel", "channel destination")
+                    .setChannelTypes(ChannelType.TEXT)
                 )
-                .addSubcommand(new Command("stop", "stops the component")
-                    .setAction(this::stop)
-                )
-                .addSubcommand(new Command("destination", "sets the destination channel")
-                    .addOption(new OptionData(OptionType.CHANNEL, "channel",
-                        "destination channel", false)
-                        .setChannelTypes(ChannelType.TEXT)
-                    )
-                    .setAction((command, reply) -> {
-                        MessageChannel newDestination = Optional.ofNullable(
-                                command.getArgs().get("channel"))
-                            .map(option -> command.getGuild()
-                                .getChannelById(MessageChannel.class, option.getAsChannel().getId())
-                            )
-                            .orElse(command.getChannel());
+                .setAction((command, reply) -> {
+                    MessageChannel parsedDestination = Optional.ofNullable(
+                            command.getArgs().get("channel"))
+                        .map(option -> command.getGuild().getChannelById(MessageChannel.class,
+                            option.getAsChannel().getId())
+                        )
+                        .orElse(command.getChannel());
+                    MessageChannel newDestination;
 
+                    if (parsedDestination != null) {
+                        newDestination = parsedDestination;
+                    } else {
+                        newDestination = getDestination() == null
+                            ? command.getChannel()
+                            : getDestination();
+                    }
+
+                    if (getDestination() == null ||
+                        !newDestination.getId().equals(getDestination().getId())) {
                         setDestination(newDestination.getId());
 
-                        reply.sendMessageFormat(":gear: Destination set to %s `(%s)`%n",
-                            getDestination().getAsMention(), getDestination().getId());
-                    })
+                        reply.sendEmbedFormat(Colors.GRAY,
+                            ":gear: Destination set to %s `(%s)`%n",
+                            getDestination().getAsMention(), getDestination().getId()
+                        );
+                    }
+
+                    List<DirectComponent> pausedComponents = new ArrayList<>();
+                    for (DirectComponent component : getServer().getDirectComponents()) {
+                        if (component != this && component.isRunning() &&
+                            !component.isPaused()) {
+                            component.setPaused(true);
+                            pausedComponents.add(component);
+                        }
+                    }
+                    if (pausedComponents.size() > 0) {
+                        StringBuilder builder = new StringBuilder()
+                            .append(":pause_button: The following components were paused:");
+                        for (Component component : pausedComponents) {
+                            builder.append(" ").append(component.getTitle()).append(",");
+                        }
+                        builder.deleteCharAt(builder.length() - 1);
+                        reply.sendEmbedFormat(Colors.GRAY, builder.toString());
+                    }
+
+                    start(command, reply);
+                })
+            )
+            .addSubcommand(new Command("stop", "stops the component")
+                .setAction(this::stop)
+            )
+            .addSubcommand(new Command("destination", "sets the destination channel")
+                .addOption(new OptionData(OptionType.CHANNEL, "channel",
+                    "destination channel", false)
+                    .setChannelTypes(ChannelType.TEXT)
                 )
-                .addSubcommand(new Command("blacklist", "manages the blacklist")
-                    .addOption(new OptionData(OptionType.STRING, "action", "action", true)
-                        .addChoice("add", "add")
-                        .addChoice("remove", "remove")
-                        .addChoice("show", "show")
-                        .addChoice("clear", "clear")
-                    )
-                    .addOption(new OptionData(OptionType.STRING, "member", "member id", false))
-                    .setAction((command, reply) -> {
-                        String action = command.getArgs().get("action").getAsString();
-                        if (!command.getArgs().containsKey("member")
-                            && ("add".equals(action) || "remove".equals(action))) {
-                            throw new BotErrorException("Please specify the member id");
-                        }
+                .setAction((command, reply) -> {
+                    MessageChannel newDestination = Optional.ofNullable(
+                            command.getArgs().get("channel"))
+                        .map(option -> command.getGuild()
+                            .getChannelById(MessageChannel.class, option.getAsChannel().getId())
+                        )
+                        .orElse(command.getChannel());
 
-                        if ("show".equals(action)) {
-                            if (blacklist.isEmpty()) {
-                                throw new BotWarningException(
-                                    "No users are added to the blacklist");
-                            }
+                    setDestination(newDestination.getId());
 
-                            command.getGuild()
-                                .retrieveMembersByIds(blacklist.stream()
-                                    .map(Long::parseLong).collect(Collectors.toList())
-                                )
-                                .onSuccess(list -> {
-                                    String[] strings = fillAbsent(blacklist, list,
-                                        ISnowflake::getId, IMentionable::getAsMention)
-                                        .toArray(String[]::new);
-                                    reply.sendMessageFormat(
-                                        ":page_facing_up: Current blacklist:%s",
-                                        concatObjects(strings, m -> "\n" + m)
-                                    );
-                                });
-                            return;
-                        }
-
-                        if ("clear".equals(action)) {
-                            if (blacklist.isEmpty()) {
-                                throw new BotWarningException("The blacklist is already empty");
-                            }
-
-                            blacklist.clear();
-                            getDatabaseManager().removeSetting("blacklist");
-                            reply.sendMessage(":white_check_mark: Blacklist cleared");
-                            return;
-                        }
-
-                        boolean add = "add".equals(action);
-                        String msg;
-
-                        if (add) {
-                            msg = "added to";
-                        } else {
-                            msg = "removed from";
-                        }
-
-                        long id;
-                        try {
-                            id = command.getArgs().get("member").getAsLong();
-                        } catch (NumberFormatException e) {
-                            throw new BotErrorException("Not a valid member id");
-                        }
-
-                        Member member = command.getGuild().getMemberById(id);
-                        if (member != null) {
-                            blacklist(member, id, add, msg, reply);
-                            return;
-                        }
-
-                        command.getGuild().retrieveMemberById(id)
-                            .onErrorMap(error -> null)
-                            .queue(m -> blacklist(m, id, add, msg, reply));
-                    })
+                    reply.sendEmbedFormat(Colors.GRAY, ":gear: Destination set to %s `(%s)`%n",
+                        getDestination().getAsMention(), getDestination().getId());
+                })
+            )
+            .addSubcommand(new Command("blacklist", "manages the blacklist")
+                .addOption(new OptionData(OptionType.STRING, "action", "action", true)
+                    .addChoice("add", "add")
+                    .addChoice("remove", "remove")
+                    .addChoice("show", "show")
+                    .addChoice("clear", "clear")
                 )
+                .addOption(new OptionData(OptionType.STRING, "member", "member id", false))
+                .setAction((command, reply) -> {
+                    String action = command.getArgs().get("action").getAsString();
+                    if (!command.getArgs().containsKey("member")
+                        && ("add".equals(action) || "remove".equals(action))) {
+                        throw new BotErrorException("Please specify the member id");
+                    }
+
+                    if ("show".equals(action)) {
+                        if (blacklist.isEmpty()) {
+                            throw new BotWarningException(
+                                "No users are added to the blacklist");
+                        }
+
+                        command.getGuild()
+                            .retrieveMembersByIds(blacklist.stream()
+                                .map(Long::parseLong).collect(Collectors.toList())
+                            )
+                            .onSuccess(list -> {
+                                String[] strings = fillAbsent(blacklist, list,
+                                    ISnowflake::getId, IMentionable::getAsMention)
+                                    .toArray(String[]::new);
+                                reply.sendEmbed(new EmbedBuilder()
+                                    .setColor(Colors.WHITE)
+                                    .addField("Blacklist",
+                                        String.join("\n", strings), false)
+                                    .build());
+                            });
+                        return;
+                    }
+
+                    if ("clear".equals(action)) {
+                        if (blacklist.isEmpty()) {
+                            throw new BotWarningException("The blacklist is already empty");
+                        }
+
+                        blacklist.clear();
+                        getDatabaseManager().removeSetting("blacklist");
+                        reply.sendEmbedFormat(Colors.GREEN, ":white_check_mark: Blacklist cleared");
+                        return;
+                    }
+
+                    boolean add = "add".equals(action);
+                    String msg;
+
+                    if (add) {
+                        msg = "added to";
+                    } else {
+                        msg = "removed from";
+                    }
+
+                    long id;
+                    try {
+                        id = command.getArgs().get("member").getAsLong();
+                    } catch (NumberFormatException e) {
+                        throw new BotErrorException("Not a valid member id");
+                    }
+
+                    Member member = command.getGuild().getMemberById(id);
+                    if (member != null) {
+                        blacklist(member, id, add, msg, reply);
+                        return;
+                    }
+
+                    command.getGuild().retrieveMemberById(id)
+                        .onErrorMap(error -> null)
+                        .queue(m -> blacklist(m, id, add, msg, reply));
+                })
+            )
         );
     }
 
@@ -199,11 +201,11 @@ public abstract class DirectComponent extends Component {
         if (member == null) {
             String idString = Long.toString(id);
             if (add || !blacklist.contains(idString)) {
-                reply.sendMessage(new BotErrorException(
-                    "The given member was not found").getMessage());
+                reply.sendEmbedFormat(Colors.RED,
+                    new BotErrorException("The given member was not found").getMessage());
             } else {
                 blacklist.remove(idString);
-                reply.sendMessageFormat(":white_check_mark: " +
+                reply.sendEmbedFormat(Colors.GREEN, ":white_check_mark: " +
                     "Member with id `%s` has been removed from the " +
                     "blacklist", idString);
             }
@@ -230,7 +232,7 @@ public abstract class DirectComponent extends Component {
             getDatabaseManager().removeSetting("blacklist", userId);
         }
 
-        reply.sendMessageFormat(":white_check_mark: %s %s the blacklist",
+        reply.sendEmbedFormat(Colors.GREEN, ":white_check_mark: %s %s the blacklist",
             user.getAsMention(), msg);
     }
 

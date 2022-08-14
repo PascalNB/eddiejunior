@@ -2,6 +2,7 @@ package com.thefatrat.application.components;
 
 import com.thefatrat.application.Bot;
 import com.thefatrat.application.sources.Server;
+import com.thefatrat.application.util.Colors;
 import com.thefatrat.application.util.Command;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
@@ -37,11 +38,15 @@ public class Manager extends Component {
             new Command("ping", "check the RTT of the connection in milliseconds")
                 .setAction((command, reply) -> {
                     final long start = System.currentTimeMillis();
-                    String content = "pong :ping_pong:";
-                    reply.sendMessage(content, message -> {
-                        long time = System.currentTimeMillis() - start;
-                        message.editMessageFormat("%s %d ms", content, time).queue();
-                    });
+                    reply.sendEmbedFormat(message -> {
+                            long time = System.currentTimeMillis() - start;
+                            message.editMessageEmbeds(new EmbedBuilder()
+                                .setColor(getColor())
+                                .setDescription(String.format(":ping_pong: %d ms", time))
+                                .build()
+                            ).queue();
+                        }, getColor(), "..."
+                    );
                 }),
 
             new Command("enable", "enable a specific component by name")
@@ -57,10 +62,9 @@ public class Manager extends Component {
                     component.getDatabaseManager().toggleComponent(true);
                     getServer().toggleComponent(component, true);
 
-                    reply.sendMessageFormat(
+                    reply.sendEmbedFormat(Colors.BLUE,
                         ":ballot_box_with_check: Component `%s` enabled",
-                        componentString
-                    );
+                        componentString);
                 }),
 
             new Command("disable", "disable a specific component by name")
@@ -83,17 +87,15 @@ public class Manager extends Component {
                     component.getDatabaseManager().toggleComponent(false);
                     getServer().toggleComponent(component, false);
 
-                    reply.sendMessageFormat(":no_entry: Component `%s` disabled",
+                    reply.sendEmbedFormat(Colors.BLUE, ":no_entry: Component `%s` disabled",
                         componentString);
-
                 }),
 
             new Command("components", "shows a list of all the components")
                 .setAction((command, reply) -> {
-                    StringBuilder builder = new StringBuilder()
-                        .append(":page_facing_up: All components:");
+                    StringBuilder builder = new StringBuilder();
                     for (Component component : getServer().getComponents()) {
-                        builder.append("\n- ").append(component.getTitle());
+                        builder.append(component.getTitle());
 
                         if (component.isEnabled()) {
                             if (component.isAlwaysEnabled()) {
@@ -110,8 +112,14 @@ public class Manager extends Component {
                                 }
                             }
                         }
+                        builder.append("\n");
                     }
-                    reply.sendMessage(builder.toString());
+                    builder.deleteCharAt(builder.length() - 1);
+                    reply.sendEmbed(new EmbedBuilder()
+                        .setColor(Colors.WHITE)
+                        .addField("Components", builder.toString(), false)
+                        .build()
+                    );
                 }),
 
             new Command("status", "shows the current status of the bot")

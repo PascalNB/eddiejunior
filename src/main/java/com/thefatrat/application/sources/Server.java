@@ -31,8 +31,6 @@ public class Server extends Source {
     private final Map<String, Component> components = new HashMap<>();
     private final List<DirectComponent> directComponents = new ArrayList<>();
     private final DefaultMemberPermissions permissions = DefaultMemberPermissions.enabledFor(
-        Permission.ADMINISTRATOR,
-        Permission.MANAGE_SERVER,
         Permission.USE_APPLICATION_COMMANDS
     );
 

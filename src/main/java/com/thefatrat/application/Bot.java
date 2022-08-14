@@ -129,6 +129,7 @@ public class Bot extends ListenerAdapter {
 
                 private final CountDownLatch latch = new CountDownLatch(1);
                 private BiConsumer<String, Consumer<Message>> sendMessage = (s, c) -> {};
+                private BiConsumer<MessageEmbed, Consumer<Message>> sendEmbed = (e, c) -> {};
                 private boolean replied = false;
 
                 @Override
@@ -142,17 +143,31 @@ public class Bot extends ListenerAdapter {
                         sendMessage.accept(message, callback);
                         return;
                     }
+                    replied = true;
                     hook.editOriginal(message).queue(callback.andThen(m -> {
                         sendMessage = (s, c) -> m.getChannel().sendMessage(s).queue(c);
+                        sendEmbed = (e, c) -> m.getChannel().sendMessageEmbeds(e).queue(c);
                         latch.countDown();
                     }));
-                    replied = true;
                 }
 
                 @Override
-                public void sendEmbed(MessageEmbed embed) {
+                public void sendEmbed(MessageEmbed embed, Consumer<Message> callback) {
+                    if (replied) {
+                        try {
+                            latch.await();
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                        sendEmbed.accept(embed, callback);
+                        return;
+                    }
                     replied = true;
-                    hook.editOriginalEmbeds(embed).queue();
+                    hook.editOriginalEmbeds(embed).queue(callback.andThen(m -> {
+                        sendMessage = (s, c) -> m.getChannel().sendMessage(s).queue(c);
+                        sendEmbed = (e, c) -> m.getChannel().sendMessageEmbeds(e).queue(c);
+                        latch.countDown();
+                    }));
                 }
             };
 
@@ -162,7 +177,7 @@ public class Bot extends ListenerAdapter {
             try {
                 ((Server) sources.get(id)).receiveCommand(commandEvent, reply);
             } catch (BotException e) {
-                reply.sendMessage(e.getMessage());
+                reply.sendEmbedFormat(e.getColor(), e.getMessage());
             }
         });
     }
@@ -181,7 +196,7 @@ public class Bot extends ListenerAdapter {
             }
 
             @Override
-            public void sendEmbed(MessageEmbed embed) {
+            public void sendEmbed(MessageEmbed embed, Consumer<Message> callback) {
                 event.getChannel().sendMessageEmbeds(embed).queue();
             }
         };
@@ -194,7 +209,7 @@ public class Bot extends ListenerAdapter {
                 sources.get(null).receiveMessage(message, reply);
             }
         } catch (BotException e) {
-            reply.sendMessage(e.getMessage());
+            reply.sendEmbedFormat(e.getColor(), e.getMessage());
         }
     }
 

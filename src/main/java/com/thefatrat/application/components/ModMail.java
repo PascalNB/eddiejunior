@@ -3,6 +3,7 @@ package com.thefatrat.application.components;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Server;
+import com.thefatrat.application.util.Colors;
 import com.thefatrat.application.util.Command;
 import com.thefatrat.application.util.CommandEvent;
 import com.thefatrat.application.util.Reply;
@@ -41,7 +42,7 @@ public class ModMail extends DirectComponent {
                 }
                 this.timeout = timeout;
                 getDatabaseManager().setSetting("timeout", Long.toString(timeout));
-                reply.sendMessageFormat(
+                reply.sendEmbedFormat(Colors.GREEN,
                     ":white_check_mark: Timout set to %d seconds", timeout);
             })
         );
@@ -80,8 +81,8 @@ public class ModMail extends DirectComponent {
             timeouts.put(author.getId(), System.currentTimeMillis());
             getDestination().sendMessageFormat(":email: %s `(%s)`:%n```%s```",
                 author.getAsMention(), author.getId(), content).queue();
-            message.getChannel().sendMessage("" +
-                ":white_check_mark: Message successfully submitted").queue();
+            reply.sendEmbedFormat(Colors.GREEN,
+                ":white_check_mark: Message successfully submitted");
         } else {
             throw new BotWarningException(
                 String.format("You can only send a message every %d seconds", timeout));
@@ -91,7 +92,7 @@ public class ModMail extends DirectComponent {
     @Override
     protected void stop(CommandEvent command, Reply reply) {
         super.stop(command, reply);
-        reply.sendMessageFormat(
+        reply.sendEmbedFormat(Colors.GREEN,
             ":stop_sign: Mod mail service stopped",
             getDestination().getId()
         );
@@ -100,7 +101,7 @@ public class ModMail extends DirectComponent {
     @Override
     protected void start(CommandEvent command, Reply reply) {
         super.start(command, reply);
-        reply.sendMessageFormat(
+        reply.sendEmbedFormat(Colors.GREEN,
             ":white_check_mark: Mod mail service started",
             getDestination().getId()
         );

@@ -5,7 +5,9 @@ import com.thefatrat.application.exceptions.BotException;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.handlers.DirectHandler;
 import com.thefatrat.application.handlers.MessageHandler;
+import com.thefatrat.application.util.Colors;
 import com.thefatrat.application.util.Reply;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 
@@ -61,7 +63,11 @@ public class Direct extends Source {
             if ("x".equalsIgnoreCase(content)) {
                 handler.removeUser(author);
                 message.getChannel()
-                    .sendMessage(":white_check_mark: Successfully cancelled")
+                    .sendMessageEmbeds(new EmbedBuilder()
+                        .setColor(Colors.GREEN)
+                        .setDescription(":white_check_mark: Successfully cancelled")
+                        .build()
+                    )
                     .queue();
                 return;
             }
@@ -104,7 +110,9 @@ public class Direct extends Source {
 
         @Override
         public void uncaughtException(Thread t, Throwable e) {
-            reply.sendMessage(e.getMessage());
+            if (e instanceof BotException error) {
+                reply.sendEmbedFormat(error.getColor(), error.getMessage());
+            }
         }
 
     }

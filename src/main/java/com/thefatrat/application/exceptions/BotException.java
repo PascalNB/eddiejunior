@@ -11,6 +11,8 @@ public abstract class BotException extends RuntimeException {
         return getIcon() + " " + super.getMessage();
     }
 
+    public abstract int getColor();
+
     protected abstract String getIcon();
 
 }

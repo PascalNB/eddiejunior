@@ -3,10 +3,8 @@ package com.thefatrat.application.components;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Server;
-import com.thefatrat.application.util.Command;
-import com.thefatrat.application.util.CommandEvent;
-import com.thefatrat.application.util.Reply;
-import com.thefatrat.application.util.URLChecker;
+import com.thefatrat.application.util.*;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Channel;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
@@ -39,7 +37,7 @@ public class Feedback extends DirectComponent {
                 .setAction((command, reply) -> {
                     if (!command.getArgs().containsKey("member")) {
                         users.clear();
-                        reply.sendMessage(
+                        reply.sendEmbedFormat(Colors.GRAY,
                             ":arrows_counterclockwise: Feedback session reset, users can submit again"
                         );
                         return;
@@ -56,15 +54,16 @@ public class Feedback extends DirectComponent {
                         .onErrorMap(e -> null)
                         .queue(member -> {
                             if (member == null) {
-                                reply.sendMessage(new BotErrorException(
+                                reply.sendEmbedFormat(Colors.RED, new BotErrorException(
                                     "The given member was not found").getMessage());
                                 return;
                             }
 
                             users.remove(member.getId());
 
-                            reply.sendMessageFormat(":arrows_counterclockwise: Feedback session " +
-                                "reset for %s, they can submit again", member.getAsMention());
+                            reply.sendEmbedFormat(Colors.GRAY,
+                                ":arrows_counterclockwise: Feedback session reset for %s, " +
+                                    "they can submit again", member.getAsMention());
                         });
                 }),
 
@@ -88,9 +87,16 @@ public class Feedback extends DirectComponent {
                         if (domains.isEmpty()) {
                             throw new BotWarningException("The domain whitelist is empty");
                         }
+                        StringBuilder builder = new StringBuilder();
+                        for (String domain : domains) {
+                            builder.append("`").append(domain).append("`\n");
+                        }
+                        builder.deleteCharAt(builder.length() - 1);
 
-                        reply.sendMessageFormat(":page_facing_up: Current whitelist:%s",
-                            concatObjects(domains.toArray(String[]::new), s -> "\n`" + s + "`"));
+                        reply.sendEmbed(new EmbedBuilder()
+                            .setColor(Colors.WHITE)
+                            .addField("Whitelist", builder.toString(), false)
+                            .build());
                         return;
                     }
 
@@ -101,7 +107,8 @@ public class Feedback extends DirectComponent {
 
                         domains.clear();
                         getDatabaseManager().removeSetting("domains");
-                        reply.sendMessage(":white_check_mark: Domain whitelist cleared");
+                        reply.sendEmbedFormat(Colors.GREEN, ":white_check_mark: Domain whitelist " +
+                            "cleared");
                         return;
                     }
 
@@ -124,9 +131,11 @@ public class Feedback extends DirectComponent {
                         msg = "added to";
                         for (String domain : domains) {
                             if (this.domains.contains(domain)) {
-                                reply.sendMessage(new BotWarningException(String.format(
-                                    "Domain %s is already in the domain whitelist", domain))
-                                    .getMessage());
+                                reply.sendEmbedFormat(Colors.YELLOW,
+                                    new BotWarningException(String.format(
+                                        "Domain %s is already in the domain whitelist", domain))
+                                        .getMessage()
+                                );
                                 continue;
                             }
                             getDatabaseManager().setSetting("domains", domain);
@@ -137,9 +146,11 @@ public class Feedback extends DirectComponent {
                         msg = "removed from";
                         for (String domain : domains) {
                             if (!this.domains.contains(domain)) {
-                                reply.sendMessage(new BotWarningException(String.format(
-                                    "Domain %s is not in the domain whitelist", domain))
-                                    .getMessage());
+                                reply.sendEmbedFormat(Colors.YELLOW,
+                                    new BotWarningException(String.format(
+                                        "Domain %s is not in the domain whitelist", domain))
+                                        .getMessage()
+                                );
                                 continue;
                             }
                             getDatabaseManager().removeSetting("domains", domain);
@@ -152,7 +163,7 @@ public class Feedback extends DirectComponent {
                         return;
                     }
 
-                    reply.sendMessageFormat(":white_check_mark: " +
+                    reply.sendEmbedFormat(Colors.GREEN, ":white_check_mark: " +
                             "Domain%s %s\n%s the whitelist", changed.size() == 1 ? "" : "s",
                         concatObjects(changed.toArray(), s -> "\n`" + s + "`"), msg);
                 }),
@@ -178,9 +189,17 @@ public class Feedback extends DirectComponent {
                         if (filetypes.isEmpty()) {
                             throw new BotWarningException("The filetype list is empty");
                         }
+                        StringBuilder builder = new StringBuilder();
+                        for (String type : filetypes) {
+                            builder.append("`").append(type).append("`").append("\n");
+                        }
+                        builder.deleteCharAt(builder.length() - 1);
 
-                        reply.sendMessageFormat(":page_facing_up: Current filetypes:%s",
-                            concatObjects(filetypes.toArray(String[]::new), s -> "\n`" + s + "`"));
+                        reply.sendEmbed(new EmbedBuilder()
+                            .setColor(Colors.WHITE)
+                            .addField("Filetypes", builder.toString(), false)
+                            .build()
+                        );
                         return;
                     }
 
@@ -191,7 +210,8 @@ public class Feedback extends DirectComponent {
 
                         filetypes.clear();
                         getDatabaseManager().removeSetting("filetypes");
-                        reply.sendMessage(":white_check_mark: Filetype list cleared");
+                        reply.sendEmbedFormat(Colors.GREEN,
+                            ":white_check_mark: Filetype list cleared");
                         return;
                     }
 
@@ -214,9 +234,11 @@ public class Feedback extends DirectComponent {
                         msg = "added to";
                         for (String filetype : filetypes) {
                             if (this.filetypes.contains(filetype)) {
-                                reply.sendMessage(new BotWarningException(String.format(
-                                    "Filetype %s is already in the filetype list", filetype))
-                                    .getMessage());
+                                reply.sendEmbedFormat(Colors.YELLOW,
+                                    new BotWarningException(String.format(
+                                        "Filetype %s is already in the filetype list", filetype))
+                                        .getMessage()
+                                );
                                 continue;
                             }
                             getDatabaseManager().setSetting("filetypes", filetype);
@@ -227,9 +249,11 @@ public class Feedback extends DirectComponent {
                         msg = "removed from";
                         for (String filetype : filetypes) {
                             if (!this.filetypes.contains(filetype)) {
-                                reply.sendMessage(new BotWarningException(String.format(
-                                    "Filetype %s is not in the filetype list", filetype))
-                                    .getMessage());
+                                reply.sendEmbedFormat(Colors.YELLOW,
+                                    new BotWarningException(String.format(
+                                        "Filetype %s is not in the filetype list", filetype))
+                                        .getMessage()
+                                );
                                 continue;
                             }
                             getDatabaseManager().removeSetting("filetypes", filetype);
@@ -242,7 +266,7 @@ public class Feedback extends DirectComponent {
                         return;
                     }
 
-                    reply.sendMessageFormat(":white_check_mark: " +
+                    reply.sendEmbedFormat(Colors.GREEN, ":white_check_mark: " +
                             "Filetype%s %s\n%s the filetype list", changed.size() == 1 ? "" : "s",
                         concatObjects(changed.toArray(), s -> "\n`" + s + "`"), msg);
                 })
@@ -325,7 +349,7 @@ public class Feedback extends DirectComponent {
         getDestination().sendMessageFormat("%s `(%s)`:%n<%s>",
             author.getAsMention(), author.getId(), url).queue();
         submissions++;
-        reply.sendMessage(":white_check_mark: Successfully submitted");
+        reply.sendEmbedFormat(Colors.GREEN, ":white_check_mark: Successfully submitted");
     }
 
     @Override
@@ -333,18 +357,14 @@ public class Feedback extends DirectComponent {
         super.start(command, reply);
         users.clear();
         submissions = 0;
-        reply.sendMessage(
-            ":white_check_mark: Feedback session started"
-        );
+        reply.sendEmbedFormat(Colors.GREEN, ":white_check_mark: Feedback session started");
     }
 
     @Override
     protected void stop(CommandEvent command, Reply reply) {
         super.stop(command, reply);
         submissions = 0;
-        reply.sendMessage(
-            ":stop_sign: Feedback session stopped"
-        );
+        reply.sendEmbedFormat(Colors.GREEN, ":stop_sign: Feedback session stopped");
     }
 
 }
