@@ -271,6 +271,26 @@ public class Feedback extends DirectComponent {
                         concatObjects(changed.toArray(), s -> "\n`" + s + "`"), msg);
                 })
         );
+
+        getServer().getInteractionHandler().addListener(getName(), (event, reply) -> {
+            switch (event.getAction().toLowerCase()) {
+                case "mark read" -> event.getMessage().editMessageEmbeds(
+                    new EmbedBuilder(event.getMessage().getEmbeds().get(0))
+                        .setColor(Colors.DARK)
+                        .build()
+                ).queue();
+                case "mark unread" -> event.getMessage().editMessageEmbeds(
+                    new EmbedBuilder(event.getMessage().getEmbeds().get(0))
+                        .setColor(Colors.LIGHT)
+                        .build()
+                ).queue();
+                default -> throw new BotErrorException(String.format(
+                    "`%s` not supported for feedback submissions", event.getAction()));
+
+            }
+            reply.sendEmbedFormat(Colors.GREEN, ":white_check_mark: `%s` performed successfully",
+                event.getAction());
+        });
     }
 
     @Override
@@ -346,8 +366,14 @@ public class Feedback extends DirectComponent {
         }
 
         users.add(author.getId());
-        getDestination().sendMessageFormat("%s `(%s)`:%n<%s>",
-            author.getAsMention(), author.getId(), url).queue();
+        getDestination().sendMessageEmbeds(new EmbedBuilder()
+            .setColor(Colors.LIGHT)
+            .addField("User", String.format("%s `(%s)`",
+                author.getAsMention(), author.getId()), true)
+            .addField("Submission", String.format("<%s>", url), true)
+            .setFooter(getName())
+            .build()
+        ).queue();
         submissions++;
         reply.sendEmbedFormat(Colors.GREEN, ":white_check_mark: Successfully submitted");
     }

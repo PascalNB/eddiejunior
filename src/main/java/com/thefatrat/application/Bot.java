@@ -1,19 +1,25 @@
 package com.thefatrat.application;
 
 import com.thefatrat.application.components.Component;
+import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotException;
 import com.thefatrat.application.sources.Direct;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.sources.Source;
+import com.thefatrat.application.util.Colors;
 import com.thefatrat.application.util.CommandEvent;
+import com.thefatrat.application.util.InteractionEvent;
 import com.thefatrat.application.util.Reply;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.events.ReadyEvent;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.events.guild.GuildReadyEvent;
+import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -104,23 +110,61 @@ public class Bot extends ListenerAdapter {
     }
 
     @Override
-    public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
-        if (event.getUser().isBot() || event.getUser().isSystem()) {
-            event.reply("Only slash commands by users allowed").queue();
+    public void onMessageContextInteraction(@NotNull MessageContextInteractionEvent event) {
+        if (event.getUser().isBot() || event.getUser().isSystem() || !event.isFromGuild()) {
+            event.reply("Context interactions not allowed").queue();
             return;
         }
-        if (!event.isFromGuild()) {
-            event.reply("Slash commands only allowed in servers").queue();
+        Message message = event.getInteraction().getTarget();
+        if (!message.getAuthor().isBot() ||
+            !event.getJDA().getSelfUser().getId().equals(message.getAuthor().getId())) {
+            event.deferReply(true).queue(hook ->
+                hook.editOriginalEmbeds(new EmbedBuilder()
+                    .setColor(Colors.RED)
+                    .setDescription(BotErrorException.icon + " Message was not send by me")
+                    .build()
+                ).queue()
+            );
+            return;
+        }
+        Guild guild = Objects.requireNonNull(event.getGuild());
+        event.deferReply(true).queue(hook -> {
+
+            Reply reply = new Reply() {
+                @Override
+                public void sendMessage(String message, Consumer<Message> callback) {
+                    hook.editOriginal(message).queue(callback);
+                }
+
+                @Override
+                public void sendEmbed(MessageEmbed embed, Consumer<Message> callback) {
+                    hook.editOriginalEmbeds(embed).queue(callback);
+                }
+            };
+
+            try {
+                ((Server) sources.get(guild.getId()))
+                    .receiveInteraction(new InteractionEvent(message,
+                        event.getInteraction().getName()), reply);
+            } catch (BotException e) {
+                reply.sendEmbedFormat(e.getColor(), e.getMessage());
+            }
+        });
+    }
+
+    @Override
+    public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
+        if (event.getUser().isBot() || event.getUser().isSystem() || !event.isFromGuild()) {
+            event.reply("Slash commands not allowed").queue();
             return;
         }
 
-        Objects.requireNonNull(event.getGuild());
+        Guild guild = Objects.requireNonNull(event.getGuild());
         event.deferReply(false).queue(hook -> {
-            Member member = event.getGuild().getMember(event.getUser());
+            Member member = guild.getMember(event.getUser());
             if (member == null) {
-                member = event.getGuild().retrieveMember(event.getUser()).complete();
+                member = guild.retrieveMember(event.getUser()).complete();
             }
-            String id = event.getGuild().getId();
 
             Map<String, OptionMapping> options = event.getOptions().stream()
                 .collect(Collectors.toMap(OptionMapping::getName, Function.identity()));
@@ -172,10 +216,10 @@ public class Bot extends ListenerAdapter {
             };
 
             CommandEvent commandEvent = new CommandEvent(event.getName(), event.getSubcommandName(),
-                options, event.getGuild(), event.getChannel(), member);
+                options, guild, event.getChannel(), member);
 
             try {
-                ((Server) sources.get(id)).receiveCommand(commandEvent, reply);
+                ((Server) sources.get(guild.getId())).receiveCommand(commandEvent, reply);
             } catch (BotException e) {
                 reply.sendEmbedFormat(e.getColor(), e.getMessage());
             }

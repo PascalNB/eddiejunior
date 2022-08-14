@@ -8,5 +8,7 @@ public class Colors {
     public static final int BLUE = 0x226699;
     public static final int WHITE = 0xb0b7bf;
     public static final int GRAY = 0x68717a;
+    public static final int DARK = 0x3e4245;
+    public static final int LIGHT = 0x3cfaa5;
 
 }

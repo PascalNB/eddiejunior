@@ -3,12 +3,13 @@ package com.thefatrat.application.sources;
 import com.thefatrat.application.Bot;
 import com.thefatrat.application.components.Component;
 import com.thefatrat.application.components.DirectComponent;
-import com.thefatrat.application.components.Manager;
 import com.thefatrat.application.exceptions.BotException;
 import com.thefatrat.application.handlers.CommandHandler;
+import com.thefatrat.application.handlers.InteractionHandler;
 import com.thefatrat.application.handlers.MessageHandler;
 import com.thefatrat.application.util.Command;
 import com.thefatrat.application.util.CommandEvent;
+import com.thefatrat.application.util.InteractionEvent;
 import com.thefatrat.application.util.Reply;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
@@ -27,6 +28,7 @@ public class Server extends Source {
     private final String id;
     private final Map<String, String> commandIds = new HashMap<>();
     private final CommandHandler commandHandler = new CommandHandler();
+    private final InteractionHandler interactionHandler = new InteractionHandler();
     private final MessageHandler directHandler = new MessageHandler();
     private final Map<String, Component> components = new HashMap<>();
     private final List<DirectComponent> directComponents = new ArrayList<>();
@@ -84,15 +86,6 @@ public class Server extends Source {
         }
     }
 
-    public boolean toggleComponent(String componentName, boolean enable) {
-        Component component = components.get(componentName);
-        if (component == null || component.isAlwaysEnabled()) {
-            return false;
-        }
-        toggleComponent(component, enable);
-        return true;
-    }
-
     public Component getComponent(String componentName) {
         return components.get(componentName.toLowerCase());
     }
@@ -110,10 +103,10 @@ public class Server extends Source {
 
                 this.components.put(instance.getName(), instance);
 
-                if (instance instanceof Manager manager) {
+                if (instance.isAlwaysEnabled()) {
                     Objects.requireNonNull(Bot.getInstance().getJDA().getGuildById(id))
                         .updateCommands()
-                        .addCommands(manager.getCommands().stream()
+                        .addCommands(instance.getCommands().stream()
                             .map(command ->
                                 Commands.slash(command.getName(), command.getDescription())
                                     .setDefaultPermissions(permissions)
@@ -122,6 +115,9 @@ public class Server extends Source {
                             )
                             .toArray(CommandData[]::new)
                         )
+                        .addCommands(
+                            Commands.message("Mark read").setGuildOnly(true),
+                            Commands.message("Mark unread").setGuildOnly(true))
                         .queue(list -> list.forEach(command ->
                             commandIds.put(command.getName(), command.getId())
                         ));
@@ -139,6 +135,14 @@ public class Server extends Source {
 
     public CommandHandler getCommandHandler() {
         return commandHandler;
+    }
+
+    public InteractionHandler getInteractionHandler() {
+        return interactionHandler;
+    }
+
+    public void receiveInteraction(InteractionEvent message, Reply reply) {
+        interactionHandler.handle(message, reply);
     }
 
     public void receiveCommand(CommandEvent event, Reply reply) {
