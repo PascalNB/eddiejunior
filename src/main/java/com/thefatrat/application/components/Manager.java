@@ -4,6 +4,7 @@ import com.thefatrat.application.Bot;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
 import com.thefatrat.application.util.Command;
+import com.thefatrat.database.Database;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
@@ -42,9 +43,18 @@ public class Manager extends Component {
                             long time = System.currentTimeMillis() - start;
                             message.editMessageEmbeds(new EmbedBuilder()
                                 .setColor(Colors.BLUE)
-                                .setDescription(String.format(":ping_pong: %d ms", time))
+                                .addField("Connection", time + " ms", true)
                                 .build()
-                            ).queue();
+                            ).queue(message2 -> {
+                                long start2 = System.currentTimeMillis();
+                                Database.getInstance().connect().close();
+                                long time2 = System.currentTimeMillis() - start2;
+                                MessageEmbed embed = message2.getEmbeds().get(0);
+                                message2.editMessageEmbeds(new EmbedBuilder(embed)
+                                    .addField("Database", time2 + " ms", true)
+                                    .build()
+                                ).queue();
+                            });
                         }, Colors.GRAY, "..."
                     );
                 }),
