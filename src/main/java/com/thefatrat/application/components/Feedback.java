@@ -6,6 +6,7 @@ import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.*;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Channel;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
@@ -34,9 +35,9 @@ public class Feedback extends DirectComponent {
 
         addSubcommands(
             new Command("reset", "allow submissions for users again")
-                .addOption(new OptionData(OptionType.STRING, "member", "member id"))
+                .addOption(new OptionData(OptionType.USER, "user", "user", false))
                 .setAction((command, reply) -> {
-                    if (!command.getArgs().containsKey("member")) {
+                    if (!command.getArgs().containsKey("user")) {
                         users.clear();
                         reply.sendEmbedFormat(Colors.GRAY,
                             ":arrows_counterclockwise: Feedback session reset, users can submit again"
@@ -44,28 +45,19 @@ public class Feedback extends DirectComponent {
                         return;
                     }
 
-                    long id;
-                    try {
-                        id = command.getArgs().get("member").getAsLong();
-                    } catch (NumberFormatException e) {
-                        throw new BotErrorException("Not a valid member id");
+                    Member member = command.getArgs().get("user").getAsMember();
+
+                    if (member == null) {
+                        reply.sendEmbedFormat(Colors.RED, new BotErrorException(
+                            "The given member was not found").getMessage());
+                        return;
                     }
 
-                    command.getGuild().retrieveMemberById(id)
-                        .onErrorMap(e -> null)
-                        .queue(member -> {
-                            if (member == null) {
-                                reply.sendEmbedFormat(Colors.RED, new BotErrorException(
-                                    "The given member was not found").getMessage());
-                                return;
-                            }
+                    users.remove(member.getId());
 
-                            users.remove(member.getId());
-
-                            reply.sendEmbedFormat(Colors.GRAY,
-                                ":arrows_counterclockwise: Feedback session reset for %s, " +
-                                    "they can submit again", member.getAsMention());
-                        });
+                    reply.sendEmbedFormat(Colors.GRAY,
+                        ":arrows_counterclockwise: Feedback session reset for %s, " +
+                            "they can submit again", member.getAsMention());
                 }),
 
             new Command("domains", "manage the domain whitelist for feedback submissions")

@@ -49,8 +49,7 @@ public abstract class DirectComponent extends Component {
                     .setChannelTypes(ChannelType.TEXT)
                 )
                 .setAction((command, reply) -> {
-                    MessageChannel parsedDestination = Optional.ofNullable(
-                            command.getArgs().get("channel"))
+                    MessageChannel parsedDestination = Optional.ofNullable(command.getArgs().get("channel"))
                         .map(option -> command.getGuild().getChannelById(MessageChannel.class,
                             option.getAsChannel().getId())
                         )
@@ -69,8 +68,7 @@ public abstract class DirectComponent extends Component {
                         !newDestination.getId().equals(getDestination().getId())) {
                         setDestination(newDestination.getId());
 
-                        reply.sendEmbedFormat(Colors.GRAY,
-                            ":gear: Destination set to %s `(%s)`%n",
+                        reply.sendEmbedFormat(Colors.GRAY, ":gear: Destination set to %s `(%s)`%n",
                             getDestination().getAsMention(), getDestination().getId()
                         );
                     }
@@ -100,8 +98,7 @@ public abstract class DirectComponent extends Component {
                 .setAction(this::stop)
             )
             .addSubcommand(new Command("destination", "sets the destination channel")
-                .addOption(new OptionData(OptionType.CHANNEL, "channel",
-                    "destination channel", false)
+                .addOption(new OptionData(OptionType.CHANNEL, "channel", "destination channel", false)
                     .setChannelTypes(ChannelType.TEXT)
                 )
                 .setAction((command, reply) -> {
@@ -125,12 +122,12 @@ public abstract class DirectComponent extends Component {
                     .addChoice("show", "show")
                     .addChoice("clear", "clear")
                 )
-                .addOption(new OptionData(OptionType.STRING, "member", "member id", false))
+                .addOption(new OptionData(OptionType.USER, "user", "user", false))
                 .setAction((command, reply) -> {
                     String action = command.getArgs().get("action").getAsString();
-                    if (!command.getArgs().containsKey("member")
+                    if (!command.getArgs().containsKey("user")
                         && ("add".equals(action) || "remove".equals(action))) {
-                        throw new BotErrorException("Please specify the member id");
+                        throw new BotErrorException("Please specify the user");
                     }
 
                     if ("show".equals(action)) {
@@ -176,43 +173,21 @@ public abstract class DirectComponent extends Component {
                         msg = "removed from";
                     }
 
-                    long id;
-                    try {
-                        id = command.getArgs().get("member").getAsLong();
-                    } catch (NumberFormatException e) {
-                        throw new BotErrorException("Not a valid member id");
-                    }
+                    Member member = command.getArgs().get("user").getAsMember();
 
-                    Member member = command.getGuild().getMemberById(id);
                     if (member != null) {
-                        blacklist(member, id, add, msg, reply);
+                        blacklist(member, add, msg, reply);
                         return;
                     }
-
-                    command.getGuild().retrieveMemberById(id)
-                        .onErrorMap(error -> null)
-                        .queue(m -> blacklist(m, id, add, msg, reply));
+                    throw new BotErrorException("The given member was not found");
                 })
             )
         );
     }
 
-    private void blacklist(Member member, long id, boolean add, String msg, Reply reply) {
-        if (member == null) {
-            String idString = Long.toString(id);
-            if (add || !blacklist.contains(idString)) {
-                reply.sendEmbedFormat(Colors.RED,
-                    new BotErrorException("The given member was not found").getMessage());
-            } else {
-                blacklist.remove(idString);
-                reply.sendEmbedFormat(Colors.GREEN, ":white_check_mark: " +
-                    "Member with id `%s` has been removed from the " +
-                    "blacklist", idString);
-            }
-            return;
-        }
+    private void blacklist(Member member, boolean add, String msg, Reply reply) {
         User user = member.getUser();
-        String userId = user.getId();
+        String userId = member.getId();
 
         if (add) {
             if (blacklist.contains(userId)) {
