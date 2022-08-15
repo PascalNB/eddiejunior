@@ -88,7 +88,7 @@ public class Feedback extends DirectComponent {
                             throw new BotWarningException("The domain whitelist is empty");
                         }
                         StringBuilder builder = new StringBuilder();
-                        for (String domain : domains) {
+                        for (String domain : domains.stream().sorted().toArray(String[]::new)) {
                             builder.append("`").append(domain).append("`\n");
                         }
                         builder.deleteCharAt(builder.length() - 1);
@@ -138,7 +138,7 @@ public class Feedback extends DirectComponent {
                                 );
                                 continue;
                             }
-                            getDatabaseManager().setSetting("domains", domain);
+                            getDatabaseManager().addSetting("domains", domain);
                             this.domains.add(domain);
                             changed.add(domain);
                         }
@@ -241,7 +241,7 @@ public class Feedback extends DirectComponent {
                                 );
                                 continue;
                             }
-                            getDatabaseManager().setSetting("filetypes", filetype);
+                            getDatabaseManager().addSetting("filetypes", filetype);
                             this.filetypes.add(filetype);
                             changed.add(filetype);
                         }

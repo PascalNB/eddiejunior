@@ -221,7 +221,7 @@ public abstract class DirectComponent extends Component {
             }
 
             blacklist.add(userId);
-            getDatabaseManager().setSetting("blacklist", userId);
+            getDatabaseManager().addSetting("blacklist", userId);
         } else {
             if (!blacklist.contains(userId)) {
                 throw new BotWarningException(String.format("%s is not on the blacklist",

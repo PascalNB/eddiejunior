@@ -18,11 +18,10 @@ public class DatabaseManager {
             "ON DUPLICATE KEY UPDATE enabled=?;";
 
     private static final String GET_SETTINGS =
-        "SELECT value FROM setting WHERE server_id=? AND component_name=? AND name=?";
+        "SELECT value FROM setting WHERE server_id=? AND component_name=? AND name=?;";
 
     private static final String ADD_SETTING =
-        "INSERT INTO setting (server_id,component_name,name,value) VALUES(?,?,?,?) " +
-            "ON DUPLICATE KEY UPDATE value=?;";
+        "INSERT INTO setting (server_id,component_name,name,value) VALUES(?,?,?,?);";
 
     private static final String REMOVE_SETTING =
         "DELETE FROM setting WHERE server_id=? AND component_name=? AND name=?;";
@@ -61,7 +60,16 @@ public class DatabaseManager {
     public void setSetting(String setting, String value) {
         Runnable runnable = () ->
             Database.getInstance().connect()
-                .executeStatement(Query.of(ADD_SETTING), server, component, setting, value, value)
+                .executeStatement(Query.of(REMOVE_SETTING), server, component, setting)
+                .executeStatement(Query.of(ADD_SETTING), server, component, setting, value)
+                .close();
+        execute(runnable);
+    }
+
+    public void addSetting(String setting, String value) {
+        Runnable runnable = () ->
+            Database.getInstance().connect()
+                .executeStatement(Query.of(ADD_SETTING), server, component, setting, value)
                 .close();
         execute(runnable);
     }

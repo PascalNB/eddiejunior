@@ -11,7 +11,7 @@ import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 
 public class Manager extends Component {
 
-    public static final String NAME = "Default";
+    public static final String NAME = "Status";
 
     public Manager(Server server) {
         super(server, NAME, true);
@@ -95,14 +95,13 @@ public class Manager extends Component {
                 .setAction((command, reply) -> {
                     StringBuilder builder = new StringBuilder();
                     for (Component component : getServer().getComponents()) {
+                        if (component.isAlwaysEnabled()) {
+                            continue;
+                        }
                         builder.append(component.getTitle());
 
                         if (component.isEnabled()) {
-                            if (component.isAlwaysEnabled()) {
-                                builder.append(" :lock:");
-                            } else {
-                                builder.append(" :ballot_box_with_check:");
-                            }
+                            builder.append(" :ballot_box_with_check:");
 
                             if (component instanceof DirectComponent direct) {
                                 if (direct.isPaused()) {
