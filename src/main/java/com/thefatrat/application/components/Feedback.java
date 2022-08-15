@@ -12,6 +12,7 @@ import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 
 import java.net.URISyntaxException;
+import java.time.Instant;
 import java.util.*;
 
 public class Feedback extends DirectComponent {
@@ -363,6 +364,8 @@ public class Feedback extends DirectComponent {
         users.add(author.getId());
         getDestination().sendMessageEmbeds(new EmbedBuilder()
             .setColor(Colors.LIGHT)
+            .setTimestamp(Instant.now())
+            .setAuthor(author.getAsTag(), null, author.getEffectiveAvatarUrl())
             .addField("User", String.format("%s `(%s)`",
                 author.getAsMention(), author.getId()), true)
             .addField("Submission", String.format("<%s>", url), true)
