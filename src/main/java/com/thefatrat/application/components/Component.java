@@ -5,6 +5,7 @@ import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotException;
 import com.thefatrat.application.handlers.CommandHandler;
 import com.thefatrat.application.sources.Server;
+import com.thefatrat.application.util.Colors;
 import com.thefatrat.application.util.Command;
 import com.thefatrat.application.util.HelpBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
@@ -17,7 +18,6 @@ public abstract class Component {
     private final Server source;
     private final String title;
     private final boolean alwaysEnabled;
-    private final int color;
     private boolean enabled;
     private final DatabaseManager databaseManager;
     private final List<Command> commands = new ArrayList<>();
@@ -29,7 +29,6 @@ public abstract class Component {
         this.title = title;
         this.alwaysEnabled = alwaysEnabled;
         enabled = alwaysEnabled;
-        color = getRandomColor(title);
         databaseManager = new DatabaseManager(source.getId(), getName());
     }
 
@@ -77,7 +76,7 @@ public abstract class Component {
             }
         }
 
-        help = new HelpBuilder(getTitle(), getCommands()).build(getColor());
+        help = new HelpBuilder(getName(), getCommands()).build(Colors.BLUE);
     }
 
     public MessageEmbed getHelp() {
@@ -89,10 +88,6 @@ public abstract class Component {
     }
 
     public abstract String getStatus();
-
-    public int getColor() {
-        return color;
-    }
 
     public List<Command> getCommands() {
         return commands;
@@ -115,14 +110,6 @@ public abstract class Component {
 
     public DatabaseManager getDatabaseManager() {
         return databaseManager;
-    }
-
-    public static int getRandomColor(String seed) {
-        int hash = 0;
-        for (int i = 0; i < seed.length(); i++) {
-            hash = seed.charAt(i) + ((hash << 5) - hash);
-        }
-        return hash & 0x00FFFFFF;
     }
 
     public static <T, V> List<T> fillAbsent(Collection<T> expected, Collection<V> actual,

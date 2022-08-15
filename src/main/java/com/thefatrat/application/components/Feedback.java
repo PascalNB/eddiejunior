@@ -294,11 +294,6 @@ public class Feedback extends DirectComponent {
     }
 
     @Override
-    public int getColor() {
-        return 0x308acb;
-    }
-
-    @Override
     public String getStatus() {
         String dest = Optional.ofNullable(getDestination())
             .map(Channel::getAsMention)

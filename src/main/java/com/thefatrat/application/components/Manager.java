@@ -11,7 +11,7 @@ import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 
 public class Manager extends Component {
 
-    public static final String NAME = "Status";
+    public static final String NAME = "Main";
 
     public Manager(Server server) {
         super(server, NAME, true);
@@ -41,11 +41,11 @@ public class Manager extends Component {
                     reply.sendEmbedFormat(message -> {
                             long time = System.currentTimeMillis() - start;
                             message.editMessageEmbeds(new EmbedBuilder()
-                                .setColor(getColor())
+                                .setColor(Colors.BLUE)
                                 .setDescription(String.format(":ping_pong: %d ms", time))
                                 .build()
                             ).queue();
-                        }, getColor(), "..."
+                        }, Colors.GRAY, "..."
                     );
                 }),
 
@@ -140,19 +140,14 @@ public class Manager extends Component {
                     }
 
                     MessageEmbed embed = new EmbedBuilder()
-                        .setTitle(component.getTitle())
-                        .setColor(component.getColor())
+                        .setColor(Colors.BLUE)
                         .setDescription(component.getStatus())
+                        .setFooter(component.getName())
                         .build();
 
                     reply.sendEmbed(embed);
                 })
         );
-    }
-
-    @Override
-    public int getColor() {
-        return 0xba3d52;
     }
 
     @Override

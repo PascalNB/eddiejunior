@@ -49,11 +49,6 @@ public class ModMail extends DirectComponent {
     }
 
     @Override
-    public int getColor() {
-        return 0xd6943e;
-    }
-
-    @Override
     public String getStatus() {
         String dest = Optional.ofNullable(getDestination())
             .map(Channel::getAsMention)

@@ -8,11 +8,11 @@ import java.util.List;
 
 public class HelpBuilder {
 
-    private final String title;
+    private final String component;
     private final List<HelpCommand> commands = new ArrayList<>();
 
-    public HelpBuilder(String title, List<Command> commands) {
-        this.title = title;
+    public HelpBuilder(String component, List<Command> commands) {
+        this.component = component;
         commands.forEach(command -> {
             if (command.getSubcommands().isEmpty()) {
                 this.commands.add(new HelpCommand(command.getName(), command.getDescription()));
@@ -28,7 +28,7 @@ public class HelpBuilder {
     public MessageEmbed build(int color) {
         EmbedBuilder builder = new EmbedBuilder()
             .setColor(color)
-            .setTitle(title);
+            .setFooter(component);
         for (HelpCommand command : commands) {
             builder.addField("/" + command.name(), command.description(), false);
         }
