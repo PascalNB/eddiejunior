@@ -25,8 +25,8 @@ public class Direct extends Source {
 
     @Override
     public void receiveMessage(Message message, Reply reply) {
+        String author = message.getAuthor().getId();
         Thread thread = new Thread(() -> {
-            String author = message.getAuthor().getId();
 
             List<Guild> mutual = message.getAuthor().getMutualGuilds();
             if (mutual.isEmpty()) {
@@ -71,7 +71,10 @@ public class Direct extends Source {
 
             handler.addUser(message.getAuthor(), message);
         });
-        thread.setUncaughtExceptionHandler(new ChannelExceptionHandler(reply));
+        thread.setUncaughtExceptionHandler(new ChannelExceptionHandler(() -> {
+            handler.removeUser(author);
+            submitter.remove(author);
+        }, reply));
         thread.start();
     }
 
@@ -109,7 +112,10 @@ public class Direct extends Source {
             messageHandler.handle(button, submitter.get(user).message(), reply);
             submitter.remove(user);
         });
-        thread.setUncaughtExceptionHandler(new ChannelExceptionHandler(reply));
+        thread.setUncaughtExceptionHandler(new ChannelExceptionHandler(() -> {
+            handler.removeUser(user);
+            submitter.remove(user);
+        }, reply));
         thread.start();
     }
 
@@ -148,12 +154,13 @@ public class Direct extends Source {
 
     }
 
-    private record ChannelExceptionHandler(Reply reply)
+    private record ChannelExceptionHandler(Runnable action, Reply reply)
         implements Thread.UncaughtExceptionHandler {
 
         @Override
         public void uncaughtException(Thread t, Throwable e) {
             if (e instanceof BotException error) {
+                action.run();
                 reply.sendEmbedFormat(error.getColor(), error.getMessage());
             }
         }
