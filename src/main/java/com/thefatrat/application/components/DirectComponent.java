@@ -1,22 +1,20 @@
 package com.thefatrat.application.components;
 
 import com.thefatrat.application.Bot;
+import com.thefatrat.application.entities.Command;
+import com.thefatrat.application.entities.Reply;
 import com.thefatrat.application.events.CommandEvent;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
-import com.thefatrat.application.entities.Command;
-import com.thefatrat.application.entities.Reply;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -25,7 +23,6 @@ public abstract class DirectComponent extends Component {
 
     private final Set<String> blacklist = new HashSet<>();
     private boolean running = false;
-    private boolean paused = false;
     private String destination;
 
     private final BiConsumer<Message, Reply> receiver = (message, reply) -> {
@@ -77,24 +74,6 @@ public abstract class DirectComponent extends Component {
                         reply.sendEmbedFormat(Colors.GRAY, ":gear: Destination set to %s `(%s)`%n",
                             getDestination().getAsMention(), getDestination().getId()
                         );
-                    }
-
-                    List<DirectComponent> pausedComponents = new ArrayList<>();
-                    for (DirectComponent component : getServer().getDirectComponents()) {
-                        if (component != this && component.isRunning() &&
-                            !component.isPaused()) {
-                            component.setPaused(true);
-                            pausedComponents.add(component);
-                        }
-                    }
-                    if (pausedComponents.size() > 0) {
-                        StringBuilder builder = new StringBuilder()
-                            .append(":pause_button: The following components were paused:");
-                        for (Component component : pausedComponents) {
-                            builder.append(" ").append(component.getTitle()).append(",");
-                        }
-                        builder.deleteCharAt(builder.length() - 1);
-                        reply.sendEmbedFormat(Colors.GRAY, builder.toString());
                     }
 
                     start(command, reply);
@@ -233,15 +212,13 @@ public abstract class DirectComponent extends Component {
     protected abstract void handleDirect(Message message, Reply reply);
 
     protected void stop(CommandEvent command, Reply reply) {
-        getServer().getDirectHandler().removeListener(receiver);
+        getServer().getDirectHandler().removeListener(getTitle());
         this.running = false;
-        this.paused = false;
     }
 
     protected void start(CommandEvent command, Reply reply) {
-        this.paused = false;
         this.running = true;
-        getServer().getDirectHandler().addListener(receiver);
+        getServer().getDirectHandler().addListener(getTitle(), receiver);
     }
 
     public void setDestination(String destination) {
@@ -258,19 +235,6 @@ public abstract class DirectComponent extends Component {
 
     public boolean isRunning() {
         return running && isEnabled();
-    }
-
-    public void setPaused(boolean paused) {
-        this.paused = paused;
-        if (paused) {
-            getServer().getDirectHandler().removeListener(receiver);
-        } else {
-            getServer().getDirectHandler().addListener(receiver);
-        }
-    }
-
-    public boolean isPaused() {
-        return paused;
     }
 
 }

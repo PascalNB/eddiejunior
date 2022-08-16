@@ -1,9 +1,9 @@
 package com.thefatrat.application.components;
 
 import com.thefatrat.application.Bot;
+import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
-import com.thefatrat.application.entities.Command;
 import com.thefatrat.database.Database;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
@@ -113,12 +113,8 @@ public class Manager extends Component {
                         if (component.isEnabled()) {
                             builder.append(" :ballot_box_with_check:");
 
-                            if (component instanceof DirectComponent direct) {
-                                if (direct.isPaused()) {
-                                    builder.append(" :pause_button:");
-                                } else if (direct.isRunning()) {
-                                    builder.append(" :white_check_mark:");
-                                }
+                            if (component instanceof DirectComponent direct && direct.isRunning()) {
+                                builder.append(" :white_check_mark:");
                             }
                         }
                         builder.append("\n");

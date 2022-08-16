@@ -1,6 +1,7 @@
 package com.thefatrat.application;
 
 import com.thefatrat.application.components.Component;
+import com.thefatrat.application.entities.Reply;
 import com.thefatrat.application.events.ArchiveEvent;
 import com.thefatrat.application.events.CommandEvent;
 import com.thefatrat.application.events.InteractionEvent;
@@ -10,7 +11,6 @@ import com.thefatrat.application.sources.Direct;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.sources.Source;
 import com.thefatrat.application.util.Colors;
-import com.thefatrat.application.entities.Reply;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.*;
@@ -20,6 +20,7 @@ import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.events.guild.GuildReadyEvent;
 import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
@@ -106,6 +107,36 @@ public class Bot extends ListenerAdapter {
     public void onGuildJoin(@NotNull GuildJoinEvent event) {
         String id = event.getGuild().getId();
         loadServer(id);
+    }
+
+    @Override
+    public void onButtonInteraction(@NotNull ButtonInteractionEvent event) {
+        if (event.getUser().isBot() || event.getUser().isSystem()) {
+            return;
+        }
+        if (!event.isFromGuild()) {
+            event.deferReply().queue(hook -> {
+
+                Reply reply = new Reply() {
+                    @Override
+                    public void sendMessage(String message, Consumer<Message> callback) {
+                        hook.editOriginal(message).queue(callback);
+                    }
+
+                    @Override
+                    public void sendEmbed(MessageEmbed embed, Consumer<Message> callback) {
+                        hook.editOriginalEmbeds(embed).queue(callback);
+                    }
+                };
+
+                try {
+                    ((Direct) sources.get(null))
+                        .clickButton(event.getUser().getId(), event.getComponentId(), event.getMessage(), reply);
+                } catch (BotException e) {
+                    reply.sendEmbedFormat(e.getColor(), e.getMessage());
+                }
+            });
+        }
     }
 
     @Override

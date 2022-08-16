@@ -1,13 +1,13 @@
 package com.thefatrat.application.components;
 
 import com.thefatrat.application.Bot;
+import com.thefatrat.application.entities.Command;
+import com.thefatrat.application.entities.Reply;
 import com.thefatrat.application.events.CommandEvent;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
-import com.thefatrat.application.entities.Command;
-import com.thefatrat.application.entities.Reply;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Channel;
 import net.dv8tion.jda.api.entities.ChannelType;
@@ -195,7 +195,7 @@ public class ModMail extends DirectComponent {
                 Max tickets per user: %d
                 Private tickets: %b
                 """,
-            isEnabled(), isRunning() && !isPaused(), dest, timeout, tickets, maxTickets, maxTicketsPerUser,
+            isEnabled(), isRunning(), dest, timeout, tickets, maxTickets, maxTicketsPerUser,
             privateThreads);
     }
 

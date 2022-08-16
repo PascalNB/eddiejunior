@@ -311,7 +311,7 @@ public class Feedback extends DirectComponent {
                 Submissions: %d
                 Destination: %s
                 """,
-            isEnabled(), isRunning() && !isPaused(), submissions, dest);
+            isEnabled(), isRunning(), submissions, dest);
     }
 
     @Override
