@@ -3,13 +3,14 @@ package com.thefatrat.application.sources;
 import com.thefatrat.application.Bot;
 import com.thefatrat.application.components.Component;
 import com.thefatrat.application.components.DirectComponent;
+import com.thefatrat.application.events.CommandEvent;
+import com.thefatrat.application.events.InteractionEvent;
 import com.thefatrat.application.exceptions.BotException;
+import com.thefatrat.application.handlers.ArchiveHandler;
 import com.thefatrat.application.handlers.CommandHandler;
 import com.thefatrat.application.handlers.InteractionHandler;
 import com.thefatrat.application.handlers.MessageHandler;
 import com.thefatrat.application.util.Command;
-import com.thefatrat.application.util.CommandEvent;
-import com.thefatrat.application.util.InteractionEvent;
 import com.thefatrat.application.util.Reply;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
@@ -30,6 +31,7 @@ public class Server extends Source {
     private final CommandHandler commandHandler = new CommandHandler();
     private final InteractionHandler interactionHandler = new InteractionHandler();
     private final MessageHandler directHandler = new MessageHandler();
+    private final ArchiveHandler archiveHandler = new ArchiveHandler();
     private final Map<String, Component> components = new HashMap<>();
     private final List<DirectComponent> directComponents = new ArrayList<>();
     private final DefaultMemberPermissions permissions = DefaultMemberPermissions.enabledFor(
@@ -38,6 +40,10 @@ public class Server extends Source {
 
     public Server(String id) {
         this.id = id;
+    }
+
+    public Guild getGuild() {
+        return Bot.getInstance().getJDA().getGuildById(id);
     }
 
     public String getId() {
@@ -59,8 +65,7 @@ public class Server extends Source {
     }
 
     public void toggleComponent(Component component, boolean enable) {
-        Guild guild = Objects.requireNonNull(
-            Bot.getInstance().getJDA().getGuildById(id));
+        Guild guild = Objects.requireNonNull(getGuild());
 
         if (enable) {
             for (Command command : component.getCommands()) {
@@ -104,7 +109,7 @@ public class Server extends Source {
                 this.components.put(instance.getName(), instance);
 
                 if (instance.isAlwaysEnabled()) {
-                    Objects.requireNonNull(Bot.getInstance().getJDA().getGuildById(id))
+                    Objects.requireNonNull(getGuild())
                         .updateCommands()
                         .addCommands(instance.getCommands().stream()
                             .map(command ->
@@ -139,6 +144,10 @@ public class Server extends Source {
 
     public InteractionHandler getInteractionHandler() {
         return interactionHandler;
+    }
+
+    public ArchiveHandler getArchiveHandler() {
+        return archiveHandler;
     }
 
     public void receiveInteraction(InteractionEvent message, Reply reply) {

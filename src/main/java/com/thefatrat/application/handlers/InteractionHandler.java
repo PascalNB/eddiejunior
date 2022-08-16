@@ -1,8 +1,8 @@
 package com.thefatrat.application.handlers;
 
+import com.thefatrat.application.events.InteractionEvent;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotException;
-import com.thefatrat.application.util.InteractionEvent;
 import com.thefatrat.application.util.Reply;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 

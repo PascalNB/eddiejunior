@@ -2,6 +2,7 @@ package com.thefatrat.application;
 
 import com.thefatrat.application.components.Feedback;
 import com.thefatrat.application.components.Manager;
+import com.thefatrat.application.components.ModMail;
 import com.thefatrat.database.DatabaseAuthenticator;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -67,7 +68,7 @@ public class Initializer {
         Bot.getInstance().setJDA(jda);
         Bot.getInstance().setComponents(
             Manager.class,
-//            ModMail.class,
+            ModMail.class,
             Feedback.class
         );
 

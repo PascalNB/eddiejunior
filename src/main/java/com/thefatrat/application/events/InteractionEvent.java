@@ -1,4 +1,4 @@
-package com.thefatrat.application.util;
+package com.thefatrat.application.events;
 
 import net.dv8tion.jda.api.entities.Message;
 

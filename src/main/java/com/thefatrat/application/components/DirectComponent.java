@@ -1,19 +1,23 @@
 package com.thefatrat.application.components;
 
 import com.thefatrat.application.Bot;
+import com.thefatrat.application.events.CommandEvent;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
 import com.thefatrat.application.util.Command;
-import com.thefatrat.application.util.CommandEvent;
 import com.thefatrat.application.util.Reply;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
@@ -49,23 +53,25 @@ public abstract class DirectComponent extends Component {
                     .setChannelTypes(ChannelType.TEXT)
                 )
                 .setAction((command, reply) -> {
-                    MessageChannel parsedDestination = Optional.ofNullable(command.getArgs().get("channel"))
-                        .map(option -> command.getGuild().getChannelById(MessageChannel.class,
-                            option.getAsChannel().getId())
-                        )
-                        .orElse(command.getChannel());
-                    MessageChannel newDestination;
+                    OptionMapping option = command.getArgs().get("channel");
+                    TextChannel parsedDestination = option == null ? null : option.getAsChannel().asTextChannel();
+                    TextChannel newDestination;
 
-                    if (parsedDestination != null) {
-                        newDestination = parsedDestination;
+                    if (getDestination() == null && parsedDestination == null) {
+                        try {
+                            newDestination = command.getChannel().asTextChannel();
+                        } catch (IllegalStateException e) {
+                            throw new BotErrorException("Can only start in a text channel");
+                        }
                     } else {
-                        newDestination = getDestination() == null
-                            ? command.getChannel()
-                            : getDestination();
+                        if (parsedDestination != null) {
+                            newDestination = parsedDestination;
+                        } else {
+                            newDestination = getDestination();
+                        }
                     }
 
-                    if (getDestination() == null ||
-                        !newDestination.getId().equals(getDestination().getId())) {
+                    if (getDestination() == null || !newDestination.getId().equals(getDestination().getId())) {
                         setDestination(newDestination.getId());
 
                         reply.sendEmbedFormat(Colors.GRAY, ":gear: Destination set to %s `(%s)`%n",
@@ -102,12 +108,16 @@ public abstract class DirectComponent extends Component {
                     .setChannelTypes(ChannelType.TEXT)
                 )
                 .setAction((command, reply) -> {
-                    MessageChannel newDestination = Optional.ofNullable(
-                            command.getArgs().get("channel"))
-                        .map(option -> command.getGuild()
-                            .getChannelById(MessageChannel.class, option.getAsChannel().getId())
-                        )
-                        .orElse(command.getChannel());
+                    TextChannel newDestination;
+                    if (command.getArgs().containsKey("channel")) {
+                        newDestination = command.getArgs().get("channel").getAsChannel().asTextChannel();
+                    } else {
+                        try {
+                            newDestination = command.getChannel().asTextChannel();
+                        } catch (IllegalStateException e) {
+                            throw new BotErrorException("Destination can only be a text channel");
+                        }
+                    }
 
                     setDestination(newDestination.getId());
 
@@ -239,11 +249,11 @@ public abstract class DirectComponent extends Component {
         getDatabaseManager().setSetting("destination", destination);
     }
 
-    public MessageChannel getDestination() {
+    public TextChannel getDestination() {
         if (destination == null) {
             return null;
         }
-        return Bot.getInstance().getJDA().getChannelById(MessageChannel.class, destination);
+        return Bot.getInstance().getJDA().getChannelById(TextChannel.class, destination);
     }
 
     public boolean isRunning() {

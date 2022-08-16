@@ -1,22 +1,21 @@
 package com.thefatrat.application;
 
 import com.thefatrat.application.components.Component;
+import com.thefatrat.application.events.ArchiveEvent;
+import com.thefatrat.application.events.CommandEvent;
+import com.thefatrat.application.events.InteractionEvent;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotException;
 import com.thefatrat.application.sources.Direct;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.sources.Source;
 import com.thefatrat.application.util.Colors;
-import com.thefatrat.application.util.CommandEvent;
-import com.thefatrat.application.util.InteractionEvent;
 import com.thefatrat.application.util.Reply;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.ReadyEvent;
+import net.dv8tion.jda.api.events.channel.update.ChannelUpdateArchivedEvent;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.events.guild.GuildReadyEvent;
 import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent;
@@ -216,7 +215,7 @@ public class Bot extends ListenerAdapter {
             };
 
             CommandEvent commandEvent = new CommandEvent(event.getName(), event.getSubcommandName(),
-                options, guild, event.getChannel(), member);
+                options, guild, event.getGuildChannel(), member);
 
             try {
                 ((Server) sources.get(guild.getId())).receiveCommand(commandEvent, reply);
@@ -224,6 +223,23 @@ public class Bot extends ListenerAdapter {
                 reply.sendEmbedFormat(e.getColor(), e.getMessage());
             }
         });
+    }
+
+    @Override
+    public void onChannelUpdateArchived(@NotNull ChannelUpdateArchivedEvent event) {
+        if (!event.isFromGuild() && !event.isFromType(ChannelType.GUILD_PRIVATE_THREAD)
+            && !event.isFromType(ChannelType.GUILD_PUBLIC_THREAD)) {
+            return;
+        }
+        boolean archived = Boolean.TRUE.equals(event.getNewValue()) && !Boolean.TRUE.equals(event.getOldValue());
+        if (!archived) {
+            return;
+        }
+        Guild guild = Objects.requireNonNull(event.getGuild());
+
+        ArchiveEvent archiveEvent = new ArchiveEvent(event.getChannel().asThreadChannel());
+
+        ((Server) sources.get(guild.getId())).getArchiveHandler().handle(archiveEvent);
     }
 
     @Override

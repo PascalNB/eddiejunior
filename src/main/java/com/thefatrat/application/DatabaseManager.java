@@ -78,8 +78,8 @@ public class DatabaseManager {
         return getSettingOr(setting, null);
     }
 
-    public String getSettingOr(String setting, String defaultValue) {
-        AtomicReference<String> result = new AtomicReference<>(defaultValue);
+    public String getSettingOr(String setting, Object defaultValue) {
+        AtomicReference<String> result = new AtomicReference<>(defaultValue == null ? null : defaultValue.toString());
         Database.getInstance().connect()
             .queryStatement(table -> {
                 if (table.getRowCount() == 0) {

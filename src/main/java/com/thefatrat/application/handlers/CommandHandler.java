@@ -1,7 +1,7 @@
 package com.thefatrat.application.handlers;
 
+import com.thefatrat.application.events.CommandEvent;
 import com.thefatrat.application.exceptions.BotException;
-import com.thefatrat.application.util.CommandEvent;
 import com.thefatrat.application.util.Reply;
 
 import java.util.HashMap;

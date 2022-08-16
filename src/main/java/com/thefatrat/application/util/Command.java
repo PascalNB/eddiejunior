@@ -1,5 +1,6 @@
 package com.thefatrat.application.util;
 
+import com.thefatrat.application.events.CommandEvent;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
 

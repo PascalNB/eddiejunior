@@ -1,8 +1,8 @@
-package com.thefatrat.application.util;
+package com.thefatrat.application.events;
 
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.channel.unions.GuildMessageChannelUnion;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 
 import java.util.Map;
@@ -13,11 +13,11 @@ public class CommandEvent {
     private final String subcommand;
     private final Map<String, OptionMapping> args;
     private final Guild guild;
-    private final MessageChannel channel;
+    private final GuildMessageChannelUnion channel;
     private final Member member;
 
     public CommandEvent(String command, String subcommand, Map<String, OptionMapping> args,
-        Guild guild, MessageChannel channel, Member member) {
+        Guild guild, GuildMessageChannelUnion channel, Member member) {
         this.command = command;
         this.subcommand = subcommand;
         this.args = args;
@@ -46,7 +46,7 @@ public class CommandEvent {
         return member;
     }
 
-    public MessageChannel getChannel() {
+    public GuildMessageChannelUnion getChannel() {
         return channel;
     }
 
