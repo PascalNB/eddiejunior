@@ -3,6 +3,9 @@ package com.thefatrat.application.sources;
 import com.thefatrat.application.Bot;
 import com.thefatrat.application.components.Component;
 import com.thefatrat.application.components.DirectComponent;
+import com.thefatrat.application.entities.Command;
+import com.thefatrat.application.entities.Interaction;
+import com.thefatrat.application.entities.Reply;
 import com.thefatrat.application.events.CommandEvent;
 import com.thefatrat.application.events.InteractionEvent;
 import com.thefatrat.application.exceptions.BotException;
@@ -10,8 +13,6 @@ import com.thefatrat.application.handlers.ArchiveHandler;
 import com.thefatrat.application.handlers.CommandHandler;
 import com.thefatrat.application.handlers.InteractionHandler;
 import com.thefatrat.application.handlers.MessageHandler;
-import com.thefatrat.application.util.Command;
-import com.thefatrat.application.util.Reply;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
@@ -77,12 +78,26 @@ public class Server extends Source {
                         commandIds.put(command.getName(), c.getId())
                     );
             }
+            for (Interaction interaction : component.getInteractions()) {
+                guild.upsertCommand(Commands.message(interaction.getName()).setGuildOnly(true))
+                    .queue(c ->
+                        commandIds.put(interaction.getName(), c.getId())
+                    );
+            }
             component.enable();
         } else {
             component.disable();
             component.getCommands().stream()
                 .flatMap(command -> {
                     String id = commandIds.remove(command.getName());
+                    return Stream.ofNullable(id);
+                })
+                .forEach(id ->
+                    guild.deleteCommandById(id).queue()
+                );
+            component.getInteractions().stream()
+                .flatMap(interaction -> {
+                    String id = commandIds.remove(interaction.getName());
                     return Stream.ofNullable(id);
                 })
                 .forEach(id ->
@@ -120,9 +135,11 @@ public class Server extends Source {
                             )
                             .toArray(CommandData[]::new)
                         )
-                        .addCommands(
-                            Commands.message("Mark read").setGuildOnly(true),
-                            Commands.message("Mark unread").setGuildOnly(true))
+                        .addCommands(instance.getInteractions().stream()
+                            .map(interaction ->
+                                Commands.message(interaction.getName()).setGuildOnly(true)
+                            )
+                            .toArray(CommandData[]::new))
                         .queue(list -> list.forEach(command ->
                             commandIds.put(command.getName(), command.getId())
                         ));

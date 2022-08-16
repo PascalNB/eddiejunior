@@ -1,4 +1,4 @@
-package com.thefatrat.application.util;
+package com.thefatrat.application.entities;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;

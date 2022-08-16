@@ -1,9 +1,9 @@
 package com.thefatrat.application.handlers;
 
+import com.thefatrat.application.entities.Reply;
 import com.thefatrat.application.events.InteractionEvent;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotException;
-import com.thefatrat.application.util.Reply;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 
 import java.util.HashMap;
@@ -13,10 +13,12 @@ import java.util.function.BiConsumer;
 
 public class InteractionHandler implements Handler<InteractionEvent> {
 
-    private final Map<String, BiConsumer<InteractionEvent, Reply>> map = new HashMap<>();
+    private final Map<String, Map<String, BiConsumer<InteractionEvent, Reply>>> map = new HashMap<>();
 
-    public void addListener(String component, BiConsumer<InteractionEvent, Reply> listener) {
-        map.put(component, listener);
+    public void addListener(String component, String key, BiConsumer<InteractionEvent, Reply> listener) {
+        Map<String, BiConsumer<InteractionEvent, Reply>> interactions = map.getOrDefault(component, new HashMap<>());
+        interactions.put(key, listener);
+        map.put(component, interactions);
     }
 
     @Override
@@ -29,12 +31,12 @@ public class InteractionHandler implements Handler<InteractionEvent> {
         if (embed.getFooter() == null || embed.getFooter().getText() == null) {
             throw new BotErrorException("Could not perform action");
         }
-        BiConsumer<InteractionEvent, Reply> consumer =
+        Map<String, BiConsumer<InteractionEvent, Reply>> interactions =
             map.get(embed.getFooter().getText().toLowerCase());
-        if (consumer == null) {
+        if (interactions == null || !interactions.containsKey(event.getAction())) {
             throw new BotErrorException("Could not perform action");
         }
-        consumer.accept(event, reply);
+        interactions.get(event.getAction()).accept(event, reply);
     }
 
 }

@@ -3,7 +3,7 @@ package com.thefatrat.application.components;
 import com.thefatrat.application.Bot;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
-import com.thefatrat.application.util.Command;
+import com.thefatrat.application.entities.Command;
 import com.thefatrat.database.Database;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;

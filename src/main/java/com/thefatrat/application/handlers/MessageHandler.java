@@ -1,7 +1,7 @@
 package com.thefatrat.application.handlers;
 
 import com.thefatrat.application.exceptions.BotException;
-import com.thefatrat.application.util.Reply;
+import com.thefatrat.application.entities.Reply;
 import net.dv8tion.jda.api.entities.Message;
 
 import java.util.HashSet;

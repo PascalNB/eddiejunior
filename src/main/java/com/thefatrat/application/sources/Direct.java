@@ -6,7 +6,7 @@ import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.handlers.DirectHandler;
 import com.thefatrat.application.handlers.MessageHandler;
 import com.thefatrat.application.util.Colors;
-import com.thefatrat.application.util.Reply;
+import com.thefatrat.application.entities.Reply;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;

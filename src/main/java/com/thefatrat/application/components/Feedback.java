@@ -1,18 +1,16 @@
 package com.thefatrat.application.components;
 
+import com.thefatrat.application.entities.Command;
+import com.thefatrat.application.entities.Interaction;
+import com.thefatrat.application.entities.Reply;
 import com.thefatrat.application.events.CommandEvent;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
-import com.thefatrat.application.util.Command;
-import com.thefatrat.application.util.Reply;
 import com.thefatrat.application.util.URLChecker;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.Channel;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 
@@ -269,25 +267,37 @@ public class Feedback extends DirectComponent {
                 })
         );
 
-        getServer().getInteractionHandler().addListener(getName(), (event, reply) -> {
-            switch (event.getAction().toLowerCase()) {
-                case "mark read" -> event.getMessage().editMessageEmbeds(
-                    new EmbedBuilder(event.getMessage().getEmbeds().get(0))
-                        .setColor(Colors.DARK)
-                        .build()
-                ).queue();
-                case "mark unread" -> event.getMessage().editMessageEmbeds(
-                    new EmbedBuilder(event.getMessage().getEmbeds().get(0))
-                        .setColor(Colors.LIGHT)
-                        .build()
-                ).queue();
-                default -> throw new BotErrorException(String.format(
-                    "`%s` not supported for feedback submissions", event.getAction()));
+        addInteractions(
+            new Interaction("mark read")
+                .setAction((event, reply) -> {
+                    MessageEmbed embed = event.getMessage().getEmbeds().get(0);
+                    if (embed.getColorRaw() != Colors.LIGHT) {
+                        throw new BotErrorException("Could not perform action");
+                    }
+                    event.getMessage().editMessageEmbeds(
+                        new EmbedBuilder(embed)
+                            .setColor(Colors.DARK)
+                            .build()
+                    ).queue();
+                    reply.sendEmbedFormat(Colors.GREEN, ":white_check_mark: `%s` performed successfully",
+                        event.getAction());
+                }),
 
-            }
-            reply.sendEmbedFormat(Colors.GREEN, ":white_check_mark: `%s` performed successfully",
-                event.getAction());
-        });
+            new Interaction("mark unread")
+                .setAction((event, reply) -> {
+                    MessageEmbed embed = event.getMessage().getEmbeds().get(0);
+                    if (embed.getColorRaw() != Colors.DARK) {
+                        throw new BotErrorException("Could not perform action");
+                    }
+                    event.getMessage().editMessageEmbeds(
+                        new EmbedBuilder(embed)
+                            .setColor(Colors.LIGHT)
+                            .build()
+                    ).queue();
+                    reply.sendEmbedFormat(Colors.GREEN, ":white_check_mark: `%s` performed successfully",
+                        event.getAction());
+                })
+        );
     }
 
     @Override

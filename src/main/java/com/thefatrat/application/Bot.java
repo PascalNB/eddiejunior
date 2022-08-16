@@ -10,7 +10,7 @@ import com.thefatrat.application.sources.Direct;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.sources.Source;
 import com.thefatrat.application.util.Colors;
-import com.thefatrat.application.util.Reply;
+import com.thefatrat.application.entities.Reply;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.*;

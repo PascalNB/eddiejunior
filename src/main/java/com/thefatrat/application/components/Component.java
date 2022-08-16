@@ -1,13 +1,15 @@
 package com.thefatrat.application.components;
 
 import com.thefatrat.application.DatabaseManager;
+import com.thefatrat.application.entities.Command;
+import com.thefatrat.application.entities.HelpBuilder;
+import com.thefatrat.application.entities.Interaction;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotException;
 import com.thefatrat.application.handlers.CommandHandler;
+import com.thefatrat.application.handlers.InteractionHandler;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
-import com.thefatrat.application.util.Command;
-import com.thefatrat.application.util.HelpBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 
 import java.util.*;
@@ -21,6 +23,7 @@ public abstract class Component {
     private boolean enabled;
     private final DatabaseManager databaseManager;
     private final List<Command> commands = new ArrayList<>();
+    private final List<Interaction> interactions = new ArrayList<>();
     private final CommandHandler subHandler = new CommandHandler();
     private MessageEmbed help = null;
 
@@ -76,6 +79,12 @@ public abstract class Component {
             }
         }
 
+        InteractionHandler interactionHandler = getServer().getInteractionHandler();
+
+        for (Interaction interaction : interactions) {
+            interactionHandler.addListener(getName(), interaction.getName(), interaction.getAction());
+        }
+
         help = new HelpBuilder(getName(), getCommands()).build(Colors.BLUE);
     }
 
@@ -93,6 +102,10 @@ public abstract class Component {
         return commands;
     }
 
+    public List<Interaction> getInteractions() {
+        return interactions;
+    }
+
     protected void addSubcommands(Command... subcommands) {
         for (Command c : commands) {
             if (Objects.equals(c.getName(), getName())) {
@@ -106,6 +119,10 @@ public abstract class Component {
 
     protected void addCommands(Command... commands) {
         this.commands.addAll(List.of(commands));
+    }
+
+    protected void addInteractions(Interaction... interactions) {
+        this.interactions.addAll(List.of(interactions));
     }
 
     public DatabaseManager getDatabaseManager() {
