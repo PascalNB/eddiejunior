@@ -27,7 +27,7 @@ public abstract class DirectComponent extends Component {
 
     private final BiConsumer<Message, Reply> receiver = (message, reply) -> {
         if (getDestination() == null) {
-            return;
+            throw new BotErrorException("Something went wrong");
         }
         if (getBlacklist().contains(message.getAuthor().getId())) {
             throw new BotWarningException("You are not allowed to send messages at the moment");
