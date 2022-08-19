@@ -28,18 +28,7 @@ public class Direct extends Source {
         String author = message.getAuthor().getId();
         Thread thread = new Thread(() -> {
 
-            List<Guild> mutual = message.getAuthor().getMutualGuilds();
-            if (mutual.isEmpty()) {
-                for (Guild server : Bot.getInstance().getJDA().getGuilds()) {
-                    if (!mutual.contains(server)
-                        && !server
-                        .findMembers(member -> member.getId().equals(author))
-                        .get()
-                        .isEmpty()) {
-                        mutual.add(server);
-                    }
-                }
-            }
+            List<Guild> mutual = Bot.getInstance().retrieveMutualGuilds(message.getAuthor()).complete();
 
             if (mutual.isEmpty()) {
                 return;
@@ -119,8 +108,8 @@ public class Direct extends Source {
         thread.start();
     }
 
-    private void forward(String id, Message message, Reply reply) throws BotException {
-        Server server = Bot.getInstance().getServer(id);
+    private void forward(String serverId, Message message, Reply reply) throws BotException {
+        Server server = Bot.getInstance().getServer(serverId);
         if (server == null) {
             throw new BotErrorException("Something went wrong");
         }
@@ -133,7 +122,7 @@ public class Direct extends Source {
             return;
         }
 
-        submitter.put(message.getAuthor().getId(), new SubmitRequest(id, message));
+        submitter.put(message.getAuthor().getId(), new SubmitRequest(serverId, message));
 
         List<Button> buttons = handler.getKeys().stream()
             .map(component ->
@@ -150,6 +139,7 @@ public class Direct extends Source {
                 .editMessageComponents()
                 .setActionRow(buttons)
                 .queue()
+
         );
 
     }

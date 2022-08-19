@@ -17,6 +17,7 @@ import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.ReadyEvent;
 import net.dv8tion.jda.api.events.channel.update.ChannelUpdateArchivedEvent;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
+import net.dv8tion.jda.api.events.guild.GuildLeaveEvent;
 import net.dv8tion.jda.api.events.guild.GuildReadyEvent;
 import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
@@ -24,11 +25,18 @@ import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
+import net.dv8tion.jda.api.requests.RestAction;
+import net.dv8tion.jda.api.utils.Result;
+import net.dv8tion.jda.api.utils.data.DataArray;
+import net.dv8tion.jda.api.utils.data.DataObject;
+import net.dv8tion.jda.internal.entities.ThreadChannelImpl;
+import net.dv8tion.jda.internal.entities.ThreadMemberImpl;
+import net.dv8tion.jda.internal.requests.RestActionImpl;
+import net.dv8tion.jda.internal.requests.Route;
+import net.dv8tion.jda.internal.utils.Helpers;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
@@ -92,6 +100,40 @@ public class Bot extends ListenerAdapter {
         );
     }
 
+    public RestAction<List<ThreadMember>> retrieveThreadMembers(ThreadChannel thread) {
+        Route.CompiledRoute route = Route.Channels.LIST_THREAD_MEMBERS.compile(thread.getId());
+
+        return new RestActionImpl<>(jda, route, (response, request) -> {
+            List<RestAction<ThreadMember>> actions = new ArrayList<>();
+            DataArray memberArr = response.getArray();
+
+            for (int i = 0; i < memberArr.length(); ++i) {
+                DataObject json = memberArr.getObject(i);
+
+                actions.add(thread.getGuild().retrieveMemberById(json.getString("user_id"))
+                    .map(member -> new ThreadMemberImpl(member, (ThreadChannelImpl) thread)
+                        .setJoinedTimestamp(Helpers.toTimestamp(json.getString("join_timestamp")))
+                        .setFlags(json.getInt("flags"))
+                    )
+                );
+            }
+
+            return RestAction.allOf(actions).complete();
+        });
+    }
+
+    public RestAction<List<Guild>> retrieveMutualGuilds(UserSnowflake user) {
+        List<RestAction<Result<Member>>> actions = jda.getGuilds().stream()
+            .map(guild -> guild.retrieveMemberById(user.getId()).mapToResult())
+            .toList();
+        return RestAction.allOf(actions)
+            .map(list -> list.stream()
+                .filter(Result::isSuccess)
+                .map(result -> result.get().getGuild())
+                .toList()
+            );
+    }
+
     @Override
     public void onReady(@NotNull ReadyEvent event) {
         time = System.currentTimeMillis();
@@ -107,6 +149,11 @@ public class Bot extends ListenerAdapter {
     public void onGuildJoin(@NotNull GuildJoinEvent event) {
         String id = event.getGuild().getId();
         loadServer(id);
+    }
+
+    @Override
+    public void onGuildLeave(@NotNull GuildLeaveEvent event) {
+        sources.remove(event.getGuild().getId());
     }
 
     @Override
@@ -190,70 +237,68 @@ public class Bot extends ListenerAdapter {
         }
 
         Guild guild = Objects.requireNonNull(event.getGuild());
-        event.deferReply(false).queue(hook -> {
-            Member member = guild.getMember(event.getUser());
-            if (member == null) {
-                member = guild.retrieveMember(event.getUser()).complete();
-            }
+        event.deferReply(false).queue(hook ->
+            guild.retrieveMember(event.getUser()).queue(member -> {
 
-            Map<String, OptionMapping> options = event.getOptions().stream()
-                .collect(Collectors.toMap(OptionMapping::getName, Function.identity()));
+                Map<String, OptionMapping> options = event.getOptions().stream()
+                    .collect(Collectors.toMap(OptionMapping::getName, Function.identity()));
 
-            Reply reply = new Reply() {
+                Reply reply = new Reply() {
 
-                private final CountDownLatch latch = new CountDownLatch(1);
-                private BiConsumer<String, Consumer<Message>> sendMessage = (s, c) -> {};
-                private BiConsumer<MessageEmbed, Consumer<Message>> sendEmbed = (e, c) -> {};
-                private boolean replied = false;
+                    private final CountDownLatch latch = new CountDownLatch(1);
+                    private BiConsumer<String, Consumer<Message>> sendMessage = (s, c) -> {};
+                    private BiConsumer<MessageEmbed, Consumer<Message>> sendEmbed = (e, c) -> {};
+                    private boolean replied = false;
 
-                @Override
-                public void sendMessage(String message, Consumer<Message> callback) {
-                    if (replied) {
-                        try {
-                            latch.await();
-                        } catch (InterruptedException e) {
-                            throw new RuntimeException(e);
+                    @Override
+                    public void sendMessage(String message, Consumer<Message> callback) {
+                        if (replied) {
+                            try {
+                                latch.await();
+                            } catch (InterruptedException e) {
+                                throw new RuntimeException(e);
+                            }
+                            sendMessage.accept(message, callback);
+                            return;
                         }
-                        sendMessage.accept(message, callback);
-                        return;
+                        replied = true;
+                        hook.editOriginal(message).queue(callback.andThen(m -> {
+                            sendMessage = (s, c) -> m.getChannel().sendMessage(s).queue(c);
+                            sendEmbed = (e, c) -> m.getChannel().sendMessageEmbeds(e).queue(c);
+                            latch.countDown();
+                        }));
                     }
-                    replied = true;
-                    hook.editOriginal(message).queue(callback.andThen(m -> {
-                        sendMessage = (s, c) -> m.getChannel().sendMessage(s).queue(c);
-                        sendEmbed = (e, c) -> m.getChannel().sendMessageEmbeds(e).queue(c);
-                        latch.countDown();
-                    }));
-                }
 
-                @Override
-                public void sendEmbed(MessageEmbed embed, Consumer<Message> callback) {
-                    if (replied) {
-                        try {
-                            latch.await();
-                        } catch (InterruptedException e) {
-                            throw new RuntimeException(e);
+                    @Override
+                    public void sendEmbed(MessageEmbed embed, Consumer<Message> callback) {
+                        if (replied) {
+                            try {
+                                latch.await();
+                            } catch (InterruptedException e) {
+                                throw new RuntimeException(e);
+                            }
+                            sendEmbed.accept(embed, callback);
+                            return;
                         }
-                        sendEmbed.accept(embed, callback);
-                        return;
+                        replied = true;
+                        hook.editOriginalEmbeds(embed).queue(callback.andThen(m -> {
+                            sendMessage = (s, c) -> m.getChannel().sendMessage(s).queue(c);
+                            sendEmbed = (e, c) -> m.getChannel().sendMessageEmbeds(e).queue(c);
+                            latch.countDown();
+                        }));
                     }
-                    replied = true;
-                    hook.editOriginalEmbeds(embed).queue(callback.andThen(m -> {
-                        sendMessage = (s, c) -> m.getChannel().sendMessage(s).queue(c);
-                        sendEmbed = (e, c) -> m.getChannel().sendMessageEmbeds(e).queue(c);
-                        latch.countDown();
-                    }));
+                };
+
+                CommandEvent commandEvent = new CommandEvent(event.getName(), event.getSubcommandName(),
+                    options, guild, event.getGuildChannel(), member);
+
+                try {
+                    ((Server) sources.get(guild.getId())).receiveCommand(commandEvent, reply);
+                } catch (BotException e) {
+                    reply.sendEmbedFormat(e.getColor(), e.getMessage());
                 }
-            };
-
-            CommandEvent commandEvent = new CommandEvent(event.getName(), event.getSubcommandName(),
-                options, guild, event.getGuildChannel(), member);
-
-            try {
-                ((Server) sources.get(guild.getId())).receiveCommand(commandEvent, reply);
-            } catch (BotException e) {
-                reply.sendEmbedFormat(e.getColor(), e.getMessage());
-            }
-        });
+            })
+        );
     }
 
     @Override
@@ -283,12 +328,12 @@ public class Bot extends ListenerAdapter {
         Reply reply = new Reply() {
             @Override
             public void sendMessage(String message, Consumer<Message> callback) {
-                event.getChannel().sendMessage(message).queue();
+                event.getChannel().sendMessage(message).queue(callback);
             }
 
             @Override
             public void sendEmbed(MessageEmbed embed, Consumer<Message> callback) {
-                event.getChannel().sendMessageEmbeds(embed).queue();
+                event.getChannel().sendMessageEmbeds(embed).queue(callback);
             }
         };
 

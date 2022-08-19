@@ -29,6 +29,8 @@ public class DatabaseManager {
     private static final String REMOVE_SETTING_VALUE =
         "DELETE FROM setting WHERE server_id=? AND component_name=? AND name=? AND value=?;";
 
+    private static boolean accessible = true;
+
     private final String server;
     private final String component;
 
@@ -37,7 +39,14 @@ public class DatabaseManager {
         this.component = component;
     }
 
+    public static void setAccessible(boolean accessible) {
+        DatabaseManager.accessible = accessible;
+    }
+
     private void execute(Runnable runnable) {
+        if (!accessible) {
+            return;
+        }
         new Thread(runnable).start();
     }
 
@@ -79,7 +88,11 @@ public class DatabaseManager {
     }
 
     public String getSettingOr(String setting, Object defaultValue) {
-        AtomicReference<String> result = new AtomicReference<>(defaultValue == null ? null : defaultValue.toString());
+        String defaultString = defaultValue == null ? null : defaultValue.toString();
+        if (!accessible) {
+            return defaultString;
+        }
+        AtomicReference<String> result = new AtomicReference<>(defaultString);
         Database.getInstance().connect()
             .queryStatement(table -> {
                 if (table.getRowCount() == 0) {
@@ -92,6 +105,9 @@ public class DatabaseManager {
     }
 
     public List<String> getSettings(String setting) {
+        if (!accessible) {
+            return List.of();
+        }
         List<String> result = new ArrayList<>();
         Database.getInstance().connect()
             .queryStatement(table -> table.forEach(row ->
@@ -102,6 +118,9 @@ public class DatabaseManager {
     }
 
     public boolean isComponentEnabled() {
+        if (!accessible) {
+            return false;
+        }
         AtomicBoolean result = new AtomicBoolean(false);
         Database.getInstance().connect()
             .queryStatement(table -> table.forEach(row ->

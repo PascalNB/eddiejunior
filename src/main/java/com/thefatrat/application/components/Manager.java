@@ -1,10 +1,12 @@
 package com.thefatrat.application.components;
 
 import com.thefatrat.application.Bot;
+import com.thefatrat.application.DatabaseManager;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
 import com.thefatrat.database.Database;
+import com.thefatrat.database.DatabaseException;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
@@ -47,13 +49,22 @@ public class Manager extends Component {
                                 .build()
                             ).queue(message2 -> {
                                 long start2 = System.currentTimeMillis();
-                                Database.getInstance().connect().close();
-                                long time2 = System.currentTimeMillis() - start2;
                                 MessageEmbed embed = message2.getEmbeds().get(0);
-                                message2.editMessageEmbeds(new EmbedBuilder(embed)
-                                    .addField("Database", time2 + " ms", true)
-                                    .build()
-                                ).queue();
+                                try {
+                                    Database.getInstance().connect().close();
+                                    long time2 = System.currentTimeMillis() - start2;
+                                    DatabaseManager.setAccessible(true);
+                                    message2.editMessageEmbeds(new EmbedBuilder(embed)
+                                        .addField("Database", time2 + " ms", true)
+                                        .build()
+                                    ).queue();
+                                } catch (DatabaseException e) {
+                                    DatabaseManager.setAccessible(false);
+                                    message2.editMessageEmbeds(new EmbedBuilder(embed)
+                                        .addField("Database", ":x:", true)
+                                        .build()
+                                    ).queue();
+                                }
                             });
                         }, Colors.GRAY, "..."
                     );

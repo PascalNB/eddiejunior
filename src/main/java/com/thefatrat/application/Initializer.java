@@ -4,6 +4,7 @@ import com.thefatrat.application.components.Feedback;
 import com.thefatrat.application.components.Manager;
 import com.thefatrat.application.components.ModMail;
 import com.thefatrat.database.DatabaseAuthenticator;
+import com.thefatrat.database.DatabaseException;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.requests.GatewayIntent;
@@ -44,21 +45,23 @@ public class Initializer {
     }
 
     public static void main(String[] args) {
-        DatabaseAuthenticator.getInstance().authenticate();
+        try {
+            DatabaseAuthenticator.getInstance().authenticate();
+        } catch (DatabaseException e) {
+            e.printStackTrace();
+            DatabaseManager.setAccessible(false);
+        }
 
         final String token = getInstance().getProperty("bot_token");
         final JDA jda;
 
         try {
-            jda = JDABuilder.createDefault(token)
-                .enableIntents(
+            jda = JDABuilder.createLight(token,
                     GatewayIntent.MESSAGE_CONTENT,
-                    GatewayIntent.GUILD_MEMBERS,
-                    GatewayIntent.DIRECT_MESSAGES,
-                    GatewayIntent.GUILD_PRESENCES
+                    GatewayIntent.DIRECT_MESSAGES
                 )
-                .setChunkingFilter(ChunkingFilter.ALL)
-                .setMemberCachePolicy(MemberCachePolicy.ALL)
+                .setMemberCachePolicy(MemberCachePolicy.NONE)
+                .setChunkingFilter(ChunkingFilter.NONE)
                 .addEventListeners(Bot.getInstance())
                 .build();
         } catch (LoginException e) {

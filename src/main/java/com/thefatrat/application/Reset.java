@@ -2,7 +2,10 @@ package com.thefatrat.application;
 
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
-import net.dv8tion.jda.api.requests.GatewayIntent;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.requests.RestAction;
+import net.dv8tion.jda.api.utils.ChunkingFilter;
+import net.dv8tion.jda.api.utils.MemberCachePolicy;
 
 import javax.security.auth.login.LoginException;
 import java.io.*;
@@ -41,12 +44,8 @@ public class Reset {
 
         try {
             jda = JDABuilder.createLight(token)
-                .enableIntents(
-                    GatewayIntent.MESSAGE_CONTENT,
-                    GatewayIntent.GUILD_MEMBERS,
-                    GatewayIntent.DIRECT_MESSAGES,
-                    GatewayIntent.GUILD_PRESENCES
-                )
+                .setMemberCachePolicy(MemberCachePolicy.NONE)
+                .setChunkingFilter(ChunkingFilter.NONE)
                 .build();
         } catch (LoginException e) {
             throw new RuntimeException(e);
@@ -58,9 +57,8 @@ public class Reset {
             throw new RuntimeException(e);
         }
 
-        jda.getGuilds().forEach(guild ->
-            guild.updateCommands().queue()
-        );
+        RestAction.allOf(jda.getGuilds().stream().map(Guild::updateCommands).toList()).queue();
+
         jda.shutdown();
     }
 

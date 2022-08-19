@@ -9,19 +9,14 @@ import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.Channel;
-import net.dv8tion.jda.api.entities.ChannelType;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
-import net.dv8tion.jda.api.requests.RestAction;
-import net.dv8tion.jda.api.utils.data.DataArray;
-import net.dv8tion.jda.internal.requests.RestActionImpl;
-import net.dv8tion.jda.internal.requests.Route;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 public class ModMail extends DirectComponent {
 
@@ -149,22 +144,9 @@ public class ModMail extends DirectComponent {
 
             --tickets;
 
-            Route.CompiledRoute route = Route.Channels.LIST_THREAD_MEMBERS.compile(event.getThread().getId());
-
-            RestAction<List<String>> action = new RestActionImpl<>(Bot.getInstance().getJDA(), route,
-                (response, request) -> {
-                    List<String> users = new LinkedList<>();
-                    DataArray memberArr = response.getArray();
-
-                    for (int i = 0; i < memberArr.length(); ++i) {
-                        users.add(memberArr.getObject(i).get("user_id").toString());
-                    }
-
-                    return users;
-                });
-
-            action.queue(users -> {
-                for (String id : users) {
+            Bot.getInstance().retrieveThreadMembers(event.getThread()).queue(members -> {
+                for (ThreadMember member : members) {
+                    String id = member.getId();
                     if (!userCount.containsKey(id)) {
                         continue;
                     }
