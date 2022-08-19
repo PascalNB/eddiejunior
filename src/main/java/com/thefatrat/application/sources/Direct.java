@@ -5,7 +5,6 @@ import com.thefatrat.application.entities.Reply;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotException;
 import com.thefatrat.application.exceptions.BotWarningException;
-import com.thefatrat.application.handlers.DirectHandler;
 import com.thefatrat.application.handlers.MessageHandler;
 import com.thefatrat.application.util.Colors;
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -20,7 +19,7 @@ import java.util.stream.Collectors;
 
 public class Direct extends Source {
 
-    private final DirectHandler handler = new DirectHandler();
+    private final Map<String, Message> handler = new HashMap<>();
     private final Map<String, SubmitRequest> submitter = new HashMap<>();
 
     @Override
@@ -38,7 +37,7 @@ public class Direct extends Source {
                 return;
             }
 
-            if (handler.contains(author) || submitter.containsKey(author)) {
+            if (handler.containsKey(author) || submitter.containsKey(author)) {
                 throw new BotErrorException("Please submit or cancel your submission first");
             }
 
@@ -58,17 +57,17 @@ public class Direct extends Source {
                 .setActionRow(buttons)
                 .queue();
 
-            handler.addUser(message.getAuthor(), message);
+            handler.put(message.getAuthor().getId(), message);
         });
         thread.setUncaughtExceptionHandler(new ChannelExceptionHandler(() -> {
-            handler.removeUser(author);
+            handler.remove(author);
             submitter.remove(author);
         }, reply));
         thread.start();
     }
 
     public void clickButton(String user, String button, Message message, Reply reply) {
-        if (!handler.contains(user) && !submitter.containsKey(user)) {
+        if (!handler.containsKey(user) && !submitter.containsKey(user)) {
             throw new BotErrorException("Something went wrong");
         }
 
@@ -76,7 +75,7 @@ public class Direct extends Source {
 
         Thread thread = new Thread(() -> {
             if ("x".equals(button)) {
-                handler.removeUser(user);
+                handler.remove(user);
                 submitter.remove(user);
                 reply.sendEmbed(new EmbedBuilder()
                     .setColor(Colors.GREEN)
@@ -87,9 +86,7 @@ public class Direct extends Source {
             }
 
             if (!submitter.containsKey(user)) {
-                Message m = handler.getMessage(user);
-                handler.removeUser(user);
-                forward(button, m, reply);
+                forward(button, handler.remove(user), reply);
                 return;
             }
 
@@ -102,7 +99,7 @@ public class Direct extends Source {
             submitter.remove(user);
         });
         thread.setUncaughtExceptionHandler(new ChannelExceptionHandler(() -> {
-            handler.removeUser(user);
+            handler.remove(user);
             submitter.remove(user);
         }, reply));
         thread.start();
