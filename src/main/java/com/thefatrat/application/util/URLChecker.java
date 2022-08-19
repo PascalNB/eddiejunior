@@ -13,12 +13,18 @@ public final class URLChecker {
     private static final String DOMAIN_REGEX =
         "^[a-z\\-\\d]+\\.[a-z]+$";
 
+    private static final String IS_HTTPS = "^https://.+$";
+
     public static boolean isDomain(String domain) {
         return domain.matches(DOMAIN_REGEX);
     }
 
-    public static boolean isUrl(String message) {
-        return message.matches(URL_REGEX);
+    public static boolean isUrl(String url) {
+        return url.matches(URL_REGEX);
+    }
+
+    public static boolean isSafe(String url) {
+        return url.matches(IS_HTTPS);
     }
 
     public static String isFromDomains(String url, Collection<String> domains) throws URISyntaxException {

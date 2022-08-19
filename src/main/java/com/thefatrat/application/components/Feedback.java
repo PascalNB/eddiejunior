@@ -368,16 +368,20 @@ public class Feedback extends DirectComponent {
         }
 
         users.add(author.getId());
-        getDestination().sendMessageEmbeds(new EmbedBuilder()
+        EmbedBuilder embed = new EmbedBuilder()
             .setColor(Colors.LIGHT)
             .setTimestamp(Instant.now())
             .setAuthor(author.getAsTag(), null, author.getEffectiveAvatarUrl())
             .addField("User", String.format("%s `(%s)`",
                 author.getAsMention(), author.getId()), true)
             .addField("Submission", String.format("<%s>", url), true)
-            .setFooter(getName())
-            .build()
-        ).queue();
+            .setFooter(getName());
+        if (!URLChecker.isSafe(url)) {
+            embed.addField(BotWarningException.icon,
+                "The source is not HTTPS and might not be safe",
+                true);
+        }
+        getDestination().sendMessageEmbeds(embed.build()).queue();
         submissions++;
         reply.sendEmbedFormat(Colors.GREEN, ":white_check_mark: Successfully submitted");
     }
