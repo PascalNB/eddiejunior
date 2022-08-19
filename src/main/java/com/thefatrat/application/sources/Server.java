@@ -2,7 +2,6 @@ package com.thefatrat.application.sources;
 
 import com.thefatrat.application.Bot;
 import com.thefatrat.application.components.Component;
-import com.thefatrat.application.components.DirectComponent;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.entities.Interaction;
 import com.thefatrat.application.entities.Reply;
@@ -21,7 +20,10 @@ import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -34,7 +36,6 @@ public class Server extends Source {
     private final MessageHandler directHandler = new MessageHandler();
     private final ArchiveHandler archiveHandler = new ArchiveHandler();
     private final Map<String, Component> components = new HashMap<>();
-    private final List<DirectComponent> directComponents = new ArrayList<>();
     private final DefaultMemberPermissions permissions = DefaultMemberPermissions.enabledFor(
         Permission.USE_APPLICATION_COMMANDS
     );
@@ -59,10 +60,6 @@ public class Server extends Source {
         return components.values().stream()
             .sorted((c1, c2) -> String.CASE_INSENSITIVE_ORDER.compare(c1.getName(), c2.getName()))
             .collect(Collectors.toList());
-    }
-
-    public List<DirectComponent> getDirectComponents() {
-        return directComponents;
     }
 
     public void toggleComponent(Component component, boolean enable) {
@@ -117,9 +114,6 @@ public class Server extends Source {
                 Component instance = component.getDeclaredConstructor(Server.class)
                     .newInstance(this);
                 instance.register();
-                if (instance instanceof DirectComponent direct) {
-                    directComponents.add(direct);
-                }
 
                 this.components.put(instance.getName(), instance);
 

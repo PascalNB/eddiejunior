@@ -3,7 +3,6 @@ package com.thefatrat.application.handlers;
 import com.thefatrat.application.entities.Reply;
 import com.thefatrat.application.events.InteractionEvent;
 import com.thefatrat.application.exceptions.BotErrorException;
-import com.thefatrat.application.exceptions.BotException;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 
 import java.util.HashMap;
@@ -22,7 +21,7 @@ public class InteractionHandler implements Handler<InteractionEvent> {
     }
 
     @Override
-    public void handle(InteractionEvent event, Reply reply) throws BotException {
+    public void handle(InteractionEvent event, Reply reply) {
         List<MessageEmbed> embeds = event.getMessage().getEmbeds();
         if (embeds.isEmpty()) {
             throw new BotErrorException("Message does not contain embeds");

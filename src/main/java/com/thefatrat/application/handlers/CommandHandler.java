@@ -2,7 +2,6 @@ package com.thefatrat.application.handlers;
 
 import com.thefatrat.application.entities.Reply;
 import com.thefatrat.application.events.CommandEvent;
-import com.thefatrat.application.exceptions.BotException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -21,7 +20,7 @@ public class CommandHandler implements Handler<CommandEvent> {
     }
 
     @Override
-    public void handle(CommandEvent command, Reply reply) throws BotException {
+    public void handle(CommandEvent command, Reply reply) {
         BiConsumer<CommandEvent, Reply> listener = map.get(command.getCommand());
         if (listener == null) {
             return;
