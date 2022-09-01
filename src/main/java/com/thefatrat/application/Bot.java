@@ -22,6 +22,7 @@ import net.dv8tion.jda.api.events.guild.GuildReadyEvent;
 import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
+import net.dv8tion.jda.api.events.interaction.component.SelectMenuInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
@@ -187,6 +188,40 @@ public class Bot extends ListenerAdapter {
     }
 
     @Override
+    public void onSelectMenuInteraction(@NotNull SelectMenuInteractionEvent event) {
+        if (event.getUser().isBot() || event.getUser().isSystem()) {
+            return;
+        }
+        if (!event.isFromGuild()) {
+            event.deferReply().queue(hook -> {
+
+                Reply reply = new Reply() {
+                    @Override
+                    public void sendMessage(String message, Consumer<Message> callback) {
+                        hook.editOriginal(message).queue(callback);
+                    }
+
+                    @Override
+                    public void sendEmbed(MessageEmbed embed, Consumer<Message> callback) {
+                        hook.editOriginalEmbeds(embed).queue(callback);
+                    }
+                };
+
+                try {
+                    ((Direct) sources.get(null))
+                        .selectMenu(event.getUser().getId(), event.getComponentId(),
+                            event.getInteraction().getSelectedOptions().get(0).getValue(),
+                            event.getMessage(),
+                            reply);
+                } catch (BotException e) {
+                    reply.sendEmbedFormat(e.getColor(), e.getMessage());
+                }
+            });
+        }
+
+    }
+
+    @Override
     public void onMessageContextInteraction(@NotNull MessageContextInteractionEvent event) {
         if (event.getUser().isBot() || event.getUser().isSystem() || !event.isFromGuild()) {
             event.reply("Context interactions not allowed").queue();
@@ -328,12 +363,12 @@ public class Bot extends ListenerAdapter {
         Reply reply = new Reply() {
             @Override
             public void sendMessage(String message, Consumer<Message> callback) {
-                event.getChannel().sendMessage(message).queue(callback);
+                event.getMessage().reply(message).queue(callback);
             }
 
             @Override
             public void sendEmbed(MessageEmbed embed, Consumer<Message> callback) {
-                event.getChannel().sendMessageEmbeds(embed).queue(callback);
+                event.getMessage().replyEmbeds(embed).queue(callback);
             }
         };
 

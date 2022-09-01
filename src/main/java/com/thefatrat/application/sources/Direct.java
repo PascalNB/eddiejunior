@@ -10,123 +10,78 @@ import com.thefatrat.application.util.Colors;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.interactions.components.ActionRow;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import net.dv8tion.jda.api.interactions.components.selections.SelectMenu;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 public class Direct extends Source {
 
-    private final Map<String, Message> handler = new HashMap<>();
-    private final Map<String, SubmitRequest> submitter = new HashMap<>();
+    private final Map<String, Message> cache = new HashMap<>();
 
     @Override
     public void receiveMessage(Message message, Reply reply) {
-        String author = message.getAuthor().getId();
         Thread thread = new Thread(() -> {
 
-            List<Guild> mutual = Bot.getInstance().retrieveMutualGuilds(message.getAuthor()).complete();
+            String userId = message.getAuthor().getId();
+            List<Guild> mutualGuilds = Bot.getInstance().retrieveMutualGuilds(message.getAuthor()).complete();
 
-            if (mutual.isEmpty()) {
-                return;
-            }
-            if (mutual.size() == 1) {
-                forward(mutual.get(0).getId(), message, reply);
+            if (mutualGuilds.isEmpty() || cache.containsKey(userId)) {
                 return;
             }
 
-            if (handler.containsKey(author) || submitter.containsKey(author)) {
-                throw new BotErrorException("Please submit or cancel your submission first");
+            cache.put(message.getAuthor().getId(), message);
+
+            if (mutualGuilds.size() == 1) {
+                String serverId = mutualGuilds.get(0).getId();
+                sendComponentMenu(userId, serverId, reply);
+                return;
             }
 
-            EmbedBuilder embed = new EmbedBuilder()
-                .setColor(Colors.BLUE)
-                .setDescription("What server do you want to send this to?");
+            SelectMenu.Builder menu = SelectMenu.create("server")
+                .setMaxValues(1);
 
-            List<Button> buttons = mutual.stream()
-                .map(server ->
-                    Button.primary(server.getId(), server.getName())
+            for (Guild guild : mutualGuilds) {
+                menu.addOption(guild.getName(), guild.getId());
+            }
+
+            message.replyEmbeds(new EmbedBuilder()
+                    .setColor(Colors.BLUE)
+                    .setDescription("What server do you want to send this to?")
+                    .build()
                 )
-                .collect(Collectors.toList());
-            buttons.add(Button.danger("x", "Cancel"));
-
-            message.getChannel()
-                .sendMessageEmbeds(embed.build())
-                .setActionRow(buttons)
+                .addActionRow(menu.build())
+                .addActionRow(Button.danger("x", "Cancel"))
                 .queue();
 
-            handler.put(message.getAuthor().getId(), message);
         });
-        thread.setUncaughtExceptionHandler(new ChannelExceptionHandler(() -> {
-            handler.remove(author);
-            submitter.remove(author);
-        }, reply));
+        thread.setUncaughtExceptionHandler(new ChannelExceptionHandler(() -> {}, reply));
         thread.start();
     }
 
-    public void clickButton(String user, String button, Message message, Reply reply) {
-        if (!handler.containsKey(user) && !submitter.containsKey(user)) {
-            throw new BotErrorException("Something went wrong");
-        }
-
-        message.delete().queue();
-
-        Thread thread = new Thread(() -> {
-            if ("x".equals(button)) {
-                handler.remove(user);
-                submitter.remove(user);
-                reply.sendEmbed(new EmbedBuilder()
-                    .setColor(Colors.GREEN)
-                    .setDescription(":white_check_mark: Successfully cancelled")
-                    .build()
-                );
-                return;
-            }
-
-            if (!submitter.containsKey(user)) {
-                forward(button, handler.remove(user), reply);
-                return;
-            }
-
-            Server server = Bot.getInstance().getServer(submitter.get(user).server());
-            MessageHandler messageHandler = server.getDirectHandler();
-            if (!messageHandler.getKeys().contains(button)) {
-                throw new BotErrorException("Could not send to the given service, try again");
-            }
-            messageHandler.handle(button, submitter.get(user).message(), reply);
-            submitter.remove(user);
-        });
-        thread.setUncaughtExceptionHandler(new ChannelExceptionHandler(() -> {
-            handler.remove(user);
-            submitter.remove(user);
-        }, reply));
-        thread.start();
-    }
-
-    private void forward(String serverId, Message message, Reply reply) throws BotException {
+    private void sendComponentMenu(String userId, String serverId, Reply reply) {
         Server server = Bot.getInstance().getServer(serverId);
         if (server == null) {
             throw new BotErrorException("Something went wrong");
         }
-        MessageHandler handler = server.getDirectHandler();
-        if (handler.size() == 0) {
+
+        Set<String> keys = server.getDirectHandler().getKeys();
+
+        if (keys.isEmpty()) {
+            cache.remove(userId);
             throw new BotWarningException("The server does not handle any messages at the moment");
         }
-        if (handler.size() == 1) {
-            handler.handle(message, reply);
-            return;
+
+        SelectMenu.Builder menu = SelectMenu.create("component")
+            .setMaxValues(1);
+        for (String key : server.getDirectHandler().getKeys()) {
+            String name = key.substring(0, 1).toUpperCase() + key.substring(1);
+            menu.addOption(name, serverId + "-" + key);
         }
-
-        submitter.put(message.getAuthor().getId(), new SubmitRequest(serverId, message));
-
-        List<Button> buttons = handler.getKeys().stream()
-            .map(component ->
-                Button.primary(component, component)
-            )
-            .collect(Collectors.toList());
-        buttons.add(Button.danger("x", "Cancel"));
 
         reply.sendEmbed(new EmbedBuilder()
                 .setColor(Colors.BLUE)
@@ -134,11 +89,48 @@ public class Direct extends Source {
                 .build(),
             callback -> callback
                 .editMessageComponents()
-                .setActionRow(buttons)
+                .setComponents(
+                    ActionRow.of(menu.build()),
+                    ActionRow.of(Button.danger("x", "Cancel")))
                 .queue()
-
         );
 
+    }
+
+    public void selectMenu(String userId, String menuId, String option, Message message, Reply reply) {
+        if ("component".equals(menuId)) {
+            message.delete().queue();
+            String[] split = option.split("-");
+            String serverId = split[0];
+            String component = split[1];
+
+            Message userMessage = cache.remove(userId);
+
+            Server server = Bot.getInstance().getServer(serverId);
+            if (server == null) {
+                throw new BotErrorException("Something went wrong");
+            }
+
+            MessageHandler handler = server.getDirectHandler();
+
+            if (!handler.getKeys().contains(component)) {
+                throw new BotErrorException("Could not send to the given service, try again");
+            }
+
+            handler.handle(component, userMessage, reply);
+
+        } else if ("server".equals(menuId)) {
+            message.delete().queue();
+            sendComponentMenu(userId, option, reply);
+        }
+    }
+
+    public void clickButton(String userId, String buttonId, Message message, Reply reply) {
+        if ("x".equals(buttonId)) {
+            message.delete().queue();
+            cache.remove(userId);
+            reply.sendEmbedFormat(Colors.BLUE, ":stop_sign: Successfully cancelled");
+        }
     }
 
     private record ChannelExceptionHandler(Runnable action, Reply reply)
@@ -151,10 +143,6 @@ public class Direct extends Source {
                 reply.sendEmbedFormat(error.getColor(), error.getMessage());
             }
         }
-
-    }
-
-    private record SubmitRequest(String server, Message message) {
 
     }
 
