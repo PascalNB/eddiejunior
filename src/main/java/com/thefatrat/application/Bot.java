@@ -91,11 +91,13 @@ public class Bot extends ListenerAdapter {
 
     public String getUptime() {
         long t = System.currentTimeMillis() - time;
+        long days = TimeUnit.MILLISECONDS.toDays(t);
         long hours = TimeUnit.MILLISECONDS.toHours(t);
         long min = TimeUnit.MILLISECONDS.toMinutes(t);
         long sec = TimeUnit.MILLISECONDS.toSeconds(t);
-        return String.format("%d hours, %d minutes, %d seconds",
-            hours,
+        return String.format("%d days, %d hours, %d minutes, %d seconds",
+            days,
+            hours - TimeUnit.DAYS.toHours(days),
             min - TimeUnit.HOURS.toMinutes(hours),
             sec - TimeUnit.MINUTES.toSeconds(min)
         );
