@@ -1,8 +1,8 @@
 package com.thefatrat.application.components;
 
 import com.thefatrat.application.DatabaseManager;
+import com.thefatrat.application.builders.HelpBuilder;
 import com.thefatrat.application.entities.Command;
-import com.thefatrat.application.entities.HelpBuilder;
 import com.thefatrat.application.entities.Interaction;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotException;

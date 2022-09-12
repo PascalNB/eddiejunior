@@ -1,6 +1,6 @@
 package com.thefatrat.application.util;
 
-public class Colors {
+public final class Colors {
 
     public static final int GREEN = 0x77B255;
     public static final int RED = 0xDD2E44;

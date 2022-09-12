@@ -57,7 +57,6 @@ public class Initializer {
 
         try {
             jda = JDABuilder.createLight(token,
-                    GatewayIntent.MESSAGE_CONTENT,
                     GatewayIntent.DIRECT_MESSAGES
                 )
                 .setMemberCachePolicy(MemberCachePolicy.NONE)
