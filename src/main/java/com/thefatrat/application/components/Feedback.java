@@ -1,5 +1,6 @@
 package com.thefatrat.application.components;
 
+import com.thefatrat.application.Bot;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.entities.Interaction;
 import com.thefatrat.application.entities.Reply;
@@ -10,9 +11,11 @@ import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
 import com.thefatrat.application.util.URLChecker;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import net.dv8tion.jda.internal.utils.PermissionUtil;
 
 import java.net.URISyntaxException;
 import java.time.Instant;
@@ -381,7 +384,16 @@ public class Feedback extends DirectComponent {
                 "The source is not HTTPS and might not be safe",
                 true);
         }
-        getDestination().sendMessageEmbeds(embed.build()).queue();
+
+        if (!getDestination().canTalk() || !PermissionUtil.checkPermission(getDestination().getPermissionContainer(),
+            getServer().getGuild().retrieveMember(Bot.getInstance().getJDA().getSelfUser()).complete(),
+            Permission.MESSAGE_EMBED_LINKS)) {
+            throw new BotErrorException("If you see this error, the server admins messed up");
+        }
+
+        getDestination()
+            .sendMessageEmbeds(embed.build())
+            .queue();
         submissions++;
         reply.sendEmbedFormat(Colors.GREEN, ":white_check_mark: Successfully submitted");
     }

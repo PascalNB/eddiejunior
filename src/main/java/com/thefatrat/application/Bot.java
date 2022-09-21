@@ -9,7 +9,6 @@ import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotException;
 import com.thefatrat.application.sources.Direct;
 import com.thefatrat.application.sources.Server;
-import com.thefatrat.application.sources.Source;
 import com.thefatrat.application.util.Colors;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
@@ -49,14 +48,13 @@ public class Bot extends ListenerAdapter {
 
     private static Bot instance;
 
-    private final Map<String, Source> sources = new HashMap<>();
+    private final Map<String, Server> servers = new HashMap<>();
+    private final Direct direct = new Direct();
     private Class<? extends Component>[] components;
     private long time = 0;
     private JDA jda = null;
 
     private Bot() {
-        Source direct = new Direct();
-        sources.put(null, direct);
     }
 
     public static Bot getInstance() {
@@ -75,7 +73,7 @@ public class Bot extends ListenerAdapter {
     }
 
     public Server getServer(String id) {
-        return (Server) sources.get(id);
+        return servers.get(id);
     }
 
     @SafeVarargs
@@ -85,7 +83,7 @@ public class Bot extends ListenerAdapter {
 
     private void loadServer(String id) {
         Server server = new Server(id);
-        sources.put(server.getId(), server);
+        servers.put(server.getId(), server);
         server.registerComponents(components);
     }
 
@@ -156,7 +154,7 @@ public class Bot extends ListenerAdapter {
 
     @Override
     public void onGuildLeave(@NotNull GuildLeaveEvent event) {
-        sources.remove(event.getGuild().getId());
+        servers.remove(event.getGuild().getId());
     }
 
     @Override
@@ -167,21 +165,10 @@ public class Bot extends ListenerAdapter {
         if (!event.isFromGuild()) {
             event.deferReply().queue(hook -> {
 
-                Reply reply = new Reply() {
-                    @Override
-                    public void sendMessage(String message, Consumer<Message> callback) {
-                        hook.editOriginal(message).queue(callback);
-                    }
-
-                    @Override
-                    public void sendEmbed(MessageEmbed embed, Consumer<Message> callback) {
-                        hook.editOriginalEmbeds(embed).queue(callback);
-                    }
-                };
+                Reply reply = Reply.defaultInteractionReply(hook);
 
                 try {
-                    ((Direct) sources.get(null))
-                        .clickButton(event.getUser().getId(), event.getComponentId(), event.getMessage(), reply);
+                    direct.clickButton(event.getUser().getId(), event.getComponentId(), event.getMessage(), reply);
                 } catch (BotException e) {
                     reply.sendEmbedFormat(e.getColor(), e.getMessage());
                 }
@@ -197,24 +184,11 @@ public class Bot extends ListenerAdapter {
         if (!event.isFromGuild()) {
             event.deferReply().queue(hook -> {
 
-                Reply reply = new Reply() {
-                    @Override
-                    public void sendMessage(String message, Consumer<Message> callback) {
-                        hook.editOriginal(message).queue(callback);
-                    }
-
-                    @Override
-                    public void sendEmbed(MessageEmbed embed, Consumer<Message> callback) {
-                        hook.editOriginalEmbeds(embed).queue(callback);
-                    }
-                };
+                Reply reply = Reply.defaultInteractionReply(hook);
 
                 try {
-                    ((Direct) sources.get(null))
-                        .selectMenu(event.getUser().getId(), event.getComponentId(),
-                            event.getInteraction().getSelectedOptions().get(0).getValue(),
-                            event.getMessage(),
-                            reply);
+                    direct.selectMenu(event.getUser().getId(), event.getComponentId(),
+                        event.getInteraction().getSelectedOptions().get(0).getValue(), event.getMessage(), reply);
                 } catch (BotException e) {
                     reply.sendEmbedFormat(e.getColor(), e.getMessage());
                 }
@@ -244,22 +218,11 @@ public class Bot extends ListenerAdapter {
         Guild guild = Objects.requireNonNull(event.getGuild());
         event.deferReply(true).queue(hook -> {
 
-            Reply reply = new Reply() {
-                @Override
-                public void sendMessage(String message, Consumer<Message> callback) {
-                    hook.editOriginal(message).queue(callback);
-                }
-
-                @Override
-                public void sendEmbed(MessageEmbed embed, Consumer<Message> callback) {
-                    hook.editOriginalEmbeds(embed).queue(callback);
-                }
-            };
+            Reply reply = Reply.defaultInteractionReply(hook);
 
             try {
-                ((Server) sources.get(guild.getId()))
-                    .receiveInteraction(new InteractionEvent(message,
-                        event.getInteraction().getName()), reply);
+                servers.get(guild.getId())
+                    .receiveInteraction(new InteractionEvent(message, event.getInteraction().getName()), reply);
             } catch (BotException e) {
                 reply.sendEmbedFormat(e.getColor(), e.getMessage());
             }
@@ -283,28 +246,8 @@ public class Bot extends ListenerAdapter {
                 Reply reply = new Reply() {
 
                     private final CountDownLatch latch = new CountDownLatch(1);
-                    private BiConsumer<String, Consumer<Message>> sendMessage = (s, c) -> {};
                     private BiConsumer<MessageEmbed, Consumer<Message>> sendEmbed = (e, c) -> {};
                     private boolean replied = false;
-
-                    @Override
-                    public void sendMessage(String message, Consumer<Message> callback) {
-                        if (replied) {
-                            try {
-                                latch.await();
-                            } catch (InterruptedException e) {
-                                throw new RuntimeException(e);
-                            }
-                            sendMessage.accept(message, callback);
-                            return;
-                        }
-                        replied = true;
-                        hook.editOriginal(message).queue(callback.andThen(m -> {
-                            sendMessage = (s, c) -> m.getChannel().sendMessage(s).queue(c);
-                            sendEmbed = (e, c) -> m.getChannel().sendMessageEmbeds(e).queue(c);
-                            latch.countDown();
-                        }));
-                    }
 
                     @Override
                     public void sendEmbed(MessageEmbed embed, Consumer<Message> callback) {
@@ -319,7 +262,6 @@ public class Bot extends ListenerAdapter {
                         }
                         replied = true;
                         hook.editOriginalEmbeds(embed).queue(callback.andThen(m -> {
-                            sendMessage = (s, c) -> m.getChannel().sendMessage(s).queue(c);
                             sendEmbed = (e, c) -> m.getChannel().sendMessageEmbeds(e).queue(c);
                             latch.countDown();
                         }));
@@ -327,10 +269,10 @@ public class Bot extends ListenerAdapter {
                 };
 
                 CommandEvent commandEvent = new CommandEvent(event.getName(), event.getSubcommandName(),
-                    options, guild, event.getGuildChannel(), member);
+                    options, guild, event.getGuildChannel());
 
                 try {
-                    ((Server) sources.get(guild.getId())).receiveCommand(commandEvent, reply);
+                    servers.get(guild.getId()).receiveCommand(commandEvent, reply);
                 } catch (BotException e) {
                     reply.sendEmbedFormat(e.getColor(), e.getMessage());
                 }
@@ -352,7 +294,7 @@ public class Bot extends ListenerAdapter {
 
         ArchiveEvent archiveEvent = new ArchiveEvent(event.getChannel().asThreadChannel());
 
-        ((Server) sources.get(guild.getId())).getArchiveHandler().handle(archiveEvent);
+        servers.get(guild.getId()).getArchiveHandler().handle(archiveEvent);
     }
 
     @Override
@@ -362,24 +304,14 @@ public class Bot extends ListenerAdapter {
         }
         Message message = event.getMessage();
 
-        Reply reply = new Reply() {
-            @Override
-            public void sendMessage(String message, Consumer<Message> callback) {
-                event.getMessage().reply(message).queue(callback);
-            }
-
-            @Override
-            public void sendEmbed(MessageEmbed embed, Consumer<Message> callback) {
-                event.getMessage().replyEmbeds(embed).queue(callback);
-            }
-        };
+        Reply reply = Reply.defaultMessageReply(event.getMessage());
 
         try {
             if (message.isFromGuild()) {
                 String id = message.getGuild().getId();
-                sources.get(id).receiveMessage(message, reply);
+                servers.get(id).receiveMessage(message, reply);
             } else {
-                sources.get(null).receiveMessage(message, reply);
+                direct.receiveMessage(message, reply);
             }
         } catch (BotException e) {
             reply.sendEmbedFormat(e.getColor(), e.getMessage());

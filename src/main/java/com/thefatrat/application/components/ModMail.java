@@ -9,9 +9,11 @@ import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import net.dv8tion.jda.internal.utils.PermissionUtil;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -202,6 +204,13 @@ public class ModMail extends DirectComponent {
         if (System.currentTimeMillis() - timeouts.getOrDefault(author.getId(), 0L) < timeout * 1000L) {
             throw new BotWarningException(
                 String.format("You can only send a message every %d seconds", timeout));
+        }
+
+        if (!PermissionUtil.checkPermission(getDestination().getPermissionContainer(),
+            getServer().getGuild().retrieveMember(Bot.getInstance().getJDA().getSelfUser()).complete(),
+            Permission.MESSAGE_EMBED_LINKS,
+            (privateThreads ? Permission.CREATE_PRIVATE_THREADS : Permission.CREATE_PUBLIC_THREADS))) {
+            throw new BotErrorException("If you see this error, the server admins messed up");
         }
 
         timeouts.put(author.getId(), System.currentTimeMillis());

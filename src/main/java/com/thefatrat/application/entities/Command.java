@@ -68,8 +68,4 @@ public class Command {
         return action;
     }
 
-    public void action(CommandEvent event, Reply reply) {
-        action.accept(event, reply);
-    }
-
 }
