@@ -208,7 +208,7 @@ public class ModMail extends DirectComponent {
 
         if (!PermissionUtil.checkPermission(getDestination().getPermissionContainer(),
             getServer().getGuild().retrieveMember(Bot.getInstance().getJDA().getSelfUser()).complete(),
-            Permission.MESSAGE_EMBED_LINKS,
+            Permission.MESSAGE_EMBED_LINKS, Permission.MANAGE_THREADS,
             (privateThreads ? Permission.CREATE_PRIVATE_THREADS : Permission.CREATE_PUBLIC_THREADS))) {
             throw new BotErrorException("If you see this error, the server admins messed up");
         }
@@ -236,10 +236,6 @@ public class ModMail extends DirectComponent {
                 }
                 thread.sendMessageEmbeds(embed.build()).queue();
                 thread.addThreadMember(author).queue();
-                thread.getManager().setSlowmode(10);
-                if (privateThreads) {
-                    thread.getManager().setInvitable(false);
-                }
             });
         ++tickets;
         reply.sendEmbedFormat(Colors.GREEN,

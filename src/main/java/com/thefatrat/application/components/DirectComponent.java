@@ -44,7 +44,7 @@ public abstract class DirectComponent extends Component {
         }).start();
 
         addCommands(new Command(getName(), "component command")
-            .setAction((command, reply) -> getSubHandler().handle(command.toSub(), reply))
+            .setAction((command, reply) -> getSubCommandHandler().handle(command.toSub(), reply))
             .addSubcommand(new Command("start", "starts the component")
                 .addOption(new OptionData(OptionType.CHANNEL, "channel", "channel destination")
                     .setChannelTypes(ChannelType.TEXT)
@@ -126,8 +126,10 @@ public abstract class DirectComponent extends Component {
                         }
 
                         command.getGuild()
-                            .retrieveMembersByIds(blacklist.stream()
-                                .map(Long::parseLong).collect(Collectors.toList())
+                            .retrieveMembersByIds(
+                                blacklist.stream()
+                                    .map(Long::parseLong)
+                                    .collect(Collectors.toList())
                             )
                             .onSuccess(list -> {
                                 String[] strings = fillAbsent(blacklist, list,
