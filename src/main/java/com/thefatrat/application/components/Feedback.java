@@ -35,7 +35,7 @@ public class Feedback extends DirectComponent {
     private int submissions = 0;
 
     public Feedback(Server server) {
-        super(server, NAME);
+        super(server, NAME, false);
 
         new Thread(() -> {
             domains.addAll(getDatabaseManager().getSettings("domains"));
@@ -62,13 +62,16 @@ public class Feedback extends DirectComponent {
                     EmbedBuilder embed = new EmbedBuilder()
                         .setColor(Colors.BLUE);
                     StringBuilder builder = new StringBuilder();
+
                     for (int i = 0; i < limit; i++) {
                         builder.append(String.format("%-3d.%s%n", i + 1, submissionList.get(i)));
                     }
+
                     builder.deleteCharAt(builder.length() - 1);
                     embed.setDescription(builder.toString());
                     reply.sendEmbed(embed.build());
                 }),
+
             new Command("reset", "allow submissions for users again")
                 .addOption(new OptionData(OptionType.USER, "user", "user", false))
                 .setAction((command, reply) -> {

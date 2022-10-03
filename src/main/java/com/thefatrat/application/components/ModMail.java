@@ -37,7 +37,7 @@ public class ModMail extends DirectComponent {
     private boolean privateThreads;
 
     public ModMail(Server server) {
-        super(server, NAME);
+        super(server, NAME, true);
 
         timeout = Long.parseLong(
             getDatabaseManager().getSettingOr("timeout", 0)

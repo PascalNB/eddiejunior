@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 
 public abstract class DirectComponent extends Component {
 
+    private final boolean autoRun;
     private final Set<String> blacklist = new HashSet<>();
     private boolean running = false;
     private String destination;
@@ -36,12 +37,12 @@ public abstract class DirectComponent extends Component {
         handleDirect(message, reply);
     };
 
-    public DirectComponent(Server server, String name) {
+    public DirectComponent(Server server, String name, boolean autoRun) {
         super(server, name, false);
-
+        this.autoRun = autoRun;
         new Thread(() -> {
             destination = getDatabaseManager().getSetting("destination");
-            if (Boolean.parseBoolean(getDatabaseManager().getSettingOr("running", "false"))) {
+            if (autoRun && Boolean.parseBoolean(getDatabaseManager().getSettingOr("running", "false"))) {
                 start(Reply.empty());
             }
             blacklist.addAll(getDatabaseManager().getSettings("blacklist"));
@@ -220,13 +221,17 @@ public abstract class DirectComponent extends Component {
     protected void stop(Reply reply) {
         getServer().getDirectHandler().removeListener(getTitle());
         this.running = false;
-        getDatabaseManager().setSetting("running", "true");
+        if (autoRun) {
+            getDatabaseManager().setSetting("running", "false");
+        }
     }
 
     protected void start(Reply reply) {
         this.running = true;
         getServer().getDirectHandler().addListener(getTitle(), receiver);
-        getDatabaseManager().setSetting("running", "false");
+        if (autoRun) {
+            getDatabaseManager().setSetting("running", "true");
+        }
     }
 
     public void setDestination(String destination) {
