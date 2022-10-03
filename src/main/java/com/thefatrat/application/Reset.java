@@ -7,7 +7,6 @@ import net.dv8tion.jda.api.requests.RestAction;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 
-import javax.security.auth.login.LoginException;
 import java.io.*;
 import java.util.Properties;
 
@@ -42,14 +41,10 @@ public class Reset {
         final String token = new Reset().getProperty("bot_token");
         final JDA jda;
 
-        try {
-            jda = JDABuilder.createLight(token)
-                .setMemberCachePolicy(MemberCachePolicy.NONE)
-                .setChunkingFilter(ChunkingFilter.NONE)
-                .build();
-        } catch (LoginException e) {
-            throw new RuntimeException(e);
-        }
+        jda = JDABuilder.createLight(token)
+            .setMemberCachePolicy(MemberCachePolicy.NONE)
+            .setChunkingFilter(ChunkingFilter.NONE)
+            .build();
 
         try {
             jda.awaitReady();

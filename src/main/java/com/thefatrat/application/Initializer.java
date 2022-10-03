@@ -11,7 +11,6 @@ import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 
-import javax.security.auth.login.LoginException;
 import java.io.*;
 import java.util.Properties;
 
@@ -55,17 +54,13 @@ public class Initializer {
         final String token = getInstance().getProperty("bot_token");
         final JDA jda;
 
-        try {
-            jda = JDABuilder.createLight(token,
-                    GatewayIntent.DIRECT_MESSAGES
-                )
-                .setMemberCachePolicy(MemberCachePolicy.NONE)
-                .setChunkingFilter(ChunkingFilter.NONE)
-                .addEventListeners(Bot.getInstance())
-                .build();
-        } catch (LoginException e) {
-            throw new RuntimeException(e);
-        }
+        jda = JDABuilder.createLight(token,
+                GatewayIntent.DIRECT_MESSAGES
+            )
+            .setMemberCachePolicy(MemberCachePolicy.NONE)
+            .setChunkingFilter(ChunkingFilter.NONE)
+            .addEventListeners(Bot.getInstance())
+            .build();
 
         Bot.getInstance().setJDA(jda);
         Bot.getInstance().setComponents(

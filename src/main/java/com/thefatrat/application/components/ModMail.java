@@ -3,14 +3,17 @@ package com.thefatrat.application.components;
 import com.thefatrat.application.Bot;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.entities.Reply;
-import com.thefatrat.application.events.CommandEvent;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
-import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.ThreadMember;
+import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.channel.Channel;
+import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.internal.utils.PermissionUtil;
@@ -242,18 +245,16 @@ public class ModMail extends DirectComponent {
             ":white_check_mark: Message successfully submitted");
     }
 
-    @Override
-    protected void stop(CommandEvent command, Reply reply) {
-        super.stop(command, reply);
+    protected void stop(Reply reply) {
+        super.stop(reply);
         reply.sendEmbedFormat(Colors.GREEN,
             ":stop_sign: Mod mail service stopped",
             getDestination().getId()
         );
     }
 
-    @Override
-    protected void start(CommandEvent command, Reply reply) {
-        super.start(command, reply);
+    protected void start(Reply reply) {
+        super.start(reply);
         reply.sendEmbedFormat(Colors.GREEN,
             ":white_check_mark: Mod mail service started",
             getDestination().getId()

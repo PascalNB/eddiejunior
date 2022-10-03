@@ -101,7 +101,7 @@ public class Manager extends Component {
 
                     if (component instanceof DirectComponent direct) {
                         if (direct.isRunning()) {
-                            direct.stop(command, reply);
+                            direct.stop(reply);
                         }
                     }
 

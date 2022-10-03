@@ -35,4 +35,8 @@ public interface Reply {
         return (embed, callback) -> hook.editOriginalEmbeds(embed).queue(callback);
     }
 
+    static Reply empty() {
+        return (embed, callback) -> {};
+    }
+
 }

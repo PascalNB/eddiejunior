@@ -3,13 +3,14 @@ package com.thefatrat.application.components;
 import com.thefatrat.application.Bot;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.entities.Reply;
-import com.thefatrat.application.events.CommandEvent;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.entities.channel.ChannelType;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
@@ -40,6 +41,9 @@ public abstract class DirectComponent extends Component {
 
         new Thread(() -> {
             destination = getDatabaseManager().getSetting("destination");
+            if (Boolean.parseBoolean(getDatabaseManager().getSettingOr("running", "false"))) {
+                start(Reply.empty());
+            }
             blacklist.addAll(getDatabaseManager().getSettings("blacklist"));
         }).start();
 
@@ -76,11 +80,11 @@ public abstract class DirectComponent extends Component {
                         );
                     }
 
-                    start(command, reply);
+                    start(reply);
                 })
             )
             .addSubcommand(new Command("stop", "stops the component")
-                .setAction(this::stop)
+                .setAction((command, reply) -> this.stop(reply))
             )
             .addSubcommand(new Command("destination", "sets the destination channel")
                 .addOption(new OptionData(OptionType.CHANNEL, "channel", "destination channel", false)
@@ -213,14 +217,16 @@ public abstract class DirectComponent extends Component {
 
     protected abstract void handleDirect(Message message, Reply reply);
 
-    protected void stop(CommandEvent command, Reply reply) {
+    protected void stop(Reply reply) {
         getServer().getDirectHandler().removeListener(getTitle());
         this.running = false;
+        getDatabaseManager().setSetting("running", "true");
     }
 
-    protected void start(CommandEvent command, Reply reply) {
+    protected void start(Reply reply) {
         this.running = true;
         getServer().getDirectHandler().addListener(getTitle(), receiver);
+        getDatabaseManager().setSetting("running", "false");
     }
 
     public void setDestination(String destination) {

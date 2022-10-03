@@ -1,6 +1,6 @@
 package com.thefatrat.application.events;
 
-import net.dv8tion.jda.api.entities.ThreadChannel;
+import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
 
 public class ArchiveEvent {
 

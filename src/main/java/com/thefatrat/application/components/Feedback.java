@@ -4,7 +4,6 @@ import com.thefatrat.application.Bot;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.entities.Interaction;
 import com.thefatrat.application.entities.Reply;
-import com.thefatrat.application.events.CommandEvent;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Server;
@@ -12,7 +11,11 @@ import com.thefatrat.application.util.Colors;
 import com.thefatrat.application.util.URLChecker;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
-import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.channel.Channel;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.internal.utils.PermissionUtil;
@@ -28,6 +31,7 @@ public class Feedback extends DirectComponent {
     private final Set<String> domains = new HashSet<>();
     private final Set<String> filetypes = new HashSet<>();
     private final Set<String> users = new HashSet<>();
+    private final List<String> submissionList = new ArrayList<>();
     private int submissions = 0;
 
     public Feedback(Server server) {
@@ -39,6 +43,32 @@ public class Feedback extends DirectComponent {
         }).start();
 
         addSubcommands(
+            new Command("list", "list all the current submissions in order")
+                .addOption(new OptionData(OptionType.INTEGER, "limit", "limit", false)
+                    .setMinValue(1)
+                    .setMaxValue(Integer.MAX_VALUE)
+                )
+                .setAction((command, reply) -> {
+                    if (!isRunning()) {
+                        throw new BotWarningException("There is no feedback session at the moment");
+                    }
+                    if (submissions == 0) {
+                        throw new BotWarningException("No submissions have been received yet");
+                    }
+                    int limit = command.getArgs().containsKey("limit")
+                        ? Math.min(command.getArgs().get("limit").getAsInt(), submissions)
+                        : submissions;
+
+                    EmbedBuilder embed = new EmbedBuilder()
+                        .setColor(Colors.BLUE);
+                    StringBuilder builder = new StringBuilder();
+                    for (int i = 0; i < limit; i++) {
+                        builder.append(String.format("%-3d.%s%n", i + 1, submissionList.get(i)));
+                    }
+                    builder.deleteCharAt(builder.length() - 1);
+                    embed.setDescription(builder.toString());
+                    reply.sendEmbed(embed.build());
+                }),
             new Command("reset", "allow submissions for users again")
                 .addOption(new OptionData(OptionType.USER, "user", "user", false))
                 .setAction((command, reply) -> {
@@ -370,7 +400,6 @@ public class Feedback extends DirectComponent {
             }
         }
 
-        users.add(author.getId());
         EmbedBuilder embed = new EmbedBuilder()
             .setColor(Colors.LIGHT)
             .setTimestamp(Instant.now())
@@ -388,27 +417,30 @@ public class Feedback extends DirectComponent {
         if (!getDestination().canTalk() || !PermissionUtil.checkPermission(getDestination().getPermissionContainer(),
             getServer().getGuild().retrieveMember(Bot.getInstance().getJDA().getSelfUser()).complete(),
             Permission.MESSAGE_EMBED_LINKS)) {
+
             throw new BotErrorException("If you see this error, the server admins messed up");
         }
 
+        users.add(author.getId());
+
         getDestination()
             .sendMessageEmbeds(embed.build())
-            .queue();
+            .queue(m -> submissionList.add(author.getAsMention()));
         submissions++;
         reply.sendEmbedFormat(Colors.GREEN, ":white_check_mark: Successfully submitted");
     }
 
-    @Override
-    protected void start(CommandEvent command, Reply reply) {
-        super.start(command, reply);
+    protected void start(Reply reply) {
+        super.start(reply);
         users.clear();
+        submissionList.clear();
         submissions = 0;
         reply.sendEmbedFormat(Colors.GREEN, ":white_check_mark: Feedback session started");
     }
 
-    @Override
-    protected void stop(CommandEvent command, Reply reply) {
-        super.stop(command, reply);
+    protected void stop(Reply reply) {
+        super.stop(reply);
+        submissionList.clear();
         submissions = 0;
         reply.sendEmbedFormat(Colors.GREEN, ":stop_sign: Feedback session stopped");
     }
