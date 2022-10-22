@@ -140,6 +140,7 @@ public class Bot extends ListenerAdapter {
     @Override
     public void onReady(@NotNull ReadyEvent event) {
         time = System.currentTimeMillis();
+        jda.getPresence().setActivity(Activity.playing("DM me"));
     }
 
     @Override
