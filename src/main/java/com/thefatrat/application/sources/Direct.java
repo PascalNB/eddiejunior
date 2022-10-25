@@ -12,7 +12,7 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.interactions.components.ActionRow;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
-import net.dv8tion.jda.api.interactions.components.selections.SelectMenu;
+import net.dv8tion.jda.api.interactions.components.selections.StringSelectMenu;
 
 import java.util.HashMap;
 import java.util.List;
@@ -42,7 +42,7 @@ public class Direct extends Source {
                 return;
             }
 
-            SelectMenu.Builder menu = SelectMenu.create("server")
+            StringSelectMenu.Builder menu = StringSelectMenu.create("server")
                 .setMaxValues(1);
 
             for (Guild guild : mutualGuilds) {
@@ -76,7 +76,7 @@ public class Direct extends Source {
             throw new BotWarningException("The server does not handle any messages at the moment");
         }
 
-        SelectMenu.Builder menu = SelectMenu.create("component")
+        StringSelectMenu.Builder menu = StringSelectMenu.create("component")
             .setMaxValues(1);
         for (String key : server.getDirectHandler().getKeys()) {
             String name = key.substring(0, 1).toUpperCase() + key.substring(1);
