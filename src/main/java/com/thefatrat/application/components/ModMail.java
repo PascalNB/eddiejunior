@@ -189,8 +189,8 @@ public class ModMail extends DirectComponent {
     @Override
     protected void handleDirect(Message message, Reply reply) {
         String content = message.getContentRaw();
-        if (content.length() < 20) {
-            throw new BotWarningException("Messages have to be at least 20 characters");
+        if (content.length() < 20 || content.length() > 1024) {
+            throw new BotWarningException("Messages have to be between 20 and 1024 characters");
         }
 
         if (maxTickets != 0 && tickets == maxTickets) {
