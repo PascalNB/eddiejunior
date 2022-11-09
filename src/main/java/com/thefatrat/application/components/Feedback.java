@@ -31,8 +31,8 @@ public class Feedback extends DirectComponent {
     private final Set<String> domains = new HashSet<>();
     private final Set<String> filetypes = new HashSet<>();
     private final Set<String> users = new HashSet<>();
-    private final List<String> submissionList = new ArrayList<>();
-    private int submissions = 0;
+    private final List<Submission> submissions = new ArrayList<>();
+    private int submissionCount = 0;
 
     public Feedback(Server server) {
         super(server, NAME, false);
@@ -43,33 +43,37 @@ public class Feedback extends DirectComponent {
         }).start();
 
         addSubcommands(
-            new Command("list", "list all the current submissions in order")
-                .addOption(new OptionData(OptionType.INTEGER, "limit", "limit", false)
-                    .setMinValue(1)
-                    .setMaxValue(Integer.MAX_VALUE)
-                )
+            new Command("raffle", "pick a random submission")
                 .setAction((command, reply) -> {
                     if (!isRunning()) {
                         throw new BotWarningException("There is no feedback session at the moment");
                     }
-                    if (submissions == 0) {
+                    if (submissionCount == 0) {
                         throw new BotWarningException("No submissions have been received yet");
                     }
-                    int limit = command.getArgs().containsKey("limit")
-                        ? Math.min(command.getArgs().get("limit").getAsInt(), submissions)
-                        : submissions;
-
-                    EmbedBuilder embed = new EmbedBuilder()
-                        .setColor(Colors.BLUE);
-                    StringBuilder builder = new StringBuilder();
-
-                    for (int i = 0; i < limit; i++) {
-                        builder.append(String.format("%-3d.%s%n", i + 1, submissionList.get(i)));
+                    if (submissions.size() == 0) {
+                        throw new BotWarningException("There are no submissions left in the queue");
                     }
 
-                    builder.deleteCharAt(builder.length() - 1);
-                    embed.setDescription(builder.toString());
-                    reply.sendEmbed(embed.build());
+                    if (!getDestination().canTalk() ||
+                        !PermissionUtil.checkPermission(getDestination().getPermissionContainer(),
+                            getServer().getGuild().retrieveMember(Bot.getInstance().getJDA().getSelfUser()).complete(),
+                            Permission.MESSAGE_EMBED_LINKS)) {
+
+                        throw new BotErrorException("Could not send submission to destination channel");
+                    }
+
+                    Collections.shuffle(submissions);
+
+                    Submission submission = submissions.get(0);
+                    submissions.remove(0);
+
+                    EmbedBuilder embed = new EmbedBuilder()
+                        .setColor(Colors.BLUE)
+                        .setDescription(String.format("%s has won!", submission.user()));
+
+                    getDestination().sendMessageEmbeds(submission.submission())
+                        .queue(m -> reply.sendEmbed(embed.build()));
                 }),
 
             new Command("reset", "allow submissions for users again")
@@ -347,7 +351,7 @@ public class Feedback extends DirectComponent {
                 Submissions: %d
                 Destination: %s
                 """,
-            isEnabled(), isRunning(), submissions, dest);
+            isEnabled(), isRunning(), submissionCount, dest);
     }
 
     @Override
@@ -417,35 +421,30 @@ public class Feedback extends DirectComponent {
                 true);
         }
 
-        if (!getDestination().canTalk() || !PermissionUtil.checkPermission(getDestination().getPermissionContainer(),
-            getServer().getGuild().retrieveMember(Bot.getInstance().getJDA().getSelfUser()).complete(),
-            Permission.MESSAGE_EMBED_LINKS)) {
-
-            throw new BotErrorException("If you see this error, the server admins messed up");
-        }
-
         users.add(author.getId());
 
-        getDestination()
-            .sendMessageEmbeds(embed.build())
-            .queue(m -> submissionList.add(author.getAsMention()));
-        submissions++;
+        submissions.add(new Submission(author.getAsMention(), embed.build()));
+        submissionCount++;
         reply.sendEmbedFormat(Colors.GREEN, ":white_check_mark: Successfully submitted");
     }
 
     protected void start(Reply reply) {
         super.start(reply);
         users.clear();
-        submissionList.clear();
-        submissions = 0;
+        submissions.clear();
+        submissionCount = 0;
         reply.sendEmbedFormat(Colors.GREEN, ":white_check_mark: Feedback session started");
     }
 
     protected void stop(Reply reply) {
         super.stop(reply);
-        submissionList.clear();
-        submissions = 0;
+        submissions.clear();
+        submissionCount = 0;
         reply.sendEmbedFormat(Colors.GREEN, ":stop_sign: Feedback session stopped");
+    }
+
+    private record Submission(String user, MessageEmbed submission) {
+
     }
 
 }
