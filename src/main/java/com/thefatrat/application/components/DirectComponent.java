@@ -155,8 +155,11 @@ public abstract class DirectComponent extends Component {
                         }
 
                         blacklist.clear();
-                        getDatabaseManager().removeSetting("blacklist");
-                        reply.sendEmbedFormat(Colors.GREEN, ":white_check_mark: Blacklist cleared");
+                        getDatabaseManager().removeSetting("blacklist")
+                            .thenRun(() ->
+                                reply.sendEmbedFormat(Colors.GREEN, ":white_check_mark: Blacklist cleared")
+                            )
+                            .join();
                         return;
                     }
 
@@ -192,7 +195,7 @@ public abstract class DirectComponent extends Component {
             }
 
             blacklist.add(userId);
-            getDatabaseManager().addSetting("blacklist", userId);
+            getDatabaseManager().addSetting("blacklist", userId).join();
         } else {
             if (!blacklist.contains(userId)) {
                 throw new BotWarningException(String.format("%s is not on the blacklist",
@@ -200,7 +203,7 @@ public abstract class DirectComponent extends Component {
             }
 
             blacklist.remove(userId);
-            getDatabaseManager().removeSetting("blacklist", userId);
+            getDatabaseManager().removeSetting("blacklist", userId).join();
         }
 
         reply.sendEmbedFormat(Colors.GREEN, ":white_check_mark: %s %s the blacklist",
@@ -222,7 +225,7 @@ public abstract class DirectComponent extends Component {
         getServer().getDirectHandler().removeListener(getTitle());
         this.running = false;
         if (autoRun) {
-            getDatabaseManager().setSetting("running", "false");
+            getDatabaseManager().setSetting("running", "false").join();
         }
     }
 
@@ -230,13 +233,13 @@ public abstract class DirectComponent extends Component {
         this.running = true;
         getServer().getDirectHandler().addListener(getTitle(), receiver);
         if (autoRun) {
-            getDatabaseManager().setSetting("running", "true");
+            getDatabaseManager().setSetting("running", "true").join();
         }
     }
 
     public void setDestination(String destination) {
         this.destination = destination;
-        getDatabaseManager().setSetting("destination", destination);
+        getDatabaseManager().setSetting("destination", destination).join();
     }
 
     public TextChannel getDestination() {

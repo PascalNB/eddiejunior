@@ -133,8 +133,7 @@ public class Direct extends Source {
         }
     }
 
-    private record ChannelExceptionHandler(Runnable action, Reply reply)
-        implements Thread.UncaughtExceptionHandler {
+    private record ChannelExceptionHandler(Runnable action, Reply reply) implements Thread.UncaughtExceptionHandler {
 
         @Override
         public void uncaughtException(Thread t, Throwable e) {

@@ -130,6 +130,13 @@ public class Table {
     }
 
     /**
+     * @return whether the table is empty
+     */
+    public boolean isEmpty() {
+        return getRowCount() == 0;
+    }
+
+    /**
      * @return the row count
      */
     public int getRowCount() {

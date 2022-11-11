@@ -1,7 +1,6 @@
 package com.thefatrat.application.components;
 
 import com.thefatrat.application.Bot;
-import com.thefatrat.application.DatabaseManager;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
@@ -53,13 +52,11 @@ public class Manager extends Component {
                                 try {
                                     Database.getInstance().connect().close();
                                     long time2 = System.currentTimeMillis() - start2;
-                                    DatabaseManager.setAccessible(true);
                                     message2.editMessageEmbeds(new EmbedBuilder(embed)
                                         .addField("Database", time2 + " ms", true)
                                         .build()
                                     ).queue();
                                 } catch (DatabaseException e) {
-                                    DatabaseManager.setAccessible(false);
                                     message2.editMessageEmbeds(new EmbedBuilder(embed)
                                         .addField("Database", ":x:", true)
                                         .build()
@@ -80,12 +77,13 @@ public class Manager extends Component {
                         componentNotFound(componentString);
                         return;
                     }
-                    component.getDatabaseManager().toggleComponent(true);
-                    getServer().toggleComponent(component, true);
-
-                    reply.sendEmbedFormat(Colors.BLUE,
-                        ":ballot_box_with_check: Component `%s` enabled",
-                        componentString);
+                    component.getDatabaseManager().toggleComponent(true)
+                        .thenRun(() -> {
+                            getServer().toggleComponent(component, true);
+                            reply.sendEmbedFormat(Colors.BLUE,
+                                ":ballot_box_with_check: Component `%s` enabled", componentString);
+                        })
+                        .join();
                 }),
 
             new Command("disable", "disable a specific component by name")
@@ -105,11 +103,14 @@ public class Manager extends Component {
                         }
                     }
 
-                    component.getDatabaseManager().toggleComponent(false);
-                    getServer().toggleComponent(component, false);
+                    component.getDatabaseManager().toggleComponent(false)
+                        .thenRun(() -> {
+                            getServer().toggleComponent(component, false);
 
-                    reply.sendEmbedFormat(Colors.BLUE, ":no_entry: Component `%s` disabled",
-                        componentString);
+                            reply.sendEmbedFormat(Colors.BLUE, ":no_entry: Component `%s` disabled",
+                                componentString);
+                        })
+                        .join();
                 }),
 
             new Command("components", "shows a list of all the components")

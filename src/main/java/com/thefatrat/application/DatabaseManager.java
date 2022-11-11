@@ -1,12 +1,13 @@
 package com.thefatrat.application;
 
 import com.thefatrat.database.Database;
+import com.thefatrat.database.DatabaseAction;
 import com.thefatrat.database.Query;
+import org.slf4j.helpers.CheckReturnValue;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 public class DatabaseManager {
 
@@ -29,8 +30,6 @@ public class DatabaseManager {
     private static final String REMOVE_SETTING_VALUE =
         "DELETE FROM setting WHERE server_id=? AND component_name=? AND name=? AND value=?;";
 
-    private static boolean accessible = true;
-
     private final String server;
     private final String component;
 
@@ -39,48 +38,28 @@ public class DatabaseManager {
         this.component = component;
     }
 
-    public static void setAccessible(boolean accessible) {
-        DatabaseManager.accessible = accessible;
+    @CheckReturnValue
+    public CompletableFuture<Void> removeSetting(String setting) {
+        return new DatabaseAction<Void>(REMOVE_SETTING, server, component, setting).execute();
     }
 
-    private void execute(Runnable runnable) {
-        if (!accessible) {
-            return;
-        }
-        new Thread(runnable).start();
+    @CheckReturnValue
+    public CompletableFuture<Void> removeSetting(String setting, String value) {
+        return new DatabaseAction<Void>(REMOVE_SETTING_VALUE, server, component, setting, value).execute();
     }
 
-    public void removeSetting(String setting) {
-        Runnable runnable = () ->
-            Database.getInstance().connect()
-                .executeStatement(Query.of(REMOVE_SETTING), server, component, setting)
-                .close();
-        execute(runnable);
-    }
-
-    public void removeSetting(String setting, String value) {
-        Runnable runnable = () ->
-            Database.getInstance().connect()
-                .executeStatement(Query.of(REMOVE_SETTING_VALUE), server, component, setting, value)
-                .close();
-        execute(runnable);
-    }
-
-    public void setSetting(String setting, String value) {
-        Runnable runnable = () ->
-            Database.getInstance().connect()
-                .executeStatement(Query.of(REMOVE_SETTING), server, component, setting)
+    @CheckReturnValue
+    public CompletableFuture<Void> setSetting(String setting, String value) {
+        return new DatabaseAction<Void>(REMOVE_SETTING, server, component, setting).execute()
+            .thenRun(() -> Database.getInstance().connect()
                 .executeStatement(Query.of(ADD_SETTING), server, component, setting, value)
-                .close();
-        execute(runnable);
+                .close()
+            );
     }
 
-    public void addSetting(String setting, String value) {
-        Runnable runnable = () ->
-            Database.getInstance().connect()
-                .executeStatement(Query.of(ADD_SETTING), server, component, setting, value)
-                .close();
-        execute(runnable);
+    @CheckReturnValue
+    public CompletableFuture<Void> addSetting(String setting, String value) {
+        return new DatabaseAction<Void>(ADD_SETTING, server, component, setting, value).execute();
     }
 
     public String getSetting(String setting) {
@@ -89,53 +68,33 @@ public class DatabaseManager {
 
     public String getSettingOr(String setting, Object defaultValue) {
         String defaultString = defaultValue == null ? null : defaultValue.toString();
-        if (!accessible) {
-            return defaultString;
-        }
-        AtomicReference<String> result = new AtomicReference<>(defaultString);
-        Database.getInstance().connect()
-            .queryStatement(table -> {
-                if (table.getRowCount() == 0) {
-                    return;
+        return new DatabaseAction<String>(GET_SETTINGS, server, component, setting)
+            .queue(table -> {
+                if (table.isEmpty()) {
+                    return defaultString;
                 }
-                result.set(table.getRow(0).get(0));
-            }, Query.of(GET_SETTINGS), server, component, setting)
-            .close();
-        return result.get();
+                return table.getRow(0).get(0);
+            })
+            .join();
     }
 
     public List<String> getSettings(String setting) {
-        if (!accessible) {
-            return List.of();
-        }
-        List<String> result = new ArrayList<>();
-        Database.getInstance().connect()
-            .queryStatement(table -> table.forEach(row ->
-                    result.add(row.get(0))),
-                Query.of(GET_SETTINGS), server, component, setting)
-            .close();
-        return result;
+        return new DatabaseAction<List<String>>(GET_SETTINGS, server, component, setting)
+            .queue(table -> {
+                return table.getTuples().stream().map(t -> t.get(0)).collect(Collectors.toList());
+            })
+            .join();
     }
 
     public boolean isComponentEnabled() {
-        if (!accessible) {
-            return false;
-        }
-        AtomicBoolean result = new AtomicBoolean(false);
-        Database.getInstance().connect()
-            .queryStatement(table -> table.forEach(row ->
-                    result.set("1".equals(row.get(0)))),
-                Query.of(GET_COMPONENT_ENABLED), server, component)
-            .close();
-        return result.get();
+        return new DatabaseAction<Boolean>(GET_COMPONENT_ENABLED, server, component)
+            .queue(table -> !table.isEmpty() && "1".equals(table.getRow(0).get(0)))
+            .join();
     }
 
-    public void toggleComponent(boolean enable) {
-        Runnable runnable = () ->
-            Database.getInstance().connect()
-                .executeStatement(Query.of(TOGGLE_COMPONENT), server, component, enable, enable)
-                .close();
-        execute(runnable);
+    @CheckReturnValue
+    public CompletableFuture<Void> toggleComponent(boolean enable) {
+        return new DatabaseAction<Void>(TOGGLE_COMPONENT, server, component, enable, enable).execute();
     }
 
 }

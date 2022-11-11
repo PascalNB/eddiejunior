@@ -23,15 +23,17 @@ import net.dv8tion.jda.internal.utils.PermissionUtil;
 import java.net.URISyntaxException;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Feedback extends DirectComponent {
 
     public static final String NAME = "Feedback";
 
-    private final Set<String> domains = new HashSet<>();
-    private final Set<String> filetypes = new HashSet<>();
-    private final Set<String> users = new HashSet<>();
-    private final List<Submission> submissions = new ArrayList<>();
+    private final Set<String> domains = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private final Set<String> filetypes = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private final Set<String> users = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private final List<Submission> submissions = new CopyOnWriteArrayList<>();
     private int submissionCount = 0;
 
     public Feedback(Server server) {
@@ -141,9 +143,12 @@ public class Feedback extends DirectComponent {
                         }
 
                         domains.clear();
-                        getDatabaseManager().removeSetting("domains");
-                        reply.sendEmbedFormat(Colors.GREEN, ":white_check_mark: Domain whitelist " +
-                            "cleared");
+                        getDatabaseManager().removeSetting("domains")
+                            .thenRun(() ->
+                                reply.sendEmbedFormat(Colors.GREEN, ":white_check_mark: Domain whitelist " +
+                                    "cleared")
+                            )
+                            .join();
                         return;
                     }
 
@@ -173,7 +178,7 @@ public class Feedback extends DirectComponent {
                                 );
                                 continue;
                             }
-                            getDatabaseManager().addSetting("domains", domain);
+                            getDatabaseManager().addSetting("domains", domain).join();
                             this.domains.add(domain);
                             changed.add(domain);
                         }
@@ -188,7 +193,7 @@ public class Feedback extends DirectComponent {
                                 );
                                 continue;
                             }
-                            getDatabaseManager().removeSetting("domains", domain);
+                            getDatabaseManager().removeSetting("domains", domain).join();
                             this.domains.remove(domain);
                             changed.add(domain);
                         }
@@ -244,9 +249,10 @@ public class Feedback extends DirectComponent {
                         }
 
                         filetypes.clear();
-                        getDatabaseManager().removeSetting("filetypes");
-                        reply.sendEmbedFormat(Colors.GREEN,
-                            ":white_check_mark: Filetype list cleared");
+                        getDatabaseManager().removeSetting("filetypes")
+                            .thenRun(() -> reply.sendEmbedFormat(Colors.GREEN,
+                                ":white_check_mark: Filetype list cleared"))
+                            .join();
                         return;
                     }
 
@@ -276,7 +282,7 @@ public class Feedback extends DirectComponent {
                                 );
                                 continue;
                             }
-                            getDatabaseManager().addSetting("filetypes", filetype);
+                            getDatabaseManager().addSetting("filetypes", filetype).join();
                             this.filetypes.add(filetype);
                             changed.add(filetype);
                         }
@@ -291,7 +297,7 @@ public class Feedback extends DirectComponent {
                                 );
                                 continue;
                             }
-                            getDatabaseManager().removeSetting("filetypes", filetype);
+                            getDatabaseManager().removeSetting("filetypes", filetype).join();
                             this.filetypes.remove(filetype);
                             changed.add(filetype);
                         }
@@ -355,7 +361,7 @@ public class Feedback extends DirectComponent {
     }
 
     @Override
-    protected void handleDirect(Message message, Reply reply) {
+    protected synchronized void handleDirect(Message message, Reply reply) {
         List<Message.Attachment> attachments = message.getAttachments();
 
         String url = null;

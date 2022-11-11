@@ -19,16 +19,17 @@ import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.internal.utils.PermissionUtil;
 
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ModMail extends DirectComponent {
 
     public static final String NAME = "Modmail";
 
-    private final Map<String, Long> timeouts = new HashMap<>();
-    private final Map<String, Integer> userCount = new HashMap<>();
+    private final Map<String, Long> timeouts = new ConcurrentHashMap<>();
+    private final Map<String, Integer> userCount = new ConcurrentHashMap<>();
     private int tickets = 0;
     private long timeout;
     private long threadId;
@@ -70,9 +71,10 @@ public class ModMail extends DirectComponent {
                 .setAction((command, reply) -> {
                     long timeout = command.getArgs().get("timeout").getAsInt();
                     this.timeout = timeout;
-                    getDatabaseManager().setSetting("timeout", String.valueOf(timeout));
-                    reply.sendEmbedFormat(Colors.GREEN,
-                        ":white_check_mark: Timout set to %d seconds", timeout);
+                    getDatabaseManager().setSetting("timeout", String.valueOf(timeout))
+                        .thenRun(() -> reply.sendEmbedFormat(Colors.GREEN,
+                            ":white_check_mark: Timout set to %d seconds", timeout))
+                        .join();
                 }),
 
             new Command("archive", "archives the current ticket thread")
@@ -94,9 +96,10 @@ public class ModMail extends DirectComponent {
                 .setAction((command, reply) -> {
                     int max = command.getArgs().get("max").getAsInt();
                     this.maxTicketsPerUser = max;
-                    getDatabaseManager().setSetting("maxticketsperuser", String.valueOf(max));
-                    reply.sendEmbedFormat(Colors.GREEN,
-                        ":white_check_mark: Maximum set to %d tickets", max);
+                    getDatabaseManager().setSetting("maxticketsperuser", String.valueOf(max))
+                        .thenRun(() -> reply.sendEmbedFormat(Colors.GREEN,
+                            ":white_check_mark: Maximum set to %d tickets", max))
+                        .join();
                 }),
 
             new Command("maxtickets", "sets the maximum number of overall tickets")
@@ -106,9 +109,10 @@ public class ModMail extends DirectComponent {
                 .setAction((command, reply) -> {
                     int max = command.getArgs().get("max").getAsInt();
                     this.maxTickets = max;
-                    getDatabaseManager().setSetting("maxtickets", String.valueOf(max));
-                    reply.sendEmbedFormat(Colors.GREEN,
-                        ":white_check_mark: Maximum set to %d tickets", max);
+                    getDatabaseManager().setSetting("maxtickets", String.valueOf(max))
+                        .thenRun(() -> reply.sendEmbedFormat(Colors.GREEN,
+                            ":white_check_mark: Maximum set to %d tickets", max))
+                        .join();
                 }),
 
             new Command("privatethreads", "determines if the created threads are private or public")
@@ -119,9 +123,10 @@ public class ModMail extends DirectComponent {
                     }
                     boolean value = command.getArgs().get("value").getAsBoolean();
                     this.privateThreads = value;
-                    getDatabaseManager().setSetting("privatethreads", String.valueOf(value));
-                    reply.sendEmbedFormat(Colors.GREEN,
-                        ":white_check_mark: Thread creation set to %s", value ? "private" : "public");
+                    getDatabaseManager().setSetting("privatethreads", String.valueOf(value))
+                        .thenRun(() -> reply.sendEmbedFormat(Colors.GREEN,
+                            ":white_check_mark: Thread creation set to %s", value ? "private" : "public"))
+                        .join();
                 }),
 
             new Command("recheck", "rechecks the amount of open tickets")
@@ -187,7 +192,7 @@ public class ModMail extends DirectComponent {
     }
 
     @Override
-    protected void handleDirect(Message message, Reply reply) {
+    protected synchronized void handleDirect(Message message, Reply reply) {
         String content = message.getContentRaw();
         if (content.length() < 20 || content.length() > 1024) {
             throw new BotWarningException("Messages have to be between 20 and 1024 characters");
@@ -219,7 +224,7 @@ public class ModMail extends DirectComponent {
         timeouts.put(author.getId(), System.currentTimeMillis());
         userCount.put(author.getId(), userCount.getOrDefault(author.getId(), 0) + 1);
         ++threadId;
-        getDatabaseManager().setSetting("threadid", String.valueOf(threadId));
+        CompletableFuture<Void> future = getDatabaseManager().setSetting("threadid", String.valueOf(threadId));
         String topic = String.format("t%d-%s", threadId, author.getAsTag());
         topic = topic.substring(0, Math.min(topic.length(), 25));
         getDestination()
@@ -241,8 +246,9 @@ public class ModMail extends DirectComponent {
                 thread.addThreadMember(author).queue();
             });
         ++tickets;
-        reply.sendEmbedFormat(Colors.GREEN,
-            ":white_check_mark: Message successfully submitted");
+        future.thenRun(() -> reply.sendEmbedFormat(Colors.GREEN,
+                ":white_check_mark: Message successfully submitted"))
+            .join();
     }
 
     protected void stop(Reply reply) {

@@ -47,8 +47,7 @@ public class Initializer {
         try {
             DatabaseAuthenticator.getInstance().authenticate();
         } catch (DatabaseException e) {
-            e.printStackTrace();
-            DatabaseManager.setAccessible(false);
+            throw new RuntimeException(e);
         }
 
         final String token = getInstance().getProperty("bot_token");
