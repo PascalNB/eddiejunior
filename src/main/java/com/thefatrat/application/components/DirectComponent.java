@@ -42,7 +42,7 @@ public abstract class DirectComponent extends Component {
         this.autoRun = autoRun;
         new Thread(() -> {
             destination = getDatabaseManager().getSetting("destination");
-            if (autoRun && Boolean.parseBoolean(getDatabaseManager().getSettingOr("running", "false"))) {
+            if (autoRun && Boolean.parseBoolean(getDatabaseManager().getSettingOr("running", false))) {
                 start(Reply.empty());
             }
             blacklist.addAll(getDatabaseManager().getSettings("blacklist"));
