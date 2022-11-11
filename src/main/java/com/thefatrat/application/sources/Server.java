@@ -16,7 +16,6 @@ import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
-import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 
 import java.lang.reflect.InvocationTargetException;
@@ -118,26 +117,10 @@ public class Server extends Source {
                 this.components.put(instance.getName(), instance);
 
                 if (instance.isAlwaysEnabled()) {
-                    Objects.requireNonNull(getGuild())
-                        .updateCommands()
-                        .addCommands(instance.getCommands().stream()
-                            .map(command ->
-                                Commands.slash(command.getName(), command.getDescription())
-                                    .setDefaultPermissions(permissions)
-                                    .addOptions(command.getOptions())
-                                    .addSubcommands(command.getSubcommandsData())
-                            )
-                            .toArray(CommandData[]::new)
-                        )
-                        .addCommands(instance.getInteractions().stream()
-                            .map(interaction ->
-                                Commands.message(interaction.getName()).setGuildOnly(true)
-                            )
-                            .toArray(CommandData[]::new))
-                        .queue(list -> list.forEach(command ->
-                            commandIds.put(command.getName(), command.getId())
-                        ));
-                } else if (instance.getDatabaseManager().isComponentEnabled()) {
+                    continue;
+                }
+
+                if (instance.getDatabaseManager().isComponentEnabled()) {
                     toggleComponent(instance, true);
                 }
 
