@@ -14,15 +14,15 @@ public class HelpBuilder {
 
     public HelpBuilder(String component, List<Command> commands) {
         this.component = component;
-        commands.forEach(command -> {
+        for (Command command : commands) {
             if (command.getSubcommands().isEmpty()) {
                 this.commands.add(new String[]{command.getName(), command.getDescription()});
-                return;
+                continue;
             }
-            command.getSubcommands().forEach(sub ->
-                this.commands.add(new String[]{command.getName() + " " + sub.getName(), sub.getDescription()})
-            );
-        });
+            for (Command sub : command.getSubcommands()) {
+                this.commands.add(new String[]{command.getName() + " " + sub.getName(), sub.getDescription()});
+            }
+        }
     }
 
     public MessageEmbed build(int color) {

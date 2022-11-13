@@ -14,6 +14,7 @@ import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
@@ -32,7 +33,6 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
-import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 import net.dv8tion.jda.api.requests.RestAction;
@@ -151,8 +151,6 @@ public class Bot extends ListenerAdapter {
 
     @Override
     public void onReady(@NotNull ReadyEvent event) {
-        time = System.currentTimeMillis();
-        jda.getPresence().setActivity(Activity.playing("DM me to contact mods"));
 
         Server server = servers.values().iterator().next();
         List<Command> commands = server.getComponent(Manager.NAME.toLowerCase()).getCommands();
@@ -167,8 +165,11 @@ public class Bot extends ListenerAdapter {
         }
         Objects.requireNonNull(jda)
             .updateCommands()
-            .addCommands(slashCommands.toArray(CommandData[]::new))
+            .addCommands(slashCommands)
             .complete();
+
+        jda.getPresence().setPresence(OnlineStatus.ONLINE, Activity.playing("DM me to contact mods"));
+        time = System.currentTimeMillis();
     }
 
     @Override

@@ -122,7 +122,16 @@ public class Feedback extends DirectComponent {
                             throw new BotWarningException("The domain whitelist is empty");
                         }
                         StringBuilder builder = new StringBuilder();
-                        for (String domain : domains.stream().sorted().toArray(String[]::new)) {
+
+                        String[] sorted = new String[domains.size()];
+                        int i = 0;
+                        for (String s : domains) {
+                            sorted[i] = s;
+                            ++i;
+                        }
+                        Arrays.sort(sorted);
+
+                        for (String domain : sorted) {
                             builder.append("`").append(domain).append("`\n");
                         }
                         builder.deleteCharAt(builder.length() - 1);

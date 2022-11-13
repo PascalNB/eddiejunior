@@ -170,7 +170,12 @@ public class Manager extends Component {
 
     @Override
     public String getStatus() {
-        long count = getServer().getComponents().stream().filter(Component::isEnabled).count() - 1;
+        int count = 0;
+        for (Component component : getServer().getComponents()) {
+            if (component.isEnabled() && !component.isAlwaysEnabled()) {
+                ++count;
+            }
+        }
         return String.format("""
                 Components enabled: %d
                 Uptime: %s

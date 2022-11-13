@@ -21,7 +21,6 @@ import net.dv8tion.jda.api.requests.RestAction;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class Server extends Source {
 
@@ -53,9 +52,9 @@ public class Server extends Source {
     }
 
     public List<Component> getComponents() {
-        return components.values().stream()
-            .sorted((c1, c2) -> String.CASE_INSENSITIVE_ORDER.compare(c1.getName(), c2.getName()))
-            .collect(Collectors.toList());
+        List<Component> list = new ArrayList<>(components.values());
+        list.sort((c1, c2) -> String.CASE_INSENSITIVE_ORDER.compare(c1.getName(), c2.getName()));
+        return list;
     }
 
     public void toggleComponent(Component component, boolean enable) {

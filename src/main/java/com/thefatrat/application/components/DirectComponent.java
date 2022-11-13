@@ -20,7 +20,6 @@ import net.dv8tion.jda.internal.utils.PermissionUtil;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
 
 public abstract class DirectComponent extends Component {
 
@@ -143,12 +142,14 @@ public abstract class DirectComponent extends Component {
                                 "No users are added to the blacklist");
                         }
 
+                        long[] blacklistIds = new long[blacklist.size()];
+                        int i = 0;
+                        for (String s : blacklist) {
+                            blacklistIds[i] = Long.parseLong(s);
+                            ++i;
+                        }
                         command.getGuild()
-                            .retrieveMembersByIds(
-                                blacklist.stream()
-                                    .map(Long::parseLong)
-                                    .collect(Collectors.toList())
-                            )
+                            .retrieveMembersByIds(blacklistIds)
                             .onSuccess(list -> {
                                 String[] strings = fillAbsent(blacklist, list, ISnowflake::getId,
                                     IMentionable::getAsMention).toArray(String[]::new);

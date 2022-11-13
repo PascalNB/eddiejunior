@@ -7,6 +7,8 @@ import com.thefatrat.database.DatabaseAuthenticator;
 import com.thefatrat.database.DatabaseException;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.OnlineStatus;
+import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
@@ -53,6 +55,12 @@ public class Initializer {
         final String token = getInstance().getProperty("bot_token");
         final JDA jda;
 
+        Bot.getInstance().setComponents(
+            Manager.class,
+            ModMail.class,
+            Feedback.class
+        );
+
         jda = JDABuilder.createLight(token,
                 GatewayIntent.DIRECT_MESSAGES,
                 GatewayIntent.GUILD_MEMBERS
@@ -63,11 +71,7 @@ public class Initializer {
             .build();
 
         Bot.getInstance().setJDA(jda);
-        Bot.getInstance().setComponents(
-            Manager.class,
-            ModMail.class,
-            Feedback.class
-        );
+        jda.getPresence().setPresence(OnlineStatus.IDLE, Activity.playing("Starting..."));
 
         try {
             jda.awaitReady();

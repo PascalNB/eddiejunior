@@ -7,7 +7,6 @@ import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
 
 public class Command {
 
@@ -54,14 +53,15 @@ public class Command {
     }
 
     public List<SubcommandData> getSubcommandsData() {
-        return subcommands.stream()
-            .map(command -> {
-                SubcommandData sub = new SubcommandData(command.getName(),
-                    command.getDescription());
-                sub.addOptions(command.getOptions());
-                return sub;
-            })
-            .collect(Collectors.toList());
+        List<SubcommandData> result = new ArrayList<>();
+
+        for (Command command : subcommands) {
+            SubcommandData sub = new SubcommandData(command.getName(), command.getDescription())
+                .addOptions(command.getOptions());
+            result.add(sub);
+        }
+
+        return result;
     }
 
     public BiConsumer<CommandEvent, Reply> getAction() {
