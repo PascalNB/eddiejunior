@@ -4,7 +4,6 @@ import com.thefatrat.database.Database;
 import com.thefatrat.database.DatabaseAction;
 import com.thefatrat.database.Query;
 import com.thefatrat.database.Tuple;
-import org.slf4j.helpers.CheckReturnValue;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,17 +38,14 @@ public class DatabaseManager {
         this.component = component;
     }
 
-    @CheckReturnValue
     public CompletableFuture<Void> removeSetting(String setting) {
         return new DatabaseAction<Void>(REMOVE_SETTING, server, component, setting).execute();
     }
 
-    @CheckReturnValue
     public CompletableFuture<Void> removeSetting(String setting, String value) {
         return new DatabaseAction<Void>(REMOVE_SETTING_VALUE, server, component, setting, value).execute();
     }
 
-    @CheckReturnValue
     public CompletableFuture<Void> setSetting(String setting, String value) {
         return new DatabaseAction<Void>(REMOVE_SETTING, server, component, setting).execute()
             .thenRun(() -> Database.getInstance().connect()
@@ -58,7 +54,6 @@ public class DatabaseManager {
             );
     }
 
-    @CheckReturnValue
     public CompletableFuture<Void> addSetting(String setting, String value) {
         return new DatabaseAction<Void>(ADD_SETTING, server, component, setting, value).execute();
     }
@@ -98,7 +93,6 @@ public class DatabaseManager {
             .join();
     }
 
-    @CheckReturnValue
     public CompletableFuture<Void> toggleComponent(boolean enable) {
         return new DatabaseAction<Void>(TOGGLE_COMPONENT, server, component, enable, enable).execute();
     }
