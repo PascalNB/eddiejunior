@@ -8,12 +8,14 @@ import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import net.dv8tion.jda.internal.utils.PermissionUtil;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -40,13 +42,11 @@ public abstract class DirectComponent extends Component {
     public DirectComponent(Server server, String name, boolean autoRun) {
         super(server, name, false);
         this.autoRun = autoRun;
-        new Thread(() -> {
-            destination = getDatabaseManager().getSetting("destination");
-            if (autoRun && Boolean.parseBoolean(getDatabaseManager().getSettingOr("running", false))) {
-                start(Reply.empty());
-            }
-            blacklist.addAll(getDatabaseManager().getSettings("blacklist"));
-        }).start();
+        destination = getDatabaseManager().getSetting("destination");
+        if (autoRun && Boolean.parseBoolean(getDatabaseManager().getSettingOr("running", false))) {
+            start(Reply.empty());
+        }
+        blacklist.addAll(getDatabaseManager().getSettings("blacklist"));
 
         addCommands(new Command(getName(), "component command")
             .setAction((command, reply) -> getSubCommandHandler().handle(command.toSub(), reply))
@@ -74,6 +74,13 @@ public abstract class DirectComponent extends Component {
                     }
 
                     if (getDestination() == null || !newDestination.getId().equals(getDestination().getId())) {
+
+                        if (!PermissionUtil.checkPermission(newDestination.getPermissionContainer(),
+                            getServer().getGuild().getSelfMember(), Permission.MESSAGE_EMBED_LINKS,
+                            Permission.MESSAGE_SEND, Permission.VIEW_CHANNEL)) {
+                            throw new BotErrorException("I do not have the right permissions for that channel");
+                        }
+
                         setDestination(newDestination.getId());
 
                         reply.sendEmbedFormat(Colors.GRAY, ":gear: Destination set to %s `(%s)`%n",
@@ -101,6 +108,12 @@ public abstract class DirectComponent extends Component {
                         } catch (IllegalStateException e) {
                             throw new BotErrorException("Destination can only be a text channel");
                         }
+                    }
+
+                    if (!PermissionUtil.checkPermission(newDestination.getPermissionContainer(),
+                        getServer().getGuild().getSelfMember(), Permission.MESSAGE_EMBED_LINKS,
+                        Permission.MESSAGE_SEND, Permission.VIEW_CHANNEL)) {
+                        throw new BotErrorException("I do not have the right permissions for that channel");
                     }
 
                     setDestination(newDestination.getId());
@@ -137,9 +150,8 @@ public abstract class DirectComponent extends Component {
                                     .collect(Collectors.toList())
                             )
                             .onSuccess(list -> {
-                                String[] strings = fillAbsent(blacklist, list,
-                                    ISnowflake::getId, IMentionable::getAsMention)
-                                    .toArray(String[]::new);
+                                String[] strings = fillAbsent(blacklist, list, ISnowflake::getId,
+                                    IMentionable::getAsMention).toArray(String[]::new);
                                 reply.sendEmbed(new EmbedBuilder()
                                     .setColor(Colors.WHITE)
                                     .addField("Blacklist",

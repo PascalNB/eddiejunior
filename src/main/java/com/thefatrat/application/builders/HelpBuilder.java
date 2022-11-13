@@ -10,18 +10,17 @@ import java.util.List;
 public class HelpBuilder {
 
     private final String component;
-    private final List<HelpCommand> commands = new ArrayList<>();
+    private final List<String[]> commands = new ArrayList<>();
 
     public HelpBuilder(String component, List<Command> commands) {
         this.component = component;
         commands.forEach(command -> {
             if (command.getSubcommands().isEmpty()) {
-                this.commands.add(new HelpCommand(command.getName(), command.getDescription()));
+                this.commands.add(new String[]{command.getName(), command.getDescription()});
                 return;
             }
             command.getSubcommands().forEach(sub ->
-                this.commands.add(new HelpCommand(
-                    command.getName() + " " + sub.getName(), sub.getDescription()))
+                this.commands.add(new String[]{command.getName() + " " + sub.getName(), sub.getDescription()})
             );
         });
     }
@@ -30,13 +29,10 @@ public class HelpBuilder {
         EmbedBuilder builder = new EmbedBuilder()
             .setColor(color)
             .setFooter(component);
-        for (HelpCommand command : commands) {
-            builder.addField("/" + command.name(), command.description(), false);
+        for (String[] command : commands) {
+            builder.addField("/" + command[0], command[1], false);
         }
         return builder.build();
-    }
-
-    private record HelpCommand(String name, String description) {
     }
 
 }

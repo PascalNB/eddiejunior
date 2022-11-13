@@ -39,10 +39,8 @@ public class Feedback extends DirectComponent {
     public Feedback(Server server) {
         super(server, NAME, false);
 
-        new Thread(() -> {
-            domains.addAll(getDatabaseManager().getSettings("domains"));
-            filetypes.addAll(getDatabaseManager().getSettings("filetypes"));
-        }).start();
+        domains.addAll(getDatabaseManager().getSettings("domains"));
+        filetypes.addAll(getDatabaseManager().getSettings("filetypes"));
 
         addSubcommands(
             new Command("raffle", "pick a random submission")
@@ -70,12 +68,11 @@ public class Feedback extends DirectComponent {
                     Submission submission = submissions.get(0);
                     submissions.remove(0);
 
-                    EmbedBuilder embed = new EmbedBuilder()
+                    MessageEmbed embed = new EmbedBuilder()
                         .setColor(Colors.BLUE)
-                        .setDescription(String.format("%s has won!", submission.user()));
+                        .setDescription(String.format("%s has won!", submission.user())).build();
 
-                    getDestination().sendMessageEmbeds(submission.submission())
-                        .queue(m -> reply.sendEmbed(embed.build()));
+                    getDestination().sendMessageEmbeds(submission.submission()).queue(m -> reply.sendEmbed(embed));
                 }),
 
             new Command("reset", "allow submissions for users again")
@@ -154,8 +151,7 @@ public class Feedback extends DirectComponent {
 
                     boolean add = "add".equals(action);
 
-                    String[] domains = command.getArgs().get("domains").getAsString()
-                        .toLowerCase().split(", ?");
+                    String[] domains = command.getArgs().get("domains").getAsString().toLowerCase().split(", ?");
                     for (String domain : domains) {
                         if (!URLChecker.isDomain(domain)) {
                             throw new BotErrorException(String.format(
@@ -417,8 +413,7 @@ public class Feedback extends DirectComponent {
             .setColor(Colors.LIGHT)
             .setTimestamp(Instant.now())
             .setAuthor(author.getAsTag(), null, author.getEffectiveAvatarUrl())
-            .addField("User", String.format("%s `(%s)`",
-                author.getAsMention(), author.getId()), true)
+            .addField("User", String.format("%s `(%s)`", author.getAsMention(), author.getId()), true)
             .addField("Submission", String.format("<%s>", url), true)
             .setFooter(getName());
         if (!URLChecker.isSafe(url)) {

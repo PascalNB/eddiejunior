@@ -17,14 +17,11 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
+import net.dv8tion.jda.api.requests.RestAction;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class Server extends Source {
 
@@ -65,40 +62,48 @@ public class Server extends Source {
         Guild guild = Objects.requireNonNull(getGuild());
 
         if (enable) {
+
+            List<RestAction<String[]>> actions = new ArrayList<>();
+
             for (Command command : component.getCommands()) {
-                guild.upsertCommand(command.getName(), command.getDescription())
+                actions.add(guild.upsertCommand(command.getName(), command.getDescription())
                     .setDefaultPermissions(permissions)
                     .addOptions(command.getOptions())
                     .addSubcommands(command.getSubcommandsData())
-                    .queue(c ->
-                        commandIds.put(command.getName(), c.getId())
-                    );
+                    .map(c -> new String[]{command.getName(), c.getId()}));
             }
             for (Interaction interaction : component.getInteractions()) {
-                guild.upsertCommand(Commands.message(interaction.getName()).setGuildOnly(true))
-                    .queue(c ->
-                        commandIds.put(interaction.getName(), c.getId())
-                    );
+                actions.add(guild.upsertCommand(Commands.message(interaction.getName()).setGuildOnly(true))
+                    .map(c -> new String[]{interaction.getName(), c.getId()}));
             }
+
+            RestAction.allOf(actions).queue(list -> {
+                for (String[] pair : list) {
+                    commandIds.put(pair[0], pair[1]);
+                }
+            });
+
             component.enable();
         } else {
             component.disable();
-            component.getCommands().stream()
-                .flatMap(command -> {
-                    String id = commandIds.remove(command.getName());
-                    return Stream.ofNullable(id);
-                })
-                .forEach(id ->
-                    guild.deleteCommandById(id).queue()
-                );
-            component.getInteractions().stream()
-                .flatMap(interaction -> {
-                    String id = commandIds.remove(interaction.getName());
-                    return Stream.ofNullable(id);
-                })
-                .forEach(id ->
-                    guild.deleteCommandById(id).queue()
-                );
+
+            List<RestAction<Void>> actions = new ArrayList<>();
+
+            for (Command command : component.getCommands()) {
+                String id = commandIds.remove(command.getName());
+                if (id != null) {
+                    actions.add(guild.deleteCommandById(id));
+                }
+            }
+
+            for (Interaction interaction : component.getInteractions()) {
+                String id = commandIds.remove(interaction.getName());
+                if (id != null) {
+                    actions.add(guild.deleteCommandById(id));
+                }
+            }
+
+            RestAction.allOf(actions).queue();
         }
     }
 
@@ -110,8 +115,7 @@ public class Server extends Source {
     public final void registerComponents(Class<? extends Component>... components) {
         try {
             for (Class<? extends Component> component : components) {
-                Component instance = component.getDeclaredConstructor(Server.class)
-                    .newInstance(this);
+                Component instance = component.getDeclaredConstructor(Server.class).newInstance(this);
                 instance.register();
 
                 this.components.put(instance.getName(), instance);

@@ -29,10 +29,12 @@ import net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionE
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.session.ReadyEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
+import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 import net.dv8tion.jda.api.requests.RestAction;
 import net.dv8tion.jda.api.utils.Result;
 import net.dv8tion.jda.api.utils.data.DataArray;
@@ -45,12 +47,7 @@ import net.dv8tion.jda.internal.utils.Helpers;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public class Bot extends ListenerAdapter {
 
@@ -132,15 +129,24 @@ public class Bot extends ListenerAdapter {
     }
 
     public RestAction<List<Guild>> retrieveMutualGuilds(UserSnowflake user) {
-        List<RestAction<Result<Member>>> actions = jda.getGuilds().stream()
-            .map(guild -> guild.retrieveMemberById(user.getId()).mapToResult())
-            .toList();
+        List<RestAction<Result<Member>>> actions = new ArrayList<>();
+
+        for (Guild guild : jda.getGuilds()) {
+            actions.add(guild.retrieveMemberById(user.getId()).mapToResult());
+        }
+
         return RestAction.allOf(actions)
-            .map(list -> list.stream()
-                .filter(Result::isSuccess)
-                .map(result -> result.get().getGuild())
-                .toList()
-            );
+            .map(list -> {
+                List<Guild> guilds = new ArrayList<>();
+
+                for (Result<Member> result : list) {
+                    if (result.isSuccess()) {
+                        guilds.add(result.get().getGuild());
+                    }
+                }
+
+                return guilds;
+            });
     }
 
     @Override
@@ -151,19 +157,18 @@ public class Bot extends ListenerAdapter {
         Server server = servers.values().iterator().next();
         List<Command> commands = server.getComponent(Manager.NAME.toLowerCase()).getCommands();
 
+        List<SlashCommandData> slashCommands = new ArrayList<>();
+        for (Command command : commands) {
+            SlashCommandData slashCommandData = Commands.slash(command.getName(), command.getDescription())
+                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.USE_APPLICATION_COMMANDS))
+                .addOptions(command.getOptions())
+                .addSubcommands(command.getSubcommandsData());
+            slashCommands.add(slashCommandData);
+        }
         Objects.requireNonNull(jda)
             .updateCommands()
-            .addCommands(commands.stream()
-                .map(command ->
-                    Commands.slash(command.getName(), command.getDescription())
-                        .setDefaultPermissions(DefaultMemberPermissions.enabledFor(
-                            Permission.USE_APPLICATION_COMMANDS))
-                        .addOptions(command.getOptions())
-                        .addSubcommands(command.getSubcommandsData())
-                )
-                .toArray(CommandData[]::new)
-            )
-            .queue();
+            .addCommands(slashCommands.toArray(CommandData[]::new))
+            .complete();
     }
 
     @Override
@@ -189,16 +194,15 @@ public class Bot extends ListenerAdapter {
             return;
         }
         if (!event.isFromGuild()) {
-            event.deferReply().queue(hook -> {
+            InteractionHook hook = event.deferReply().complete();
 
-                Reply reply = Reply.defaultInteractionReply(hook);
+            Reply reply = Reply.defaultInteractionReply(hook);
 
-                try {
-                    direct.clickButton(event.getUser().getId(), event.getComponentId(), event.getMessage(), reply);
-                } catch (BotException e) {
-                    reply.sendEmbedFormat(e.getColor(), e.getMessage());
-                }
-            });
+            try {
+                direct.clickButton(event.getUser().getId(), event.getComponentId(), event.getMessage(), reply);
+            } catch (BotException e) {
+                reply.sendEmbedFormat(e.getColor(), e.getMessage());
+            }
         }
     }
 
@@ -208,17 +212,15 @@ public class Bot extends ListenerAdapter {
             return;
         }
         if (!event.isFromGuild()) {
-            event.deferReply().queue(hook -> {
+            InteractionHook hook = event.deferReply().complete();
+            Reply reply = Reply.defaultInteractionReply(hook);
 
-                Reply reply = Reply.defaultInteractionReply(hook);
-
-                try {
-                    direct.selectMenu(event.getUser().getId(), event.getComponentId(),
-                        event.getInteraction().getValues().get(0), event.getMessage(), reply);
-                } catch (BotException e) {
-                    reply.sendEmbedFormat(e.getColor(), e.getMessage());
-                }
-            });
+            try {
+                direct.selectMenu(event.getUser().getId(), event.getComponentId(),
+                    event.getInteraction().getValues().get(0), event.getMessage(), reply);
+            } catch (BotException e) {
+                reply.sendEmbedFormat(e.getColor(), e.getMessage());
+            }
         }
     }
 
@@ -228,30 +230,29 @@ public class Bot extends ListenerAdapter {
             event.reply("Context interactions not allowed").queue();
             return;
         }
+
         Message message = event.getInteraction().getTarget();
-        if (!message.getAuthor().isBot() ||
-            !event.getJDA().getSelfUser().getId().equals(message.getAuthor().getId())) {
-            event.deferReply(true).queue(hook ->
-                hook.editOriginalEmbeds(new EmbedBuilder()
-                    .setColor(Colors.RED)
-                    .setDescription(BotErrorException.icon + " Message was not send by me")
-                    .build()
-                ).queue()
-            );
+        if (!event.getJDA().getSelfUser().getId().equals(message.getAuthor().getId())) {
+            InteractionHook hook = event.deferReply(true).complete();
+            hook.editOriginalEmbeds(new EmbedBuilder()
+                .setColor(Colors.RED)
+                .setDescription(BotErrorException.icon + " Message was not send by me")
+                .build()
+            ).queue();
             return;
         }
+
         Guild guild = Objects.requireNonNull(event.getGuild());
-        event.deferReply(true).queue(hook -> {
+        InteractionHook hook = event.deferReply(true).complete();
 
-            Reply reply = Reply.defaultInteractionReply(hook);
+        Reply reply = Reply.defaultInteractionReply(hook);
 
-            try {
-                servers.get(guild.getId())
-                    .receiveInteraction(new InteractionEvent(message, event.getInteraction().getName()), reply);
-            } catch (BotException e) {
-                reply.sendEmbedFormat(e.getColor(), e.getMessage());
-            }
-        });
+        try {
+            servers.get(guild.getId())
+                .receiveInteraction(new InteractionEvent(message, event.getInteraction().getName()), reply);
+        } catch (BotException e) {
+            reply.sendEmbedFormat(e.getColor(), e.getMessage());
+        }
     }
 
     @Override
@@ -262,47 +263,23 @@ public class Bot extends ListenerAdapter {
         }
 
         Guild guild = Objects.requireNonNull(event.getGuild());
-        event.deferReply(false).queue(hook ->
-            guild.retrieveMember(event.getUser()).queue(member -> {
+        InteractionHook hook = event.deferReply(false).complete();
 
-                Map<String, OptionMapping> options = event.getOptions().stream()
-                    .collect(Collectors.toMap(OptionMapping::getName, Function.identity()));
+        Map<String, OptionMapping> options = new HashMap<>();
+        for (OptionMapping option : event.getOptions()) {
+            options.put(option.getName(), option);
+        }
 
-                Reply reply = new Reply() {
+        Reply reply = Reply.defaultMultiInteractionReply(hook);
 
-                    private final CountDownLatch latch = new CountDownLatch(1);
-                    private BiConsumer<MessageEmbed, Consumer<Message>> sendEmbed = (e, c) -> {};
-                    private boolean replied = false;
+        CommandEvent commandEvent = new CommandEvent(event.getName(), event.getSubcommandName(),
+            options, guild, event.getGuildChannel());
 
-                    @Override
-                    public void sendEmbed(MessageEmbed embed, Consumer<Message> callback) {
-                        if (replied) {
-                            try {
-                                latch.await();
-                            } catch (InterruptedException e) {
-                                throw new RuntimeException(e);
-                            }
-                            sendEmbed.accept(embed, callback);
-                            return;
-                        }
-                        replied = true;
-                        hook.editOriginalEmbeds(embed).queue(callback.andThen(m -> {
-                            sendEmbed = (e, c) -> m.getChannel().sendMessageEmbeds(e).queue(c);
-                            latch.countDown();
-                        }));
-                    }
-                };
-
-                CommandEvent commandEvent = new CommandEvent(event.getName(), event.getSubcommandName(),
-                    options, guild, event.getGuildChannel());
-
-                try {
-                    servers.get(guild.getId()).receiveCommand(commandEvent, reply);
-                } catch (BotException e) {
-                    reply.sendEmbedFormat(e.getColor(), e.getMessage());
-                }
-            })
-        );
+        try {
+            servers.get(guild.getId()).receiveCommand(commandEvent, reply);
+        } catch (BotException e) {
+            reply.sendEmbedFormat(e.getColor(), e.getMessage());
+        }
     }
 
     @Override

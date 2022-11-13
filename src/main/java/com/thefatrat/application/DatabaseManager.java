@@ -3,11 +3,12 @@ package com.thefatrat.application;
 import com.thefatrat.database.Database;
 import com.thefatrat.database.DatabaseAction;
 import com.thefatrat.database.Query;
+import com.thefatrat.database.Tuple;
 import org.slf4j.helpers.CheckReturnValue;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 public class DatabaseManager {
 
@@ -81,7 +82,12 @@ public class DatabaseManager {
     public List<String> getSettings(String setting) {
         return new DatabaseAction<List<String>>(GET_SETTINGS, server, component, setting)
             .queue(table -> {
-                return table.getTuples().stream().map(t -> t.get(0)).collect(Collectors.toList());
+                List<String> list = new ArrayList<>();
+                for (Tuple t : table.getTuples()) {
+                    String s = t.get(0);
+                    list.add(s);
+                }
+                return list;
             })
             .join();
     }

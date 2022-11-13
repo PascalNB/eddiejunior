@@ -14,11 +14,14 @@ import net.dv8tion.jda.api.entities.ThreadMember;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.Channel;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
+import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.internal.utils.PermissionUtil;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -135,11 +138,11 @@ public class ModMail extends DirectComponent {
                         throw new BotErrorException("Destination channel has not been set");
                     }
                     tickets = 0;
-                    getDestination().getThreadChannels().forEach(threadChannel -> {
+                    for (ThreadChannel threadChannel : getDestination().getThreadChannels()) {
                         if (!threadChannel.isArchived() && threadChannel.getName().matches("^t\\d+-.+$")) {
                             tickets++;
                         }
-                    });
+                    }
                     reply.sendEmbedFormat(Colors.GREEN,
                         ":white_check_mark: Recheck completed, found **%d** open tickets", tickets);
                 })
@@ -215,8 +218,7 @@ public class ModMail extends DirectComponent {
         }
 
         if (!PermissionUtil.checkPermission(getDestination().getPermissionContainer(),
-            getServer().getGuild().retrieveMember(Bot.getInstance().getJDA().getSelfUser()).complete(),
-            Permission.MESSAGE_EMBED_LINKS, Permission.MANAGE_THREADS,
+            getServer().getGuild().getSelfMember(), Permission.MESSAGE_EMBED_LINKS, Permission.MANAGE_THREADS,
             (privateThreads ? Permission.CREATE_PRIVATE_THREADS : Permission.CREATE_PUBLIC_THREADS))) {
             throw new BotErrorException("If you see this error, the server admins messed up");
         }
@@ -227,11 +229,18 @@ public class ModMail extends DirectComponent {
         CompletableFuture<Void> future = getDatabaseManager().setSetting("threadid", String.valueOf(threadId));
         String topic = String.format("t%d-%s", threadId, author.getAsTag());
         topic = topic.substring(0, Math.min(topic.length(), 25));
+
         getDestination()
             .createThreadChannel(topic, privateThreads)
             .queue(thread -> {
-                String urls = String.join("\n",
-                    message.getAttachments().stream().map(Message.Attachment::getUrl).toArray(String[]::new));
+                List<String> list = new ArrayList<>();
+
+                for (Message.Attachment attachment : message.getAttachments()) {
+                    list.add(attachment.getUrl());
+                }
+
+                String urls = String.join("\n", list.toArray(new String[0]));
+
                 EmbedBuilder embed = new EmbedBuilder()
                     .setColor(Colors.LIGHT)
                     .setAuthor(author.getAsTag(), null, author.getEffectiveAvatarUrl())
@@ -239,12 +248,15 @@ public class ModMail extends DirectComponent {
                     .addField("Message", String.format("```%s```", content), false)
                     .setFooter(getName())
                     .setTimestamp(Instant.now());
+
                 if (urls.length() > 1) {
                     embed.addField("Attachments", String.format("```%s```", urls), false);
                 }
+
                 thread.sendMessageEmbeds(embed.build()).queue();
                 thread.addThreadMember(author).queue();
             });
+
         ++tickets;
         future.thenRun(() -> reply.sendEmbedFormat(Colors.GREEN,
                 ":white_check_mark: Message successfully submitted"))

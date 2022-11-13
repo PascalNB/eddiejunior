@@ -3,7 +3,6 @@ package com.thefatrat.application.sources;
 import com.thefatrat.application.Bot;
 import com.thefatrat.application.entities.Reply;
 import com.thefatrat.application.exceptions.BotErrorException;
-import com.thefatrat.application.exceptions.BotException;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.handlers.MessageHandler;
 import com.thefatrat.application.util.Colors;
@@ -13,6 +12,8 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.interactions.components.ActionRow;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.interactions.components.selections.StringSelectMenu;
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
+import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 
 import java.util.HashMap;
 import java.util.List;
@@ -25,42 +26,42 @@ public class Direct extends Source {
 
     @Override
     public void receiveMessage(Message message, Reply reply) {
-        Thread thread = new Thread(() -> {
 
-            String userId = message.getAuthor().getId();
-            List<Guild> mutualGuilds = Bot.getInstance().retrieveMutualGuilds(message.getAuthor()).complete();
+        String userId = message.getAuthor().getId();
+        List<Guild> mutualGuilds = Bot.getInstance().retrieveMutualGuilds(message.getAuthor()).complete();
 
-            if (mutualGuilds.isEmpty() || cache.containsKey(userId)) {
-                return;
-            }
+        if (mutualGuilds.isEmpty() || cache.containsKey(userId)) {
+            return;
+        }
 
-            cache.put(message.getAuthor().getId(), message);
+        cache.put(message.getAuthor().getId(), message);
 
-            if (mutualGuilds.size() == 1) {
-                String serverId = mutualGuilds.get(0).getId();
-                sendComponentMenu(userId, serverId, reply);
-                return;
-            }
+        if (mutualGuilds.size() == 1) {
+            String serverId = mutualGuilds.get(0).getId();
+            sendComponentMenu(userId, serverId, reply);
+            return;
+        }
 
-            StringSelectMenu.Builder menu = StringSelectMenu.create("server")
-                .setMaxValues(1);
+        StringSelectMenu.Builder menu = StringSelectMenu.create("server")
+            .setMaxValues(1);
 
-            for (Guild guild : mutualGuilds) {
-                menu.addOption(guild.getName(), guild.getId());
-            }
+        for (Guild guild : mutualGuilds) {
+            menu.addOption(guild.getName(), guild.getId());
+        }
 
-            message.replyEmbeds(new EmbedBuilder()
-                    .setColor(Colors.BLUE)
-                    .setDescription("What server do you want to send this to?")
-                    .build()
-                )
-                .addActionRow(menu.build())
-                .addActionRow(Button.danger("x", "Cancel"))
-                .queue();
+        MessageCreateData data = new MessageCreateBuilder()
+            .addEmbeds(new EmbedBuilder()
+                .setColor(Colors.BLUE)
+                .setDescription("What server do you want to send this to?")
+                .build()
+            )
+            .setComponents(
+                ActionRow.of(menu.build()),
+                ActionRow.of(Button.danger("x", "Cancel"))
+            )
+            .build();
 
-        });
-        thread.setUncaughtExceptionHandler(new ChannelExceptionHandler(() -> {}, reply));
-        thread.start();
+        message.reply(data).queue();
     }
 
     private void sendComponentMenu(String userId, String serverId, Reply reply) {
@@ -83,18 +84,19 @@ public class Direct extends Source {
             menu.addOption(name, serverId + "-" + key);
         }
 
-        reply.sendEmbed(new EmbedBuilder()
+        MessageCreateData data = new MessageCreateBuilder()
+            .addEmbeds(new EmbedBuilder()
                 .setColor(Colors.BLUE)
                 .setDescription("What service do you want to send this to?")
-                .build(),
-            callback -> callback
-                .editMessageComponents()
-                .setComponents(
-                    ActionRow.of(menu.build()),
-                    ActionRow.of(Button.danger("x", "Cancel")))
-                .queue()
-        );
+                .build()
+            )
+            .setComponents(
+                ActionRow.of(menu.build()),
+                ActionRow.of(Button.danger("x", "Cancel"))
+            )
+            .build();
 
+        reply.sendMessageData(data);
     }
 
     public void selectMenu(String userId, String menuId, String option, Message message, Reply reply) {
@@ -131,18 +133,6 @@ public class Direct extends Source {
             cache.remove(userId);
             reply.sendEmbedFormat(Colors.BLUE, ":stop_sign: Successfully cancelled");
         }
-    }
-
-    private record ChannelExceptionHandler(Runnable action, Reply reply) implements Thread.UncaughtExceptionHandler {
-
-        @Override
-        public void uncaughtException(Thread t, Throwable e) {
-            if (e instanceof BotException error) {
-                action.run();
-                reply.sendEmbedFormat(error.getColor(), error.getMessage());
-            }
-        }
-
     }
 
 }
