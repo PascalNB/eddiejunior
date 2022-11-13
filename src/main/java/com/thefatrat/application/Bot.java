@@ -302,20 +302,21 @@ public class Bot extends ListenerAdapter {
 
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
-        if (event.getAuthor().isBot() || event.getAuthor().isSystem()) {
+        if (event.isFromGuild() || event.getAuthor().isBot() || event.getAuthor().isSystem()) {
             return;
         }
+
         Message message = event.getMessage();
 
         Reply reply = Reply.defaultMessageReply(event.getMessage());
 
         try {
-            if (message.isFromGuild()) {
-                String id = message.getGuild().getId();
-                servers.get(id).receiveMessage(message, reply);
-            } else {
-                direct.receiveMessage(message, reply);
-            }
+//            if (message.isFromGuild()) {
+//                String id = message.getGuild().getId();
+//                servers.get(id).receiveMessage(message, reply);
+//            } else {
+            direct.receiveMessage(message, reply);
+//            }
         } catch (BotException e) {
             reply.sendEmbedFormat(e.getColor(), e.getMessage());
         }

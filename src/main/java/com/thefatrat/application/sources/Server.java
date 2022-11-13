@@ -157,7 +157,6 @@ public class Server extends Source {
 
     @Override
     public void receiveMessage(Message message, Reply reply) throws BotException {
-        getMessageHandler().handle(message, reply);
     }
 
 }
