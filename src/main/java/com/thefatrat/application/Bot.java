@@ -18,7 +18,6 @@ import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
-import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
 import net.dv8tion.jda.api.events.channel.update.ChannelUpdateArchivedEvent;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.events.guild.GuildLeaveEvent;
@@ -37,13 +36,6 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 import net.dv8tion.jda.api.requests.RestAction;
 import net.dv8tion.jda.api.utils.Result;
-import net.dv8tion.jda.api.utils.data.DataArray;
-import net.dv8tion.jda.api.utils.data.DataObject;
-import net.dv8tion.jda.internal.entities.ThreadMemberImpl;
-import net.dv8tion.jda.internal.entities.channel.concrete.ThreadChannelImpl;
-import net.dv8tion.jda.internal.requests.RestActionImpl;
-import net.dv8tion.jda.internal.requests.Route;
-import net.dv8tion.jda.internal.utils.Helpers;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -104,28 +96,6 @@ public class Bot extends ListenerAdapter {
             min - TimeUnit.HOURS.toMinutes(hours),
             sec - TimeUnit.MINUTES.toSeconds(min)
         );
-    }
-
-    public RestAction<List<ThreadMember>> retrieveThreadMembers(ThreadChannel thread) {
-        Route.CompiledRoute route = Route.Channels.LIST_THREAD_MEMBERS.compile(thread.getId());
-
-        return new RestActionImpl<>(jda, route, (response, request) -> {
-            List<RestAction<ThreadMember>> actions = new ArrayList<>();
-            DataArray memberArr = response.getArray();
-
-            for (int i = 0; i < memberArr.length(); ++i) {
-                DataObject json = memberArr.getObject(i);
-
-                actions.add(thread.getGuild().retrieveMemberById(json.getString("user_id"))
-                    .map(member -> new ThreadMemberImpl(member, (ThreadChannelImpl) thread)
-                        .setJoinedTimestamp(Helpers.toTimestamp(json.getString("join_timestamp")))
-                        .setFlags(json.getInt("flags"))
-                    )
-                );
-            }
-
-            return RestAction.allOf(actions).complete();
-        });
     }
 
     public RestAction<List<Guild>> retrieveMutualGuilds(UserSnowflake user) {

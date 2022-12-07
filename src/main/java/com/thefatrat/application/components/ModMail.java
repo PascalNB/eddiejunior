@@ -1,6 +1,5 @@
 package com.thefatrat.application.components;
 
-import com.thefatrat.application.Bot;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.entities.Reply;
 import com.thefatrat.application.exceptions.BotErrorException;
@@ -121,9 +120,6 @@ public class ModMail extends DirectComponent {
             new Command("privatethreads", "determines if the created threads are private or public")
                 .addOption(new OptionData(OptionType.BOOLEAN, "value", "true or false", true))
                 .setAction((command, reply) -> {
-                    if (command.getGuild().getBoostCount() < 2) {
-                        throw new BotErrorException("The server needs 2 boosts to use private threads");
-                    }
                     boolean value = command.getArgs().get("value").getAsBoolean();
                     this.privateThreads = value;
                     getDatabaseManager().setSetting("privatethreads", String.valueOf(value))
@@ -157,7 +153,7 @@ public class ModMail extends DirectComponent {
 
             --tickets;
 
-            Bot.getInstance().retrieveThreadMembers(event.getThread()).queue(members -> {
+            event.getThread().retrieveThreadMembers().queue(members -> {
                 for (ThreadMember member : members) {
                     String id = member.getId();
                     if (!userCount.containsKey(id)) {
