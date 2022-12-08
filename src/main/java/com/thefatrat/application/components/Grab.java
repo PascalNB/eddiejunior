@@ -43,9 +43,11 @@ public class Grab extends Component {
             .addSubcommand(new Command("usericon", "Get a user's icon")
                 .addOption(new OptionData(OptionType.USER, "user", "user", false))
                 .setAction((command, reply) -> {
-                    String url = getEffectiveUser(command).getEffectiveAvatar().getUrl(1024);
+                    User user = getEffectiveUser(command);
+                    String url = user.getEffectiveAvatar().getUrl(1024);
                     reply.sendEmbed(new EmbedBuilder()
                         .setColor(Colors.BLUE)
+                        .setAuthor(user.getAsTag(), null)
                         .setImage(url)
                         .build());
                 })
@@ -87,8 +89,8 @@ public class Grab extends Component {
                     EmbedBuilder embed = new EmbedBuilder()
                         .setColor(profile.getAccentColorRaw())
                         .setThumbnail(user.getEffectiveAvatarUrl())
-                        .addField("Username", user.getName(), true)
-                        .addField("Tag", user.getDiscriminator(), true);
+                        .setTitle(user.getAsTag())
+                        .setDescription(user.getAsMention());
 
                     EnumSet<User.UserFlag> flags = user.getFlags();
 
@@ -111,7 +113,7 @@ public class Grab extends Component {
 
                         if (member.getRoles().size() > 0) {
                             String roles = String.join(", ", member.getRoles().stream()
-                                .map(role -> '`' + role.getName() + '`')
+                                .map(Role::getAsMention)
                                 .toArray(String[]::new));
 
                             embed.addField("Roles", roles, false);
@@ -143,7 +145,8 @@ public class Grab extends Component {
 
                     EmbedBuilder embed = new EmbedBuilder()
                         .setColor(role.getColor())
-                        .addField("Name", role.getName(), true)
+                        .setTitle(role.getName())
+                        .setDescription(role.getAsMention())
                         .addField("Color", '#' + Integer.toHexString(role.getColorRaw()), true)
                         .addField("Permissions",
                             String.join(", ", role.getPermissions().stream()
