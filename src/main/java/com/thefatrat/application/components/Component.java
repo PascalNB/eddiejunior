@@ -123,7 +123,7 @@ public abstract class Component {
         InteractionHandler interactionHandler = getServer().getInteractionHandler();
 
         for (Interaction interaction : interactions) {
-            interactionHandler.addListener(getName(), interaction.getName(), interaction.getAction());
+            interactionHandler.addListener(interaction.getName(), interaction.getAction());
         }
 
         help = new HelpBuilder(getName(), getCommands()).build(Colors.BLUE);
@@ -192,6 +192,9 @@ public abstract class Component {
      * @param interactions the interactions
      */
     protected void addInteractions(Interaction... interactions) {
+        for (Interaction i : interactions) {
+            i.setName(getName() + " " + i.getName());
+        }
         this.interactions.addAll(List.of(interactions));
     }
 

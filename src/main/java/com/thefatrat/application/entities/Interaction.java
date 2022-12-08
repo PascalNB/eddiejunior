@@ -6,13 +6,17 @@ import java.util.function.BiConsumer;
 
 public class Interaction {
 
-    private final String name;
+    private String name;
     private BiConsumer<InteractionEvent, Reply> action = (__, ___) -> {};
 
     public Interaction(String name) {this.name = name;}
 
     public String getName() {
         return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public BiConsumer<InteractionEvent, Reply> getAction() {

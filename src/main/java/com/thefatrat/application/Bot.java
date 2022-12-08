@@ -7,12 +7,9 @@ import com.thefatrat.application.entities.Reply;
 import com.thefatrat.application.events.ArchiveEvent;
 import com.thefatrat.application.events.CommandEvent;
 import com.thefatrat.application.events.InteractionEvent;
-import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotException;
 import com.thefatrat.application.sources.Direct;
 import com.thefatrat.application.sources.Server;
-import com.thefatrat.application.util.Colors;
-import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.Permission;
@@ -203,15 +200,6 @@ public class Bot extends ListenerAdapter {
         }
 
         Message message = event.getInteraction().getTarget();
-        if (!event.getJDA().getSelfUser().getId().equals(message.getAuthor().getId())) {
-            InteractionHook hook = event.deferReply(true).complete();
-            hook.editOriginalEmbeds(new EmbedBuilder()
-                .setColor(Colors.RED)
-                .setDescription(BotErrorException.icon + " Message was not send by me")
-                .build()
-            ).queue();
-            return;
-        }
 
         Guild guild = Objects.requireNonNull(event.getGuild());
         InteractionHook hook = event.deferReply(true).complete();

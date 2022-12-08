@@ -10,8 +10,7 @@ public final class URLChecker {
     private static final String URL_REGEX =
         "^https?://[a-z.\\d\\-A-Z]+\\.[a-z]+(/[\\w&=\\-.~:/?#\\[\\]@!$'()*+,;%]*)?$";
 
-    private static final String DOMAIN_REGEX =
-        "^[a-z\\-\\d]+\\.[a-z]+$";
+    private static final String DOMAIN_REGEX = "^[a-z\\-\\d]+\\.[a-z]+$";
 
     private static final String IS_HTTPS = "^https://.+$";
 

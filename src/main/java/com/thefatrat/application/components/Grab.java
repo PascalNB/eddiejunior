@@ -1,7 +1,9 @@
 package com.thefatrat.application.components;
 
 import com.thefatrat.application.entities.Command;
+import com.thefatrat.application.entities.Interaction;
 import com.thefatrat.application.events.CommandEvent;
+import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
@@ -10,12 +12,16 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.RoleIcon;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.emoji.CustomEmoji;
+import net.dv8tion.jda.api.entities.emoji.Emoji;
+import net.dv8tion.jda.api.entities.sticker.StickerItem;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.utils.ImageProxy;
 import net.dv8tion.jda.api.utils.TimeFormat;
 
 import java.util.EnumSet;
+import java.util.List;
 
 public class Grab extends Component {
 
@@ -112,7 +118,7 @@ public class Grab extends Component {
                         }
 
                         if (member.getRoles().size() > 0) {
-                            String roles = String.join(", ", member.getRoles().stream()
+                            String roles = String.join(" ", member.getRoles().stream()
                                 .map(Role::getAsMention)
                                 .toArray(String[]::new));
 
@@ -190,6 +196,45 @@ public class Grab extends Component {
                     reply.sendEmbed(embed.build());
                 })
             )
+            .addSubcommand(new Command("emoji", "Get an emoji")
+                .addOption(new OptionData(OptionType.STRING, "emoji", "emoji", true))
+                .setAction((command, reply) -> {
+                    String string = command.getArgs().get("emoji").getAsString().trim();
+
+                    if (!string.matches("^<a?:[a-z\\dA-Z_]+:\\d+>$")) {
+                        throw new BotErrorException("Please select a proper emoji");
+                    }
+
+                    CustomEmoji emoji = Emoji.fromFormatted(string).asCustom();
+                    String url = emoji.getImageUrl();
+
+                    reply.sendEmbed(new EmbedBuilder()
+                        .setColor(Colors.BLUE)
+                        .setTitle(emoji.getName())
+                        .setImage(url)
+                        .setFooter(emoji.getId())
+                        .build());
+                })
+            )
+        );
+
+        addInteractions(new Interaction("sticker")
+            .setAction((command, reply) -> {
+                List<StickerItem> stickers = command.getMessage().getStickers();
+
+                if (stickers.size() == 0) {
+                    throw new BotWarningException("No sticker found in the message");
+                }
+
+                StickerItem sticker = stickers.get(0);
+
+                reply.sendEmbed(new EmbedBuilder()
+                    .setColor(Colors.BLUE)
+                    .setTitle(sticker.getName())
+                    .setImage(sticker.getIcon().getUrl(512))
+                    .setFooter(sticker.getId())
+                    .build());
+            })
         );
 
     }

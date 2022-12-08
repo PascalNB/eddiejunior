@@ -4,6 +4,7 @@ import com.thefatrat.application.Bot;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.entities.Interaction;
 import com.thefatrat.application.entities.Reply;
+import com.thefatrat.application.events.InteractionEvent;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Server;
@@ -321,6 +322,8 @@ public class Feedback extends DirectComponent {
         addInteractions(
             new Interaction("mark read")
                 .setAction((event, reply) -> {
+                    interactionCheck(event);
+
                     MessageEmbed embed = event.getMessage().getEmbeds().get(0);
                     if (embed.getColorRaw() != Colors.LIGHT) {
                         throw new BotErrorException("Could not perform action");
@@ -336,6 +339,8 @@ public class Feedback extends DirectComponent {
 
             new Interaction("mark unread")
                 .setAction((event, reply) -> {
+                    interactionCheck(event);
+
                     MessageEmbed embed = event.getMessage().getEmbeds().get(0);
                     if (embed.getColorRaw() != Colors.DARK) {
                         throw new BotErrorException("Could not perform action");
@@ -349,6 +354,21 @@ public class Feedback extends DirectComponent {
                         event.getAction());
                 })
         );
+    }
+
+    private void interactionCheck(InteractionEvent event) {
+        if (!Bot.getInstance().getJDA().getSelfUser().getId()
+            .equals(event.getMessage().getAuthor().getId())) {
+            throw new BotWarningException("Message was not send by me");
+        }
+        List<MessageEmbed> embeds = event.getMessage().getEmbeds();
+        if (embeds.isEmpty()) {
+            throw new BotErrorException("Message does not contain embeds");
+        }
+        MessageEmbed embed = embeds.get(0);
+        if (embed.getFooter() == null || !getName().equals(embed.getFooter().getText())) {
+            throw new BotErrorException("Could not perform action");
+        }
     }
 
     @Override
