@@ -244,7 +244,7 @@ public class Bot extends ListenerAdapter {
         Reply reply = Reply.defaultMultiInteractionReply(hook);
 
         CommandEvent commandEvent = new CommandEvent(event.getName(), event.getSubcommandName(),
-            options, guild, event.getGuildChannel());
+            options, guild, event.getGuildChannel(), event.getUser());
 
         try {
             servers.get(guild.getId()).receiveCommand(commandEvent, reply);

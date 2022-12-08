@@ -181,6 +181,7 @@ public abstract class Component {
                     subHandler.addListener(s.getName(), s.getAction());
                     c.addSubcommand(s);
                 }
+                break;
             }
         }
     }
@@ -206,17 +207,6 @@ public abstract class Component {
      */
     public abstract String getStatus();
 
-    /**
-     * If
-     *
-     * @param expected
-     * @param actual
-     * @param keygen
-     * @param valgen
-     * @param <T>
-     * @param <V>
-     * @return
-     */
     public static <T, V> List<T> fillAbsent(Collection<T> expected, Collection<V> actual,
         Function<V, T> keygen, Function<V, T> valgen) {
         Map<T, T> found = new HashMap<>();

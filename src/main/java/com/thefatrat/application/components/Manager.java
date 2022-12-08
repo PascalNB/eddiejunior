@@ -2,6 +2,7 @@ package com.thefatrat.application.components;
 
 import com.thefatrat.application.Bot;
 import com.thefatrat.application.entities.Command;
+import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
 import com.thefatrat.database.Database;
@@ -77,6 +78,9 @@ public class Manager extends Component {
                         componentNotFound(componentString);
                         return;
                     }
+                    if (component.isAlwaysEnabled()) {
+                        throw new BotWarningException("This component is always enabled");
+                    }
                     component.getDatabaseManager().toggleComponent(true)
                         .thenRun(() -> {
                             getServer().toggleComponent(component, true);
@@ -95,6 +99,10 @@ public class Manager extends Component {
                     if (component == null) {
                         componentNotFound(componentString);
                         return;
+                    }
+
+                    if (component.isAlwaysEnabled()) {
+                        throw new BotWarningException("This component is always enabled");
                     }
 
                     if (component instanceof DirectComponent direct) {

@@ -1,6 +1,7 @@
 package com.thefatrat.application;
 
 import com.thefatrat.application.components.Feedback;
+import com.thefatrat.application.components.Grab;
 import com.thefatrat.application.components.Manager;
 import com.thefatrat.application.components.ModMail;
 import com.thefatrat.database.DatabaseAuthenticator;
@@ -58,7 +59,8 @@ public class Initializer {
         Bot.getInstance().setComponents(
             Manager.class,
             ModMail.class,
-            Feedback.class
+            Feedback.class,
+            Grab.class
         );
 
         jda = JDABuilder.createLight(token,
