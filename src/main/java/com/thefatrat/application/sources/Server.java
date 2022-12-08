@@ -1,6 +1,7 @@
 package com.thefatrat.application.sources;
 
 import com.thefatrat.application.Bot;
+import com.thefatrat.application.CommandRegister;
 import com.thefatrat.application.components.Component;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.entities.Interaction;
@@ -16,16 +17,19 @@ import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
+import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.requests.RestAction;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class Server extends Source {
 
     private final String id;
-    private final Map<String, String> commandIds = new HashMap<>();
     private final CommandHandler commandHandler = new CommandHandler();
     private final InteractionHandler interactionHandler = new InteractionHandler();
     private final MessageHandler directHandler = new MessageHandler();
@@ -35,8 +39,17 @@ public class Server extends Source {
         Permission.USE_APPLICATION_COMMANDS
     );
 
+    public static Server dummy() {
+        return new Server();
+    }
+
+    private Server() {
+        id = "";
+    }
+
     public Server(String id) {
         this.id = id;
+        CommandRegister.getInstance().retrieveServerCommands(id);
     }
 
     public Guild getGuild() {
@@ -58,51 +71,38 @@ public class Server extends Source {
     }
 
     public void toggleComponent(Component component, boolean enable) {
-        Guild guild = Objects.requireNonNull(getGuild());
-
         if (enable) {
 
-            List<RestAction<String[]>> actions = new ArrayList<>();
+            List<CommandData> commandData = new ArrayList<>();
 
             for (Command command : component.getCommands()) {
-                actions.add(guild.upsertCommand(command.getName(), command.getDescription())
+                commandData.add(Commands.slash(command.getName(), command.getDescription())
                     .setDefaultPermissions(permissions)
                     .addOptions(command.getOptions())
-                    .addSubcommands(command.getSubcommandsData())
-                    .map(c -> new String[]{command.getName(), c.getId()}));
+                    .addSubcommands(command.getSubcommandsData()));
             }
             for (Interaction interaction : component.getInteractions()) {
-                actions.add(guild.upsertCommand(Commands.message(interaction.getName()).setGuildOnly(true))
-                    .map(c -> new String[]{interaction.getName(), c.getId()}));
+                commandData.add(Commands.message(interaction.getName()).setGuildOnly(true));
             }
 
-            RestAction.allOf(actions).queue(list -> {
-                for (String[] pair : list) {
-                    commandIds.put(pair[0], pair[1]);
-                }
-            });
+            CommandRegister.getInstance().registerServerCommands(id, commandData).queue();
 
             component.enable();
         } else {
+
             component.disable();
 
             List<RestAction<Void>> actions = new ArrayList<>();
 
             for (Command command : component.getCommands()) {
-                String id = commandIds.remove(command.getName());
-                if (id != null) {
-                    actions.add(guild.deleteCommandById(id));
-                }
+                actions.add(CommandRegister.getInstance().removeServerCommand(id, command.getName()));
             }
 
             for (Interaction interaction : component.getInteractions()) {
-                String id = commandIds.remove(interaction.getName());
-                if (id != null) {
-                    actions.add(guild.deleteCommandById(id));
-                }
+                actions.add(CommandRegister.getInstance().removeServerCommand(id, interaction.getName()));
             }
 
-            RestAction.allOf(actions).queue();
+            RestAction.allOf(actions).complete();
         }
     }
 

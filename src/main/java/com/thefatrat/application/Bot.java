@@ -63,6 +63,7 @@ public class Bot extends ListenerAdapter {
 
     public void setJDA(JDA jda) {
         this.jda = jda;
+        CommandRegister.getInstance().setJDA(jda);
     }
 
     public JDA getJDA() {
@@ -121,8 +122,10 @@ public class Bot extends ListenerAdapter {
 
     @Override
     public void onReady(@NotNull ReadyEvent event) {
+        CommandRegister.getInstance().retrieveDefaultCommands();
 
-        Server server = servers.values().iterator().next();
+        Server server = Server.dummy();
+        server.registerComponents(components);
         List<Command> commands = server.getComponent(Manager.NAME.toLowerCase()).getCommands();
 
         List<SlashCommandData> slashCommands = new ArrayList<>();
@@ -133,10 +136,7 @@ public class Bot extends ListenerAdapter {
                 .addSubcommands(command.getSubcommandsData());
             slashCommands.add(slashCommandData);
         }
-        Objects.requireNonNull(jda)
-            .updateCommands()
-            .addCommands(slashCommands)
-            .complete();
+        CommandRegister.getInstance().registerDefaultCommands(slashCommands).complete();
 
         jda.getPresence().setPresence(OnlineStatus.ONLINE, Activity.playing("DM me to contact mods"));
         time = System.currentTimeMillis();
