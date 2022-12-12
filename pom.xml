@@ -67,17 +67,17 @@
             </exclusions>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/net.dv8tion/JDA -->
-        <!--        <dependency>-->
-        <!--            <groupId>net.dv8tion</groupId>-->
-        <!--            <artifactId>JDA</artifactId>-->
-        <!--            <version>5.0.0-beta.1</version>-->
-        <!--        </dependency>-->
+        <!--        https://mvnrepository.com/artifact/net.dv8tion/JDA-->
         <dependency>
-            <groupId>com.github.DV8FromTheWorld</groupId>
+            <groupId>net.dv8tion</groupId>
             <artifactId>JDA</artifactId>
-            <version>936d85f9be32b126532210129c2cec120085117e</version>
+            <version>5.0.0-beta.2</version>
         </dependency>
+        <!--        <dependency>-->
+        <!--            <groupId>com.github.DV8FromTheWorld</groupId>-->
+        <!--            <artifactId>JDA</artifactId>-->
+        <!--            <version>936d85f9be32b126532210129c2cec120085117e</version>-->
+        <!--        </dependency>-->
 
         <!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind -->
         <dependency>

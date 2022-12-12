@@ -1,9 +1,6 @@
 package com.thefatrat.application;
 
-import com.thefatrat.application.components.Feedback;
-import com.thefatrat.application.components.Grab;
-import com.thefatrat.application.components.Manager;
-import com.thefatrat.application.components.ModMail;
+import com.thefatrat.application.components.*;
 import com.thefatrat.database.DatabaseAuthenticator;
 import com.thefatrat.database.DatabaseException;
 import net.dv8tion.jda.api.JDA;
@@ -60,7 +57,8 @@ public class Initializer {
             Manager.class,
             ModMail.class,
             Feedback.class,
-            Grab.class
+            Grab.class,
+            Session.class
         );
 
         jda = JDABuilder.createLight(token,
