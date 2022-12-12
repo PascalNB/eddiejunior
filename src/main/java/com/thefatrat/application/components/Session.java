@@ -22,6 +22,8 @@ public class Session extends Component {
 
     public static final String NAME = "Session";
 
+    private static final String ERROR_SESSION_NONEXISTENT = String.format("The given session does not exist, " +
+        "use `/%s list` for the list of available sessions", NAME.toLowerCase());
     private static final Permission[] PERMISSIONS = new Permission[]{
         Permission.VIEW_CHANNEL,
         Permission.MANAGE_PERMISSIONS};
@@ -91,7 +93,7 @@ public class Session extends Component {
                 .setAction((command, reply) -> {
                     String string = command.getArgs().get("session").getAsString();
                     if (!sessions.containsKey(string)) {
-                        throw new BotErrorException("The given session does not exist");
+                        throw new BotErrorException(ERROR_SESSION_NONEXISTENT);
                     }
                     IMentionable channel = command.getArgs().get("channel").getAsChannel();
                     Set<String> session = sessions.get(string);
@@ -103,8 +105,7 @@ public class Session extends Component {
                     getDatabaseManager().removeSetting("session_" + string, channel.getId()).join();
                     if (session.isEmpty()) {
                         sessions.remove(string);
-                        getDatabaseManager().removeSetting("session_" + string).join();
-                        getDatabaseManager().removeSetting("session", string).join();
+                        removeSessionFromDatabase(string);
                     }
                     reply.sendEmbedFormat(Colors.GREEN, ":white_check_mark: %s removed from session `%s`",
                         channel.getAsMention(), string);
@@ -117,7 +118,7 @@ public class Session extends Component {
                 .setAction((command, reply) -> {
                     String string = command.getArgs().get("session").getAsString();
                     if (!sessions.containsKey(string)) {
-                        throw new BotErrorException("The given session does not exist");
+                        throw new BotErrorException(ERROR_SESSION_NONEXISTENT);
                     }
 
                     Set<String> session = sessions.get(string);
@@ -134,6 +135,7 @@ public class Session extends Component {
 
                     if (channels.isEmpty()) {
                         sessions.remove(string);
+                        removeSessionFromDatabase(string);
                         throw new BotWarningException(
                             "The given session did not have existing channels and has been removed");
                     }
@@ -156,7 +158,7 @@ public class Session extends Component {
                 .setAction((command, reply) -> {
                     String string = command.getArgs().get("session").getAsString();
                     if (!sessions.containsKey(string)) {
-                        throw new BotErrorException("The given session does not exist");
+                        throw new BotErrorException(ERROR_SESSION_NONEXISTENT);
                     }
 
                     Set<String> session = sessions.get(string);
@@ -176,6 +178,7 @@ public class Session extends Component {
 
                     if (actions.isEmpty()) {
                         sessions.remove(string);
+                        removeSessionFromDatabase(string);
                         throw new BotWarningException(
                             "The given session did not have existing channels and has been removed");
                     }
@@ -222,6 +225,7 @@ public class Session extends Component {
 
                     if (actions.isEmpty()) {
                         sessions.remove(string);
+                        removeSessionFromDatabase(string);
                         throw new BotWarningException(
                             "The given session did not have existing channels and has been removed");
                     }
@@ -256,6 +260,11 @@ public class Session extends Component {
                 ));
             }
         }
+    }
+
+    private void removeSessionFromDatabase(String session) {
+        getDatabaseManager().removeSetting("session_" + session).join();
+        getDatabaseManager().removeSetting("session", session).join();
     }
 
     @Override
