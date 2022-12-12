@@ -149,7 +149,7 @@ public class Session extends Component {
                     );
                 })
             )
-            .addSubcommand(new Command("start", "start a session, opens channels of that session")
+            .addSubcommand(new Command("open", "opens channels of a session")
                 .addOption(new OptionData(OptionType.STRING, "session", "session name", true)
                     .setRequiredLength(3, 20)
                 )
@@ -195,7 +195,7 @@ public class Session extends Component {
                         string, joined);
                 })
             )
-            .addSubcommand(new Command("stop", "stop a session, close channels of that session")
+            .addSubcommand(new Command("close", "closes channels of a session")
                 .addOption(new OptionData(OptionType.STRING, "session", "session name", true)
                     .setRequiredLength(3, 20)
                 )
