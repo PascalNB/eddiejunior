@@ -82,7 +82,7 @@ public abstract class DirectComponent extends Component {
 
                         setDestination(newDestination.getId());
 
-                        reply.sendEmbedFormat(Colors.GRAY, ":gear: Destination set to %s `(%s)`%n",
+                        reply.send(Colors.GRAY, ":gear: Destination set to %s `(%s)`%n",
                             getDestination().getAsMention(), getDestination().getId()
                         );
                     }
@@ -117,7 +117,7 @@ public abstract class DirectComponent extends Component {
 
                     setDestination(newDestination.getId());
 
-                    reply.sendEmbedFormat(Colors.GRAY, ":gear: Destination set to %s `(%s)`%n",
+                    reply.send(Colors.GRAY, ":gear: Destination set to %s `(%s)`%n",
                         getDestination().getAsMention(), getDestination().getId());
                 })
             )
@@ -153,7 +153,7 @@ public abstract class DirectComponent extends Component {
                             .onSuccess(list -> {
                                 String[] strings = fillAbsent(blacklist, list, ISnowflake::getId,
                                     IMentionable::getAsMention).toArray(String[]::new);
-                                reply.sendEmbed(new EmbedBuilder()
+                                reply.send(new EmbedBuilder()
                                     .setColor(Colors.WHITE)
                                     .addField("Blacklist",
                                         String.join("\n", strings), false)
@@ -170,9 +170,8 @@ public abstract class DirectComponent extends Component {
                         blacklist.clear();
                         getDatabaseManager().removeSetting("blacklist")
                             .thenRun(() ->
-                                reply.sendEmbedFormat(Colors.GREEN, ":white_check_mark: Blacklist cleared")
-                            )
-                            .join();
+                                reply.send(Colors.GREEN, ":white_check_mark: Blacklist cleared")
+                            );
                         return;
                     }
 
@@ -208,7 +207,7 @@ public abstract class DirectComponent extends Component {
             }
 
             blacklist.add(userId);
-            getDatabaseManager().addSetting("blacklist", userId).join();
+            getDatabaseManager().addSetting("blacklist", userId);
         } else {
             if (!blacklist.contains(userId)) {
                 throw new BotWarningException(String.format("%s is not on the blacklist",
@@ -216,10 +215,10 @@ public abstract class DirectComponent extends Component {
             }
 
             blacklist.remove(userId);
-            getDatabaseManager().removeSetting("blacklist", userId).join();
+            getDatabaseManager().removeSetting("blacklist", userId);
         }
 
-        reply.sendEmbedFormat(Colors.GREEN, ":white_check_mark: %s %s the blacklist",
+        reply.send(Colors.GREEN, ":white_check_mark: %s %s the blacklist",
             user.getAsMention(), msg);
     }
 
@@ -238,7 +237,7 @@ public abstract class DirectComponent extends Component {
         getServer().getDirectHandler().removeListener(getTitle());
         this.running = false;
         if (autoRun) {
-            getDatabaseManager().setSetting("running", "false").join();
+            getDatabaseManager().setSetting("running", "false");
         }
     }
 
@@ -246,13 +245,13 @@ public abstract class DirectComponent extends Component {
         this.running = true;
         getServer().getDirectHandler().addListener(getTitle(), receiver);
         if (autoRun) {
-            getDatabaseManager().setSetting("running", "true").join();
+            getDatabaseManager().setSetting("running", "true");
         }
     }
 
     public void setDestination(String destination) {
         this.destination = destination;
-        getDatabaseManager().setSetting("destination", destination).join();
+        getDatabaseManager().setSetting("destination", destination);
     }
 
     public TextChannel getDestination() {

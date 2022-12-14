@@ -32,41 +32,37 @@ public class Manager extends Component {
                             return;
                         }
 
-                        reply.sendEmbed(component.getHelp());
+                        reply.send(component.getHelp());
                     } else {
-                        reply.sendEmbed(getHelp());
+                        reply.send(getHelp());
                     }
                 }),
 
             new Command("ping", "check the RTT of the connection in milliseconds")
-                .setAction((command, reply) -> {
-                    final long start = System.currentTimeMillis();
-                    reply.sendEmbedFormat(message -> {
-                            long time = System.currentTimeMillis() - start;
-                            message.editMessageEmbeds(new EmbedBuilder()
-                                .setColor(Colors.BLUE)
-                                .addField("Connection", time + " ms", true)
+                .setAction((command, reply) -> reply.send(
+                    new EmbedBuilder()
+                        .setColor(Colors.BLUE)
+                        .addField("WebSocket", Bot.getInstance().getJDA().getGatewayPing() + " ms", true)
+                        .build(),
+                    message -> {
+                        MessageEmbed embed = message.getEmbeds().get(0);
+                        try {
+                            long start2 = System.currentTimeMillis();
+                            Database database = Database.getInstance().connect();
+                            long time2 = System.currentTimeMillis() - start2;
+                            message.editMessageEmbeds(new EmbedBuilder(embed)
+                                .addField("Database", time2 + " ms", true)
                                 .build()
-                            ).queue(message2 -> {
-                                long start2 = System.currentTimeMillis();
-                                MessageEmbed embed = message2.getEmbeds().get(0);
-                                try {
-                                    Database.getInstance().connect().close();
-                                    long time2 = System.currentTimeMillis() - start2;
-                                    message2.editMessageEmbeds(new EmbedBuilder(embed)
-                                        .addField("Database", time2 + " ms", true)
-                                        .build()
-                                    ).queue();
-                                } catch (DatabaseException e) {
-                                    message2.editMessageEmbeds(new EmbedBuilder(embed)
-                                        .addField("Database", ":x:", true)
-                                        .build()
-                                    ).queue();
-                                }
-                            });
-                        }, Colors.GRAY, "..."
-                    );
-                }),
+                            ).queue();
+                            database.close();
+                        } catch (DatabaseException e) {
+                            message.editMessageEmbeds(new EmbedBuilder(embed)
+                                .addField("Database", ":x:", true)
+                                .build()
+                            ).queue();
+                        }
+                    }
+                )),
 
             new Command("enable", "enable a specific component by name")
                 .addOption(new OptionData(OptionType.STRING, "component", "component name", true))
@@ -84,10 +80,9 @@ public class Manager extends Component {
                     component.getDatabaseManager().toggleComponent(true)
                         .thenRun(() -> {
                             getServer().toggleComponent(component, true);
-                            reply.sendEmbedFormat(Colors.BLUE,
+                            reply.send(Colors.BLUE,
                                 ":ballot_box_with_check: Component `%s` enabled", componentString);
-                        })
-                        .join();
+                        });
                 }),
 
             new Command("disable", "disable a specific component by name")
@@ -115,10 +110,9 @@ public class Manager extends Component {
                         .thenRun(() -> {
                             getServer().toggleComponent(component, false);
 
-                            reply.sendEmbedFormat(Colors.BLUE, ":no_entry: Component `%s` disabled",
+                            reply.send(Colors.BLUE, ":no_entry: Component `%s` disabled",
                                 componentString);
-                        })
-                        .join();
+                        });
                 }),
 
             new Command("components", "shows a list of all the components")
@@ -140,7 +134,7 @@ public class Manager extends Component {
                         builder.append("\n");
                     }
                     builder.deleteCharAt(builder.length() - 1);
-                    reply.sendEmbed(new EmbedBuilder()
+                    reply.send(new EmbedBuilder()
                         .setColor(Colors.WHITE)
                         .addField("Components", builder.toString(), false)
                         .build()
@@ -171,7 +165,7 @@ public class Manager extends Component {
                         .setFooter(component.getName())
                         .build();
 
-                    reply.sendEmbed(embed);
+                    reply.send(embed);
                 })
         );
     }

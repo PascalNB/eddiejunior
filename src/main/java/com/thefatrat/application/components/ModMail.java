@@ -74,9 +74,8 @@ public class ModMail extends DirectComponent {
                     long timeout = command.getArgs().get("timeout").getAsInt();
                     this.timeout = timeout;
                     getDatabaseManager().setSetting("timeout", String.valueOf(timeout))
-                        .thenRun(() -> reply.sendEmbedFormat(Colors.GREEN,
-                            ":white_check_mark: Timout set to %d seconds", timeout))
-                        .join();
+                        .thenRun(() -> reply.send(Colors.GREEN,
+                            ":white_check_mark: Timout set to %d seconds", timeout));
                 }),
 
             new Command("archive", "archives the current ticket thread")
@@ -85,7 +84,7 @@ public class ModMail extends DirectComponent {
                         && !command.getChannel().getType().equals(ChannelType.GUILD_PUBLIC_THREAD)) {
                         throw new BotErrorException("Cannot archive this channel");
                     }
-                    reply.sendEmbedFormat(callback ->
+                    reply.send(callback ->
                         command.getChannel().asThreadChannel().getManager().setLocked(true).queue(success ->
                             command.getChannel().asThreadChannel().getManager().setArchived(true).queue()
                         ), Colors.GREEN, ":white_check_mark: Current thread archived");
@@ -99,9 +98,8 @@ public class ModMail extends DirectComponent {
                     int max = command.getArgs().get("max").getAsInt();
                     this.maxTicketsPerUser = max;
                     getDatabaseManager().setSetting("maxticketsperuser", String.valueOf(max))
-                        .thenRun(() -> reply.sendEmbedFormat(Colors.GREEN,
-                            ":white_check_mark: Maximum set to %d tickets", max))
-                        .join();
+                        .thenRun(() -> reply.send(Colors.GREEN,
+                            ":white_check_mark: Maximum set to %d tickets", max));
                 }),
 
             new Command("maxtickets", "sets the maximum number of overall tickets")
@@ -112,9 +110,8 @@ public class ModMail extends DirectComponent {
                     int max = command.getArgs().get("max").getAsInt();
                     this.maxTickets = max;
                     getDatabaseManager().setSetting("maxtickets", String.valueOf(max))
-                        .thenRun(() -> reply.sendEmbedFormat(Colors.GREEN,
-                            ":white_check_mark: Maximum set to %d tickets", max))
-                        .join();
+                        .thenRun(() -> reply.send(Colors.GREEN,
+                            ":white_check_mark: Maximum set to %d tickets", max));
                 }),
 
             new Command("privatethreads", "determines if the created threads are private or public")
@@ -123,9 +120,8 @@ public class ModMail extends DirectComponent {
                     boolean value = command.getArgs().get("value").getAsBoolean();
                     this.privateThreads = value;
                     getDatabaseManager().setSetting("privatethreads", String.valueOf(value))
-                        .thenRun(() -> reply.sendEmbedFormat(Colors.GREEN,
-                            ":white_check_mark: Thread creation set to %s", value ? "private" : "public"))
-                        .join();
+                        .thenRun(() -> reply.send(Colors.GREEN,
+                            ":white_check_mark: Thread creation set to %s", value ? "private" : "public"));
                 }),
 
             new Command("recheck", "rechecks the amount of open tickets")
@@ -139,7 +135,7 @@ public class ModMail extends DirectComponent {
                             tickets++;
                         }
                     }
-                    reply.sendEmbedFormat(Colors.GREEN,
+                    reply.send(Colors.GREEN,
                         ":white_check_mark: Recheck completed, found **%d** open tickets", tickets);
                 })
         );
@@ -254,14 +250,13 @@ public class ModMail extends DirectComponent {
             });
 
         ++tickets;
-        future.thenRun(() -> reply.sendEmbedFormat(Colors.GREEN,
-                ":white_check_mark: Message successfully submitted"))
-            .join();
+        future.thenRun(() -> reply.send(Colors.GREEN,
+            ":white_check_mark: Message successfully submitted"));
     }
 
     protected void stop(Reply reply) {
         super.stop(reply);
-        reply.sendEmbedFormat(Colors.GREEN,
+        reply.send(Colors.GREEN,
             ":stop_sign: Mod mail service stopped",
             getDestination().getId()
         );
@@ -269,7 +264,7 @@ public class ModMail extends DirectComponent {
 
     protected void start(Reply reply) {
         super.start(reply);
-        reply.sendEmbedFormat(Colors.GREEN,
+        reply.send(Colors.GREEN,
             ":white_check_mark: Mod mail service started",
             getDestination().getId()
         );

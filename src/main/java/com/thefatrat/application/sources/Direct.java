@@ -96,7 +96,7 @@ public class Direct extends Source {
             )
             .build();
 
-        reply.sendMessageData(data);
+        reply.send(data);
     }
 
     public void selectMenu(String userId, String menuId, String option, Message message, Reply reply) {
@@ -131,7 +131,7 @@ public class Direct extends Source {
         if ("x".equals(buttonId)) {
             message.delete().queue();
             cache.remove(userId);
-            reply.sendEmbedFormat(Colors.BLUE, ":stop_sign: Successfully cancelled");
+            reply.send(Colors.BLUE, ":stop_sign: Successfully cancelled");
         }
     }
 

@@ -1,12 +1,14 @@
 package com.thefatrat.database;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class DatabaseAction<T> {
 
+    private static final Executor EXECUTOR = command -> new Thread(command).start();
     private final Query query;
     private final Object[] args;
 
@@ -29,7 +31,7 @@ public class DatabaseAction<T> {
                 database.close();
             }
             return reference.get();
-        });
+        }, EXECUTOR);
     }
 
     public CompletableFuture<Void> queue(Consumer<Table> callback) {
@@ -40,7 +42,7 @@ public class DatabaseAction<T> {
             } finally {
                 database.close();
             }
-        });
+        }, EXECUTOR);
     }
 
     public CompletableFuture<Void> execute() {
@@ -51,7 +53,7 @@ public class DatabaseAction<T> {
             } finally {
                 database.close();
             }
-        });
+        }, EXECUTOR);
 
     }
 

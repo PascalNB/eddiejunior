@@ -4,6 +4,7 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.interactions.InteractionHook;
+import net.dv8tion.jda.api.interactions.callbacks.IReplyCallback;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import net.dv8tion.jda.api.utils.messages.MessageEditData;
 
@@ -11,39 +12,39 @@ import java.util.function.Consumer;
 
 public interface Reply {
 
-    void sendEmbed(MessageEmbed embed, Consumer<Message> callback);
+    void send(MessageEmbed embed, Consumer<Message> callback);
 
-    void sendMessageData(MessageCreateData data, Consumer<Message> callback);
+    void send(MessageCreateData data, Consumer<Message> callback);
 
-    default void sendEmbed(MessageEmbed embed) {
-        sendEmbed(embed, __ -> {});
+    default void send(MessageEmbed embed) {
+        send(embed, __ -> {});
     }
 
-    default void sendMessageData(MessageCreateData data) {
-        sendMessageData(data, __ -> {});
+    default void send(MessageCreateData data) {
+        send(data, __ -> {});
     }
 
-    default void sendEmbedFormat(Consumer<Message> callback, int color, String content,
+    default void send(Consumer<Message> callback, int color, String content,
         Object... variables) {
-        sendEmbed(new EmbedBuilder()
+        send(new EmbedBuilder()
             .setColor(color)
             .setDescription(String.format(content, variables))
             .build(), callback);
     }
 
-    default void sendEmbedFormat(int color, String content, Object... variables) {
-        sendEmbedFormat(__ -> {}, color, content, variables);
+    default void send(int color, String content, Object... variables) {
+        send(__ -> {}, color, content, variables);
     }
 
     static Reply defaultMessageReply(Message message) {
         return new Reply() {
             @Override
-            public void sendEmbed(MessageEmbed embed, Consumer<Message> callback) {
+            public void send(MessageEmbed embed, Consumer<Message> callback) {
                 message.replyEmbeds(embed).queue(callback);
             }
 
             @Override
-            public void sendMessageData(MessageCreateData data, Consumer<Message> callback) {
+            public void send(MessageCreateData data, Consumer<Message> callback) {
                 message.reply(data).queue(callback);
             }
         };
@@ -52,12 +53,12 @@ public interface Reply {
     static Reply defaultInteractionReply(InteractionHook hook) {
         return new Reply() {
             @Override
-            public void sendEmbed(MessageEmbed embed, Consumer<Message> callback) {
+            public void send(MessageEmbed embed, Consumer<Message> callback) {
                 hook.editOriginalEmbeds(embed).queue(callback);
             }
 
             @Override
-            public void sendMessageData(MessageCreateData data, Consumer<Message> callback) {
+            public void send(MessageCreateData data, Consumer<Message> callback) {
                 hook.editOriginal(MessageEditData.fromCreateData(data)).queue(callback);
             }
         };
@@ -66,10 +67,37 @@ public interface Reply {
     static Reply empty() {
         return new Reply() {
             @Override
-            public void sendEmbed(MessageEmbed embed, Consumer<Message> callback) {}
+            public void send(MessageEmbed embed, Consumer<Message> callback) {}
 
             @Override
-            public void sendMessageData(MessageCreateData data, Consumer<Message> callback) {}
+            public void send(MessageCreateData data, Consumer<Message> callback) {}
+        };
+    }
+
+    static Reply immediateMultiInteractionReply(IReplyCallback event) {
+        return new Reply() {
+
+            private boolean replied = false;
+
+            @Override
+            public void send(MessageEmbed embed, Consumer<Message> callback) {
+                if (!replied) {
+                    replied = true;
+                    event.replyEmbeds(embed).queue(hook -> hook.retrieveOriginal().queue(callback));
+                } else {
+                    event.getMessageChannel().sendMessageEmbeds(embed).queue(callback);
+                }
+            }
+
+            @Override
+            public void send(MessageCreateData data, Consumer<Message> callback) {
+                if (!replied) {
+                    replied = true;
+                    event.reply(data).queue(hook -> hook.retrieveOriginal().queue(callback));
+                } else {
+                    event.getMessageChannel().sendMessage(data).queue(callback);
+                }
+            }
         };
     }
 
@@ -79,7 +107,7 @@ public interface Reply {
             private boolean replied = false;
 
             @Override
-            public void sendEmbed(MessageEmbed embed, Consumer<Message> callback) {
+            public void send(MessageEmbed embed, Consumer<Message> callback) {
                 if (!replied) {
                     replied = true;
                     hook.editOriginalEmbeds(embed).queue(callback);
@@ -89,7 +117,7 @@ public interface Reply {
             }
 
             @Override
-            public void sendMessageData(MessageCreateData data, Consumer<Message> callback) {
+            public void send(MessageCreateData data, Consumer<Message> callback) {
                 if (!replied) {
                     replied = true;
                     hook.editOriginal(MessageEditData.fromCreateData(data)).queue(callback);

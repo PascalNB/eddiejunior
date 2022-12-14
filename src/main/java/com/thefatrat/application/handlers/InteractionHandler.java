@@ -18,10 +18,11 @@ public class InteractionHandler implements Handler<InteractionEvent> {
 
     @Override
     public void handle(InteractionEvent event, Reply reply) {
-        if (!map.containsKey(event.getAction())) {
+        BiConsumer<InteractionEvent, Reply> action = map.get(event.getAction());
+        if (action == null) {
             throw new BotErrorException("Could not perform action");
         }
-        map.get(event.getAction()).accept(event, reply);
+        action.accept(event, reply);
     }
 
 }

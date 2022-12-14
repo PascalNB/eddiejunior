@@ -37,7 +37,7 @@ public class Grab extends Component {
                     }
 
                     String url = icon.getUrl(1024);
-                    reply.sendEmbed(new EmbedBuilder()
+                    reply.send(new EmbedBuilder()
                         .setColor(Colors.BLUE)
                         .setImage(url)
                         .build());
@@ -48,7 +48,7 @@ public class Grab extends Component {
                 .setAction((command, reply) -> {
                     User user = getEffectiveUser(command);
                     String url = user.getEffectiveAvatar().getUrl(1024);
-                    reply.sendEmbed(new EmbedBuilder()
+                    reply.send(new EmbedBuilder()
                         .setColor(Colors.BLUE)
                         .setAuthor(user.getAsTag(), null)
                         .setImage(url)
@@ -63,7 +63,7 @@ public class Grab extends Component {
                     }
 
                     String url = banner.getUrl(1024);
-                    reply.sendEmbed(new EmbedBuilder()
+                    reply.send(new EmbedBuilder()
                         .setColor(Colors.BLUE)
                         .setImage(url)
                         .build());
@@ -77,7 +77,7 @@ public class Grab extends Component {
                     }
 
                     String url = splash.getUrl(1024);
-                    reply.sendEmbed(new EmbedBuilder()
+                    reply.send(new EmbedBuilder()
                         .setColor(Colors.BLUE)
                         .setImage(url)
                         .build());
@@ -138,7 +138,7 @@ public class Grab extends Component {
 
                     embed.setFooter(user.getId());
 
-                    reply.sendEmbed(embed.build());
+                    reply.send(embed.build());
                 })
             )
             .addSubcommand(new Command("role", "Get a role's info")
@@ -164,7 +164,7 @@ public class Grab extends Component {
 
                     embed.setFooter(role.getId());
 
-                    reply.sendEmbed(embed.build());
+                    reply.send(embed.build());
                 })
             )
             .addSubcommand(new Command("permissions", "Get a user's permissions")
@@ -190,7 +190,7 @@ public class Grab extends Component {
                         .setAuthor(user.getAsTag(), null, member.getEffectiveAvatarUrl())
                         .setFooter(user.getId());
 
-                    reply.sendEmbed(embed.build());
+                    reply.send(embed.build());
                 })
             )
             .addSubcommand(new Command("emoji", "Get an emoji")
@@ -205,7 +205,7 @@ public class Grab extends Component {
                     CustomEmoji emoji = Emoji.fromFormatted(string).asCustom();
                     String url = emoji.getImageUrl();
 
-                    reply.sendEmbed(new EmbedBuilder()
+                    reply.send(new EmbedBuilder()
                         .setColor(Colors.BLUE)
                         .setTitle(emoji.getName())
                         .setImage(url)
@@ -217,7 +217,7 @@ public class Grab extends Component {
                 .addOption(new OptionData(OptionType.MENTIONABLE, "mention", "mention", true))
                 .setAction((command, reply) -> {
                     IMentionable mention = command.getArgs().get("mention").getAsMentionable();
-                    reply.sendEmbedFormat(Colors.BLUE, mention.getId());
+                    reply.send(Colors.BLUE, mention.getId());
                 })
             )
         );
@@ -232,7 +232,7 @@ public class Grab extends Component {
 
                 StickerItem sticker = stickers.get(0);
 
-                reply.sendEmbed(new EmbedBuilder()
+                reply.send(new EmbedBuilder()
                     .setColor(Colors.BLUE)
                     .setTitle(sticker.getName())
                     .setImage(sticker.getIcon().getUrl(512))

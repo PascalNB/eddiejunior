@@ -56,7 +56,7 @@ public class Session extends Component {
                         .map(session -> '`' + session + '`').toArray(String[]::new);
                     String joined = String.join("\n", array);
 
-                    reply.sendEmbed(new EmbedBuilder()
+                    reply.send(new EmbedBuilder()
                         .setTitle("Sessions")
                         .setColor(Colors.BLUE)
                         .setDescription(joined)
@@ -74,13 +74,13 @@ public class Session extends Component {
                     String session = command.getArgs().get("session").getAsString();
                     if (!sessions.containsKey(session)) {
                         sessions.put(session, new HashSet<>());
-                        getDatabaseManager().addSetting("session", session).join();
+                        getDatabaseManager().addSetting("session", session);
                     }
                     IMentionable channel = command.getArgs().get("channel").getAsChannel();
                     sessions.get(session).add(channel.getId());
-                    getDatabaseManager().addSetting("session_" + session, channel.getId()).join();
+                    getDatabaseManager().addSetting("session_" + session, channel.getId());
 
-                    reply.sendEmbedFormat(Colors.GREEN, ":white_check_mark: %s added to session `%s`",
+                    reply.send(Colors.GREEN, ":white_check_mark: %s added to session `%s`",
                         channel.getAsMention(), session);
                 })
             )
@@ -102,12 +102,12 @@ public class Session extends Component {
                     }
 
                     session.remove(channel.getId());
-                    getDatabaseManager().removeSetting("session_" + string, channel.getId()).join();
+                    getDatabaseManager().removeSetting("session_" + string, channel.getId());
                     if (session.isEmpty()) {
                         sessions.remove(string);
                         removeSessionFromDatabase(string);
                     }
-                    reply.sendEmbedFormat(Colors.GREEN, ":white_check_mark: %s removed from session `%s`",
+                    reply.send(Colors.GREEN, ":white_check_mark: %s removed from session `%s`",
                         channel.getAsMention(), string);
                 })
             )
@@ -143,7 +143,7 @@ public class Session extends Component {
                     String[] array = channels.toArray(String[]::new);
                     String joined = String.join("\n", array);
 
-                    reply.sendEmbed(new EmbedBuilder()
+                    reply.send(new EmbedBuilder()
                         .setColor(Colors.BLUE)
                         .setTitle(string)
                         .setDescription(joined)
@@ -193,7 +193,7 @@ public class Session extends Component {
                     String[] array = channels.toArray(String[]::new);
                     String joined = String.join(", ", array);
 
-                    reply.sendEmbedFormat(Colors.GREEN, ":white_check_mark: session `%s` started.%n" +
+                    reply.send(Colors.GREEN, ":white_check_mark: session `%s` started.%n" +
                             "The following channels have been made public:%n%s",
                         string, joined);
                 })
@@ -240,7 +240,7 @@ public class Session extends Component {
                     String[] array = channels.toArray(String[]::new);
                     String joined = String.join(", ", array);
 
-                    reply.sendEmbedFormat(Colors.GREEN, ":white_check_mark: session `%s` stopped.%n" +
+                    reply.send(Colors.GREEN, ":stop_sign: session `%s` stopped.%n" +
                             "The following channels have been made private:%n%s",
                         string, joined);
                 })
@@ -263,8 +263,8 @@ public class Session extends Component {
     }
 
     private void removeSessionFromDatabase(String session) {
-        getDatabaseManager().removeSetting("session_" + session).join();
-        getDatabaseManager().removeSetting("session", session).join();
+        getDatabaseManager().removeSetting("session_" + session);
+        getDatabaseManager().removeSetting("session", session);
     }
 
     @Override

@@ -1,7 +1,6 @@
 package com.thefatrat.application;
 
 import com.thefatrat.application.components.Component;
-import com.thefatrat.application.components.Manager;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.entities.Reply;
 import com.thefatrat.application.events.ArchiveEvent;
@@ -123,7 +122,13 @@ public class Bot extends ListenerAdapter {
 
         Server server = Server.dummy();
         server.registerComponents(components);
-        List<Command> commands = server.getComponent(Manager.NAME.toLowerCase()).getCommands();
+        List<Component> list = server.getComponents();
+        List<Command> commands = new ArrayList<>();
+        for (Component component : list) {
+            if (component.isAlwaysEnabled()) {
+                commands.addAll(component.getCommands());
+            }
+        }
 
         List<SlashCommandData> slashCommands = new ArrayList<>();
         for (Command command : commands) {
@@ -169,7 +174,7 @@ public class Bot extends ListenerAdapter {
             try {
                 direct.clickButton(event.getUser().getId(), event.getComponentId(), event.getMessage(), reply);
             } catch (BotException e) {
-                reply.sendEmbedFormat(e.getColor(), e.getMessage());
+                reply.send(e.getColor(), e.getMessage());
             }
         }
     }
@@ -187,7 +192,7 @@ public class Bot extends ListenerAdapter {
                 direct.selectMenu(event.getUser().getId(), event.getComponentId(),
                     event.getInteraction().getValues().get(0), event.getMessage(), reply);
             } catch (BotException e) {
-                reply.sendEmbedFormat(e.getColor(), e.getMessage());
+                reply.send(e.getColor(), e.getMessage());
             }
         }
     }
@@ -210,26 +215,25 @@ public class Bot extends ListenerAdapter {
             servers.get(guild.getId())
                 .receiveInteraction(new InteractionEvent(message, event.getInteraction().getName()), reply);
         } catch (BotException e) {
-            reply.sendEmbedFormat(e.getColor(), e.getMessage());
+            reply.send(e.getColor(), e.getMessage());
         }
     }
 
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
         if (event.getUser().isBot() || event.getUser().isSystem() || !event.isFromGuild()) {
-            event.reply("Slash commands not allowed").queue();
             return;
         }
 
-        Guild guild = Objects.requireNonNull(event.getGuild());
-        InteractionHook hook = event.deferReply(false).complete();
+        Guild guild = event.getGuild();
+        assert guild != null;
 
         Map<String, OptionMapping> options = new HashMap<>();
         for (OptionMapping option : event.getOptions()) {
             options.put(option.getName(), option);
         }
 
-        Reply reply = Reply.defaultMultiInteractionReply(hook);
+        Reply reply = Reply.immediateMultiInteractionReply(event);
 
         CommandEvent commandEvent = new CommandEvent(event.getName(), event.getSubcommandName(),
             options, guild, event.getGuildChannel(), event.getUser());
@@ -237,7 +241,7 @@ public class Bot extends ListenerAdapter {
         try {
             servers.get(guild.getId()).receiveCommand(commandEvent, reply);
         } catch (BotException e) {
-            reply.sendEmbedFormat(e.getColor(), e.getMessage());
+            reply.send(e.getColor(), e.getMessage());
         }
     }
 
@@ -276,7 +280,7 @@ public class Bot extends ListenerAdapter {
             direct.receiveMessage(message, reply);
 //            }
         } catch (BotException e) {
-            reply.sendEmbedFormat(e.getColor(), e.getMessage());
+            reply.send(e.getColor(), e.getMessage());
         }
     }
 
