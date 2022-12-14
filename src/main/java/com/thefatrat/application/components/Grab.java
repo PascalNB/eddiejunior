@@ -8,10 +8,7 @@ import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Role;
-import net.dv8tion.jda.api.entities.RoleIcon;
-import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.emoji.CustomEmoji;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.entities.sticker.StickerItem;
@@ -214,6 +211,13 @@ public class Grab extends Component {
                         .setImage(url)
                         .setFooter(emoji.getId())
                         .build());
+                })
+            )
+            .addSubcommand(new Command("id", "Get an id")
+                .addOption(new OptionData(OptionType.MENTIONABLE, "mention", "mention", true))
+                .setAction((command, reply) -> {
+                    IMentionable mention = command.getArgs().get("mention").getAsMentionable();
+                    reply.sendEmbedFormat(Colors.BLUE, mention.getId());
                 })
             )
         );
