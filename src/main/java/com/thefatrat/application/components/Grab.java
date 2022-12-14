@@ -8,6 +8,7 @@ import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.emoji.CustomEmoji;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
@@ -17,6 +18,7 @@ import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.utils.ImageProxy;
 import net.dv8tion.jda.api.utils.TimeFormat;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 
@@ -90,7 +92,6 @@ public class Grab extends Component {
                     User.Profile profile = user.retrieveProfile().complete();
 
                     EmbedBuilder embed = new EmbedBuilder()
-                        .setColor(profile.getAccentColorRaw())
                         .setThumbnail(user.getEffectiveAvatarUrl())
                         .setTitle(user.getAsTag())
                         .setDescription(user.getAsMention());
@@ -98,9 +99,11 @@ public class Grab extends Component {
                     EnumSet<User.UserFlag> flags = user.getFlags();
 
                     if (!flags.isEmpty()) {
-                        embed.addField("Badges", String.join(", ", flags.stream()
-                                .map(flag -> '`' + flag.getName() + '`')
-                                .toArray(String[]::new)),
+                        List<String> list = new ArrayList<>(flags.size());
+                        for (User.UserFlag flag : flags) {
+                            list.add('`' + flag.getName() + '`');
+                        }
+                        embed.addField("Badges", String.join(", ", list.toArray(new String[0])),
                             false);
                     }
 
@@ -115,14 +118,20 @@ public class Grab extends Component {
                         }
 
                         if (member.getRoles().size() > 0) {
-                            String roles = String.join(" ", member.getRoles().stream()
-                                .map(Role::getAsMention)
-                                .toArray(String[]::new));
+                            List<Role> roles = member.getRoles();
+                            List<String> mentions = new ArrayList<>(roles.size());
+                            for (Role role : roles) {
+                                mentions.add(role.getAsMention());
+                            }
+                            String joined = String.join(" ", mentions.toArray(new String[0]));
 
-                            embed.addField("Roles", roles, false);
+                            embed.addField("Roles", joined, false);
                         } else {
                             embed.addField("Roles", "None", false);
                         }
+                        embed.setColor(member.getColorRaw());
+                    } else {
+                        embed.setColor(profile.getAccentColorRaw());
                     }
 
                     embed.addField("Account date", TimeFormat.DATE_TIME_LONG.format(user.getTimeCreated()), true);
@@ -146,16 +155,17 @@ public class Grab extends Component {
                 .setAction((command, reply) -> {
                     Role role = command.getArgs().get("role").getAsRole();
 
+                    EnumSet<Permission> permissions = role.getPermissions();
+                    List<String> permissionNames = new ArrayList<>(permissions.size());
+                    for (Permission permission : permissions) {
+                        permissionNames.add('`' + permission.getName() + '`');
+                    }
                     EmbedBuilder embed = new EmbedBuilder()
                         .setColor(role.getColor())
                         .setTitle(role.getName())
                         .setDescription(role.getAsMention())
                         .addField("Color", '#' + Integer.toHexString(role.getColorRaw()), true)
-                        .addField("Permissions",
-                            String.join(", ", role.getPermissions().stream()
-                                .map(permission -> '`' + permission.getName() + '`')
-                                .toArray(String[]::new)
-                            ), false);
+                        .addField("Permissions", String.join(", ", permissionNames.toArray(new String[0])), false);
 
                     RoleIcon icon = role.getIcon();
                     if (icon != null) {
@@ -180,13 +190,15 @@ public class Grab extends Component {
                         throw new BotWarningException("The given user is not a member of this server");
                     }
 
+                    EnumSet<Permission> permissions = member.getPermissions();
+                    List<String> list = new ArrayList<>(permissions.size());
+                    for (Permission permission : permissions) {
+                        list.add('`' + permission.getName() + '`');
+                    }
+
                     EmbedBuilder embed = new EmbedBuilder()
                         .setColor(member.getColorRaw())
-                        .addField("Permissions",
-                            String.join(", ", member.getPermissions().stream()
-                                .map(permission -> '`' + permission.getName() + '`')
-                                .toArray(String[]::new)
-                            ), false)
+                        .addField("Permissions", String.join(", ", list.toArray(new String[0])), false)
                         .setAuthor(user.getAsTag(), null, member.getEffectiveAvatarUrl())
                         .setFooter(user.getId());
 

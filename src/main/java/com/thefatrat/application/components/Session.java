@@ -52,9 +52,11 @@ public class Session extends Component {
                         throw new BotWarningException("There are no sessions added yet");
                     }
 
-                    String[] array = sessions.keySet().stream()
-                        .map(session -> '`' + session + '`').toArray(String[]::new);
-                    String joined = String.join("\n", array);
+                    List<String> list = new ArrayList<>(sessions.size());
+                    for (String session : sessions.keySet()) {
+                        list.add('`' + session + '`');
+                    }
+                    String joined = String.join("\n", list.toArray(new String[0]));
 
                     reply.send(new EmbedBuilder()
                         .setTitle("Sessions")
