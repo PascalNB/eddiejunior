@@ -47,9 +47,9 @@ public abstract class DirectComponent extends Component {
         }
         blacklist.addAll(getDatabaseManager().getSettings("blacklist"));
 
-        addCommands(new Command(getName(), "component command")
-            .setAction((command, reply) -> getSubCommandHandler().handle(command.toSub(), reply))
-            .addSubcommand(new Command("start", "starts the component")
+        setComponentCommand();
+
+        addSubcommands(new Command("start", "starts the component")
                 .addOption(new OptionData(OptionType.CHANNEL, "channel", "channel destination")
                     .setChannelTypes(ChannelType.TEXT)
                 )
@@ -88,12 +88,10 @@ public abstract class DirectComponent extends Component {
                     }
 
                     start(reply);
-                })
-            )
-            .addSubcommand(new Command("stop", "stops the component")
-                .setAction((command, reply) -> this.stop(reply))
-            )
-            .addSubcommand(new Command("destination", "sets the destination channel")
+                }),
+            new Command("stop", "stops the component")
+                .setAction((command, reply) -> this.stop(reply)),
+            new Command("destination", "sets the destination channel")
                 .addOption(new OptionData(OptionType.CHANNEL, "channel", "destination channel", false)
                     .setChannelTypes(ChannelType.TEXT)
                 )
@@ -119,9 +117,8 @@ public abstract class DirectComponent extends Component {
 
                     reply.send(Colors.GRAY, ":gear: Destination set to %s `(%s)`%n",
                         getDestination().getAsMention(), getDestination().getId());
-                })
-            )
-            .addSubcommand(new Command("blacklist", "manages the blacklist")
+                }),
+            new Command("blacklist", "manages the blacklist")
                 .addOption(new OptionData(OptionType.STRING, "action", "action", true)
                     .addChoice("add", "add")
                     .addChoice("remove", "remove")
@@ -192,7 +189,6 @@ public abstract class DirectComponent extends Component {
                     }
                     throw new BotErrorException("The given member was not found");
                 })
-            )
         );
     }
 

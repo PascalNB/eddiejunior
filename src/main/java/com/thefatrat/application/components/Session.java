@@ -44,9 +44,10 @@ public class Session extends Component {
             }
         }
 
-        addCommands(new Command(getName(), "component command")
-            .setAction((command, reply) -> getSubCommandHandler().handle(command.toSub(), reply))
-            .addSubcommand(new Command("list", "list all sessions")
+        setComponentCommand();
+
+        addSubcommands(
+            new Command("list", "list all sessions")
                 .setAction((command, reply) -> {
                     if (sessions.isEmpty()) {
                         throw new BotWarningException("There are no sessions added yet");
@@ -64,9 +65,8 @@ public class Session extends Component {
                         .setDescription(joined)
                         .build()
                     );
-                })
-            )
-            .addSubcommand(new Command("add",
+                }),
+            new Command("add",
                 "add a channel to a session, creates a new session if it does not exist")
                 .addOption(new OptionData(OptionType.STRING, "session", "session name", true)
                     .setRequiredLength(3, 20)
@@ -84,9 +84,8 @@ public class Session extends Component {
 
                     reply.send(Colors.GREEN, ":white_check_mark: %s added to session `%s`",
                         channel.getAsMention(), session);
-                })
-            )
-            .addSubcommand(new Command("remove",
+                }),
+            new Command("remove",
                 "removes a channel from a session, removes the session if no channels are left")
                 .addOption(new OptionData(OptionType.STRING, "session", "session name", true)
                     .setRequiredLength(3, 20)
@@ -111,9 +110,8 @@ public class Session extends Component {
                     }
                     reply.send(Colors.GREEN, ":white_check_mark: %s removed from session `%s`",
                         channel.getAsMention(), string);
-                })
-            )
-            .addSubcommand(new Command("show", "shows the channels of the given session")
+                }),
+            new Command("show", "shows the channels of the given session")
                 .addOption(new OptionData(OptionType.STRING, "session", "session name", true)
                     .setRequiredLength(3, 20)
                 )
@@ -151,9 +149,8 @@ public class Session extends Component {
                         .setDescription(joined)
                         .build()
                     );
-                })
-            )
-            .addSubcommand(new Command("open", "opens channels of a session")
+                }),
+            new Command("open", "opens channels of a session")
                 .addOption(new OptionData(OptionType.STRING, "session", "session name", true)
                     .setRequiredLength(3, 20)
                 )
@@ -198,9 +195,8 @@ public class Session extends Component {
                     reply.send(Colors.GREEN, ":white_check_mark: session `%s` started.%n" +
                             "The following channels have been made public:%n%s",
                         string, joined);
-                })
-            )
-            .addSubcommand(new Command("close", "closes channels of a session")
+                }),
+            new Command("close", "closes channels of a session")
                 .addOption(new OptionData(OptionType.STRING, "session", "session name", true)
                     .setRequiredLength(3, 20)
                 )
@@ -246,7 +242,6 @@ public class Session extends Component {
                             "The following channels have been made private:%n%s",
                         string, joined);
                 })
-            )
         );
 
     }

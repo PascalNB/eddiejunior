@@ -129,6 +129,11 @@ public abstract class Component {
         help = new HelpBuilder(getName(), getCommands()).build(Colors.BLUE);
     }
 
+    public final void setComponentCommand() {
+        addCommands(new Command(getName(), "component command")
+            .setAction((command, reply) -> getSubCommandHandler().handle(command.toSub(), reply)));
+    }
+
     /**
      * Returns an embed with a list of all the component's commands
      *

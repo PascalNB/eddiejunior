@@ -9,6 +9,7 @@ import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.emoji.CustomEmoji;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
@@ -28,6 +29,8 @@ public class Grab extends Component {
 
     public Grab(Server server) {
         super(server, NAME, false);
+
+        setComponentCommand();
 
         addCommands(new Command(getName(), "component command")
             .setAction((command, reply) -> getSubCommandHandler().handle(command.toSub(), reply))
@@ -118,16 +121,16 @@ public class Grab extends Component {
                         }
 
                         if (member.getRoles().size() > 0) {
-                            List<Role> roles = member.getRoles();
+                            List<net.dv8tion.jda.api.entities.Role> roles = member.getRoles();
                             List<String> mentions = new ArrayList<>(roles.size());
                             for (Role role : roles) {
                                 mentions.add(role.getAsMention());
                             }
                             String joined = String.join(" ", mentions.toArray(new String[0]));
 
-                            embed.addField("Roles", joined, false);
+                            embed.addField("Role", joined, false);
                         } else {
-                            embed.addField("Roles", "None", false);
+                            embed.addField("Role", "None", false);
                         }
                         embed.setColor(member.getColorRaw());
                     } else {
@@ -153,7 +156,7 @@ public class Grab extends Component {
             .addSubcommand(new Command("role", "Get a role's info")
                 .addOption(new OptionData(OptionType.ROLE, "role", "role", true))
                 .setAction((command, reply) -> {
-                    Role role = command.getArgs().get("role").getAsRole();
+                    net.dv8tion.jda.api.entities.Role role = command.getArgs().get("role").getAsRole();
 
                     EnumSet<Permission> permissions = role.getPermissions();
                     List<String> permissionNames = new ArrayList<>(permissions.size());
