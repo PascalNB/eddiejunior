@@ -77,9 +77,11 @@ public class Roles extends Component {
             new Command("message", "create a message with buttons for a specific role")
                 .addOptions(
                     new OptionData(OptionType.ROLE, "role", "role", true),
-                    new OptionData(OptionType.STRING, "label_add", "button label for adding role", false)
+                    new OptionData(OptionType.STRING, "label_add", "button label for adding role, " +
+                        "use | to split an emoji and label, e.g. \uD83D\uDE0E|label", false)
                         .setMaxLength(80),
-                    new OptionData(OptionType.STRING, "label_remove", "button label for removing role", false)
+                    new OptionData(OptionType.STRING, "label_remove", "button label for removing role," +
+                        "use | to split an emoji and label, e.g. \uD83D\uDE0E|label", false)
                         .setMaxLength(80),
 
                     new OptionData(OptionType.CHANNEL, "channel", "channel to send the message in", false)
@@ -182,17 +184,27 @@ public class Roles extends Component {
 
                     Button buttonAdd;
                     Button buttonRemove;
+                    String[] splitAdd = labelAdd.split(" ?\\| ?", 2);
+                    String[] splitRemove = labelRemove.split(" ?\\| ?", 2);
 
-                    if (EmojiChecker.isEmoji(labelAdd)) {
-                        Emoji emoji = Emoji.fromUnicode(labelAdd);
-                        buttonAdd = Button.success("roles-1-" + role.getId(), emoji);
+                    if (EmojiChecker.isEmoji(splitAdd[0])) {
+                        Emoji emoji = Emoji.fromUnicode(splitAdd[0]);
+                        if (splitAdd.length > 1) {
+                            buttonAdd = Button.success("roles-1-" + role.getId(), splitAdd[1]).withEmoji(emoji);
+                        } else {
+                            buttonAdd = Button.success("roles-1-" + role.getId(), emoji);
+                        }
                     } else {
                         buttonAdd = Button.success("roles-1-" + role.getId(), labelAdd);
                     }
 
-                    if (EmojiChecker.isEmoji(labelRemove)) {
-                        Emoji emoji = Emoji.fromUnicode(labelRemove);
-                        buttonRemove = Button.danger("roles-0-" + role.getId(), emoji);
+                    if (EmojiChecker.isEmoji(splitRemove[0])) {
+                        Emoji emoji = Emoji.fromUnicode(splitRemove[0]);
+                        if (splitRemove.length > 1) {
+                            buttonRemove = Button.danger("roles-0-" + role.getId(), splitRemove[1]).withEmoji(emoji);
+                        } else {
+                            buttonRemove = Button.danger("roles-0-" + role.getId(), emoji);
+                        }
                     } else {
                         buttonRemove = Button.danger("roles-0-" + role.getId(), labelRemove);
                     }
