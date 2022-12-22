@@ -9,10 +9,7 @@ import com.thefatrat.application.entities.Reply;
 import com.thefatrat.application.events.CommandEvent;
 import com.thefatrat.application.events.InteractionEvent;
 import com.thefatrat.application.exceptions.BotException;
-import com.thefatrat.application.handlers.ArchiveHandler;
-import com.thefatrat.application.handlers.CommandHandler;
-import com.thefatrat.application.handlers.InteractionHandler;
-import com.thefatrat.application.handlers.MessageHandler;
+import com.thefatrat.application.handlers.*;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
@@ -29,15 +26,17 @@ import java.util.Map;
 
 public class Server extends Source {
 
+    private static final DefaultMemberPermissions PERMISSIONS = DefaultMemberPermissions.enabledFor(
+        Permission.USE_APPLICATION_COMMANDS
+    );
+
     private final String id;
     private final CommandHandler commandHandler = new CommandHandler();
     private final InteractionHandler interactionHandler = new InteractionHandler();
     private final MessageHandler directHandler = new MessageHandler();
     private final ArchiveHandler archiveHandler = new ArchiveHandler();
+    private final ButtonHandler buttonHandler = new ButtonHandler();
     private final Map<String, Component> components = new HashMap<>();
-    private final DefaultMemberPermissions permissions = DefaultMemberPermissions.enabledFor(
-        Permission.USE_APPLICATION_COMMANDS
-    );
 
     public static Server dummy() {
         return new Server();
@@ -77,7 +76,7 @@ public class Server extends Source {
 
             for (Command command : component.getCommands()) {
                 commandData.add(Commands.slash(command.getName(), command.getDescription())
-                    .setDefaultPermissions(permissions)
+                    .setDefaultPermissions(PERMISSIONS)
                     .addOptions(command.getOptions())
                     .addSubcommands(command.getSubcommandsData()));
             }
@@ -145,6 +144,10 @@ public class Server extends Source {
 
     public ArchiveHandler getArchiveHandler() {
         return archiveHandler;
+    }
+
+    public ButtonHandler getButtonHandler() {
+        return buttonHandler;
     }
 
     public void receiveInteraction(InteractionEvent message, Reply reply) {

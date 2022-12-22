@@ -9,7 +9,6 @@ import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
-import net.dv8tion.jda.api.utils.MemberCachePolicy;
 
 import java.io.*;
 import java.util.Properties;
@@ -58,16 +57,18 @@ public class Initializer {
             ModMail.class,
             Feedback.class,
             Grab.class,
-            Session.class
+            Session.class,
+            Roles.class
         );
 
         jda = JDABuilder.createLight(token,
                 GatewayIntent.DIRECT_MESSAGES,
                 GatewayIntent.GUILD_MEMBERS
             )
-            .setMemberCachePolicy(MemberCachePolicy.NONE)
+            .setMemberCachePolicy(member -> member.isTimedOut() || member.isBoosting())
             .setChunkingFilter(ChunkingFilter.NONE)
             .addEventListeners(Bot.getInstance())
+            .setRawEventsEnabled(true)
             .build();
 
         Bot.getInstance().setJDA(jda);

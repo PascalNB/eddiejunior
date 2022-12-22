@@ -5,6 +5,7 @@ import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.BiConsumer;
 
@@ -37,6 +38,11 @@ public class Command {
 
     public String getDescription() {
         return description;
+    }
+
+    public Command addOptions(OptionData... options) {
+        Collections.addAll(this.options, options);
+        return this;
     }
 
     public Command addOption(OptionData option) {

@@ -2,20 +2,20 @@ package com.thefatrat.application.handlers;
 
 import com.thefatrat.application.events.ArchiveEvent;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public class ArchiveHandler {
 
-    private final Map<String, Consumer<ArchiveEvent>> map = new HashMap<>();
+    private final Set<Consumer<ArchiveEvent>> set = new HashSet<>();
 
-    public void addListener(String component, Consumer<ArchiveEvent> listener) {
-        map.put(component, listener);
+    public void addListener(Consumer<ArchiveEvent> listener) {
+        set.add(listener);
     }
 
     public void handle(ArchiveEvent archiveEvent) {
-        for (Consumer<ArchiveEvent> event : map.values()) {
+        for (Consumer<ArchiveEvent> event : set) {
             event.accept(archiveEvent);
         }
     }

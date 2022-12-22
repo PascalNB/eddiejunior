@@ -140,7 +140,7 @@ public class ModMail extends DirectComponent {
                 })
         );
 
-        getServer().getArchiveHandler().addListener(getName(), event -> {
+        getServer().getArchiveHandler().addListener(event -> {
             String name = event.getThread().getName();
 
             if (!name.matches("^t\\d+-.+$")) {

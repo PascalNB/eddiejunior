@@ -4,6 +4,7 @@ import com.thefatrat.application.components.Component;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.entities.Reply;
 import com.thefatrat.application.events.ArchiveEvent;
+import com.thefatrat.application.events.ButtonEvent;
 import com.thefatrat.application.events.CommandEvent;
 import com.thefatrat.application.events.InteractionEvent;
 import com.thefatrat.application.exceptions.BotException;
@@ -176,6 +177,22 @@ public class Bot extends ListenerAdapter {
             } catch (BotException e) {
                 reply.send(e.getColor(), e.getMessage());
             }
+        } else {
+            InteractionHook hook = event.deferReply(true).complete();
+
+            Reply reply = Reply.defaultInteractionReply(hook);
+
+            try {
+                Server server = getServer(Objects.requireNonNull(event.getGuild()).getId());
+
+                Member member = Objects.requireNonNull(event.getMember());
+                String buttonId = event.getComponentId();
+                Message message = event.getMessage();
+
+                server.getButtonHandler().handle(new ButtonEvent(member, buttonId, message), reply);
+            } catch (BotException e) {
+                reply.send(e.getColor(), e.getMessage());
+            }
         }
     }
 
@@ -236,7 +253,7 @@ public class Bot extends ListenerAdapter {
         Reply reply = Reply.immediateMultiInteractionReply(event);
 
         CommandEvent commandEvent = new CommandEvent(event.getName(), event.getSubcommandName(),
-            options, guild, event.getGuildChannel(), event.getUser());
+            options, guild, event.getGuildChannel(), Objects.requireNonNull(event.getMember()));
 
         try {
             servers.get(guild.getId()).receiveCommand(commandEvent, reply);
@@ -273,12 +290,7 @@ public class Bot extends ListenerAdapter {
         Reply reply = Reply.defaultMessageReply(event.getMessage());
 
         try {
-//            if (message.isFromGuild()) {
-//                String id = message.getGuild().getId();
-//                servers.get(id).receiveMessage(message, reply);
-//            } else {
             direct.receiveMessage(message, reply);
-//            }
         } catch (BotException e) {
             reply.send(e.getColor(), e.getMessage());
         }

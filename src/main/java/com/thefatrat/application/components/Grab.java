@@ -9,7 +9,6 @@ import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
-import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.emoji.CustomEmoji;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
@@ -263,7 +262,7 @@ public class Grab extends Component {
         if (event.getArgs().containsKey("user")) {
             user = event.getArgs().get("user").getAsUser();
         } else {
-            user = event.getUser();
+            user = event.getMember().getUser();
         }
         return user;
     }
