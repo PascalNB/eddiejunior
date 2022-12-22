@@ -63,7 +63,8 @@ public class Initializer {
 
         jda = JDABuilder.createLight(token,
                 GatewayIntent.DIRECT_MESSAGES,
-                GatewayIntent.GUILD_MEMBERS
+                GatewayIntent.GUILD_MEMBERS,
+                GatewayIntent.MESSAGE_CONTENT
             )
             .setMemberCachePolicy(member -> member.isTimedOut() || member.isBoosting())
             .setChunkingFilter(ChunkingFilter.NONE)
