@@ -82,20 +82,8 @@ public class Feedback extends DirectComponent {
                     Submission submission = submissions.get(0);
                     submissions.remove(0);
 
-                    try (MessageCreateData data = new MessageCreateBuilder()
-                        .mention(submission.user())
-                        .addEmbeds(new EmbedBuilder()
-                            .setColor(Icon.WIN.getColor())
-                            .setDescription(String.format("%s has won!", submission.user().getAsMention()))
-                            .build()
-                        )
-                        .build()) {
-
-                        destination.sendMessage(submission.submission()).queue(m -> reply.send(data));
-
-                    } catch (Exception e) {
-                        throw new BotErrorException("Something went wrong");
-                    }
+                    destination.sendMessage(submission.submission()).queue(m ->
+                        reply.send(Icon.WIN, "%s has won!", submission.user().getAsMention()));
                 }),
 
             new Command("reset", "allow submissions for users again")
