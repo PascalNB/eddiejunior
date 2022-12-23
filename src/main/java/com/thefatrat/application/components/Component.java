@@ -126,7 +126,7 @@ public abstract class Component {
             messageInteractionHandler.addListener(interaction.getName(), interaction.getAction());
         }
 
-        help = new HelpBuilder(getName(), getCommands()).build(Colors.BLUE);
+        help = new HelpBuilder(getTitle(), getCommands()).build(Colors.TRANSPARENT);
     }
 
     public final void setComponentCommand() {

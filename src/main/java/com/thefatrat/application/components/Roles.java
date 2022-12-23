@@ -121,7 +121,7 @@ public class Roles extends Component {
                     if (messageOption == null) {
                         boolean embedEmpty = true;
                         EmbedBuilder embed = new EmbedBuilder()
-                            .setColor(Colors.BLUE);
+                            .setColor(Colors.TRANSPARENT);
 
                         OptionMapping contentOption = command.getArgs().get("content");
                         if (contentOption != null) {

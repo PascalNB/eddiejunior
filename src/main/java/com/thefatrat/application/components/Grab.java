@@ -31,9 +31,7 @@ public class Grab extends Component {
 
         setComponentCommand();
 
-        addCommands(new Command(getName(), "component command")
-            .setAction((command, reply) -> getSubCommandHandler().handle(command.toSub(), reply))
-            .addSubcommand(new Command("servericon", "Get the server icon")
+        addSubcommands(new Command("servericon", "Get the server icon")
                 .setAction((command, reply) -> {
                     ImageProxy icon = getServer().getGuild().getIcon();
                     if (icon == null) {
@@ -45,9 +43,8 @@ public class Grab extends Component {
                         .setColor(Colors.TRANSPARENT)
                         .setImage(url)
                         .build());
-                })
-            )
-            .addSubcommand(new Command("usericon", "Get a user's icon")
+                }),
+            new Command("usericon", "Get a user's icon")
                 .addOption(new OptionData(OptionType.USER, "user", "user", false))
                 .setAction((command, reply) -> {
                     User user = getEffectiveUser(command);
@@ -57,9 +54,8 @@ public class Grab extends Component {
                         .setAuthor(user.getAsTag(), null)
                         .setImage(url)
                         .build());
-                })
-            )
-            .addSubcommand(new Command("banner", "Get the server banner")
+                }),
+            new Command("banner", "Get the server banner")
                 .setAction((command, reply) -> {
                     ImageProxy banner = getServer().getGuild().getBanner();
                     if (banner == null) {
@@ -71,9 +67,8 @@ public class Grab extends Component {
                         .setColor(Colors.TRANSPARENT)
                         .setImage(url)
                         .build());
-                })
-            )
-            .addSubcommand(new Command("splash", "Get the server splash image")
+                }),
+            new Command("splash", "Get the server splash image")
                 .setAction((command, reply) -> {
                     ImageProxy splash = getServer().getGuild().getSplash();
                     if (splash == null) {
@@ -85,9 +80,8 @@ public class Grab extends Component {
                         .setColor(Colors.TRANSPARENT)
                         .setImage(url)
                         .build());
-                })
-            )
-            .addSubcommand(new Command("profile", "Get a user's profile")
+                }),
+            new Command("profile", "Get a user's profile")
                 .addOption(new OptionData(OptionType.USER, "user", "user", false))
                 .setAction((command, reply) -> {
                     User user = getEffectiveUser(command);
@@ -150,9 +144,8 @@ public class Grab extends Component {
                     embed.setFooter(user.getId());
 
                     reply.send(embed.build());
-                })
-            )
-            .addSubcommand(new Command("role", "Get a role's info")
+                }),
+            new Command("role", "Get a role's info")
                 .addOption(new OptionData(OptionType.ROLE, "role", "role", true))
                 .setAction((command, reply) -> {
                     net.dv8tion.jda.api.entities.Role role = command.getArgs().get("role").getAsRole();
@@ -177,9 +170,8 @@ public class Grab extends Component {
                     embed.setFooter(role.getId());
 
                     reply.send(embed.build());
-                })
-            )
-            .addSubcommand(new Command("permissions", "Get a user's permissions")
+                }),
+            new Command("permissions", "Get a user's permissions")
                 .addOption(new OptionData(OptionType.USER, "user", "user", false))
                 .setAction((command, reply) -> {
                     User user = getEffectiveUser(command);
@@ -205,9 +197,8 @@ public class Grab extends Component {
                         .setFooter(user.getId());
 
                     reply.send(embed.build());
-                })
-            )
-            .addSubcommand(new Command("emoji", "Get an emoji")
+                }),
+            new Command("emoji", "Get an emoji")
                 .addOption(new OptionData(OptionType.STRING, "emoji", "emoji", true))
                 .setAction((command, reply) -> {
                     String string = command.getArgs().get("emoji").getAsString().trim();
@@ -225,15 +216,13 @@ public class Grab extends Component {
                         .setImage(url)
                         .setFooter(emoji.getId())
                         .build());
-                })
-            )
-            .addSubcommand(new Command("id", "Get an id")
+                }),
+            new Command("id", "Get an id")
                 .addOption(new OptionData(OptionType.MENTIONABLE, "mention", "mention", true))
                 .setAction((command, reply) -> {
                     IMentionable mention = command.getArgs().get("mention").getAsMentionable();
                     reply.send(Colors.TRANSPARENT, mention.getId());
                 })
-            )
         );
 
         addInteractions(new Interaction("sticker")
@@ -247,7 +236,7 @@ public class Grab extends Component {
                 StickerItem sticker = stickers.get(0);
 
                 reply.send(new EmbedBuilder()
-                    .setColor(Colors.BLUE)
+                    .setColor(Colors.TRANSPARENT)
                     .setTitle(sticker.getName())
                     .setImage(sticker.getIcon().getUrl(512))
                     .setFooter(sticker.getId())

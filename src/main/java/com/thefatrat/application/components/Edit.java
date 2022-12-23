@@ -20,7 +20,7 @@ public class Edit extends Component {
     public Edit(Server server) {
         super(server, NAME, false);
 
-        addCommands(new Command(getName(), "edit a message send by me")
+        addCommands(new Command(getName(), "edit a message sent by me")
             .addOptions(
                 new OptionData(OptionType.STRING, "message", "message jump url", true),
                 new OptionData(OptionType.STRING, "regex", "regex", true),

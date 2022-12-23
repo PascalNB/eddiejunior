@@ -6,8 +6,8 @@ public enum Icon {
     WARNING(":warning:", Colors.YELLOW),
     SETTING(":gear:", Colors.GRAY),
     STOP(":stop_sign:", Colors.WHITE),
-    ENABLE(":ballot_box_with_check:", Colors.TRANSPARENT),
-    DISABLE(":no_entry:", Colors.TRANSPARENT),
+    ENABLE(":ballot_box_with_check:", Colors.BLUE),
+    DISABLE(":no_entry:", Colors.WHITE),
     RESET(":arrows_counterclockwise:", Colors.GRAY),
     WIN(":trophy:", Colors.GOLD);
 

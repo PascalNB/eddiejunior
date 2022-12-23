@@ -102,7 +102,7 @@ public class Server extends Source {
                 actions.add(CommandRegister.getInstance().removeServerCommand(id, interaction.getName()));
             }
 
-            RestAction.allOf(actions).complete();
+            RestAction.allOf(actions).queue();
         }
     }
 

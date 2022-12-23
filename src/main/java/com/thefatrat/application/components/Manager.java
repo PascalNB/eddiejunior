@@ -106,12 +106,9 @@ public class Manager extends Component {
                         }
                     }
 
-                    component.getDatabaseManager().toggleComponent(false)
-                        .thenRun(() -> {
-                            getServer().toggleComponent(component, false);
-
-                            reply.send(Icon.DISABLE, "Component `%s` disabled", componentString);
-                        });
+                    component.getDatabaseManager().toggleComponent(false);
+                    getServer().toggleComponent(component, false);
+                    reply.send(Icon.DISABLE, "Component `%s` disabled", componentString);
                 }),
 
             new Command("components", "shows a list of all the components")
@@ -134,8 +131,9 @@ public class Manager extends Component {
                     }
                     builder.deleteCharAt(builder.length() - 1);
                     reply.send(new EmbedBuilder()
-                        .setColor(Colors.BLUE)
-                        .addField("Components", builder.toString(), false)
+                        .setColor(Colors.TRANSPARENT)
+                        .setTitle("Components")
+                        .setDescription(builder.toString())
                         .build()
                     );
                 }),
@@ -159,9 +157,9 @@ public class Manager extends Component {
                     }
 
                     MessageEmbed embed = new EmbedBuilder()
-                        .setColor(Colors.BLUE)
+                        .setColor(Colors.TRANSPARENT)
+                        .setTitle(component.getTitle() + " status")
                         .setDescription(component.getStatus())
-                        .setFooter(component.getName())
                         .build();
 
                     reply.send(embed);

@@ -46,7 +46,7 @@ public class HelpBuilder {
     public MessageEmbed build(int color) {
         EmbedBuilder builder = new EmbedBuilder()
             .setColor(color)
-            .setFooter(component);
+            .setTitle(component + " help");
         for (String[] command : commands) {
             builder.addField("/" + command[0] + command[2], command[1], false);
         }

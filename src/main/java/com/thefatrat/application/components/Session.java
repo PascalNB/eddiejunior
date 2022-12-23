@@ -62,7 +62,7 @@ public class Session extends Component {
 
                     reply.send(new EmbedBuilder()
                         .setTitle("Sessions")
-                        .setColor(Colors.BLUE)
+                        .setColor(Colors.TRANSPARENT)
                         .setDescription(joined)
                         .build()
                     );
@@ -143,8 +143,8 @@ public class Session extends Component {
                     String joined = String.join("\n", array);
 
                     reply.send(new EmbedBuilder()
-                        .setColor(Colors.BLUE)
-                        .setTitle(string)
+                        .setColor(Colors.TRANSPARENT)
+                        .setTitle("Session " + string)
                         .setDescription(joined)
                         .build()
                     );

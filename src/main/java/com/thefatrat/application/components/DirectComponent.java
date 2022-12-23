@@ -57,8 +57,9 @@ public abstract class DirectComponent extends Component {
                     OptionMapping option = command.getArgs().get("channel");
                     TextChannel parsedDestination = option == null ? null : option.getAsChannel().asTextChannel();
                     TextChannel newDestination;
+                    TextChannel currentDestination = getDestination();
 
-                    if (getDestination() == null && parsedDestination == null) {
+                    if (currentDestination == null && parsedDestination == null) {
                         try {
                             newDestination = command.getChannel().asTextChannel();
                         } catch (IllegalStateException e) {
@@ -72,7 +73,7 @@ public abstract class DirectComponent extends Component {
                         }
                     }
 
-                    if (getDestination() == null || !newDestination.getId().equals(getDestination().getId())) {
+                    if (currentDestination == null || !newDestination.getId().equals(currentDestination.getId())) {
 
                         if (!PermissionUtil.checkPermission(newDestination.getPermissionContainer(),
                             getServer().getGuild().getSelfMember(), Permission.MESSAGE_EMBED_LINKS,
@@ -83,7 +84,7 @@ public abstract class DirectComponent extends Component {
                         setDestination(newDestination.getId());
 
                         reply.send(Icon.SETTING, "Destination set to %s `(%s)`%n",
-                            getDestination().getAsMention(), getDestination().getId()
+                            newDestination.getAsMention(), newDestination.getId()
                         );
                     }
 
@@ -150,8 +151,9 @@ public abstract class DirectComponent extends Component {
                                 String[] strings = fillAbsent(blacklist, list, ISnowflake::getId,
                                     IMentionable::getAsMention).toArray(String[]::new);
                                 reply.send(new EmbedBuilder()
-                                    .setColor(Colors.BLUE)
-                                    .addField("Blacklist", String.join("\n", strings), false)
+                                    .setColor(Colors.TRANSPARENT)
+                                    .setTitle(getTitle() + " blacklist")
+                                    .setDescription(String.join("\n", strings))
                                     .build());
                             });
                         return;

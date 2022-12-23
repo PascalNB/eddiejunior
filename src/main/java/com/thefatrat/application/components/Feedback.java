@@ -149,8 +149,9 @@ public class Feedback extends DirectComponent {
                         Arrays.sort(sorted);
 
                         reply.send(new EmbedBuilder()
-                            .setColor(Colors.BLUE)
-                            .addField("Whitelist", String.join("\n", sorted), false)
+                            .setColor(Colors.TRANSPARENT)
+                            .setTitle(getTitle() + " whitelist")
+                            .setDescription(String.join("\n", sorted))
                             .build());
                         return;
                     }
@@ -245,8 +246,9 @@ public class Feedback extends DirectComponent {
                         builder.deleteCharAt(builder.length() - 1);
 
                         reply.send(new EmbedBuilder()
-                            .setColor(Colors.BLUE)
-                            .addField("Filetypes", builder.toString(), false)
+                            .setColor(Colors.TRANSPARENT)
+                            .setTitle(getTitle() + " filetypes")
+                            .setDescription(builder.toString())
                             .build()
                         );
                         return;
