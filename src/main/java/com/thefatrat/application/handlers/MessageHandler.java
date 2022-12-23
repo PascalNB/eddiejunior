@@ -31,21 +31,16 @@ public class MessageHandler implements Handler<Message> {
 
     @Override
     public void handle(Message message, Reply reply) throws BotException {
-        if (map.isEmpty()) {
-            return;
-        }
-
         for (BiConsumer<Message, Reply> listener : map.values()) {
             listener.accept(message, reply);
         }
     }
 
     public void handle(String component, Message message, Reply reply) {
-        if (!map.containsKey(component)) {
-            return;
+        BiConsumer<Message, Reply> listener = map.get(component);
+        if (listener != null) {
+            listener.accept(message, reply);
         }
-
-        map.get(component).accept(message, reply);
     }
 
 }

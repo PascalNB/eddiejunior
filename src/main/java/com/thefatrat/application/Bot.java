@@ -3,10 +3,7 @@ package com.thefatrat.application;
 import com.thefatrat.application.components.Component;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.entities.Reply;
-import com.thefatrat.application.events.ArchiveEvent;
-import com.thefatrat.application.events.ButtonEvent;
-import com.thefatrat.application.events.CommandEvent;
-import com.thefatrat.application.events.InteractionEvent;
+import com.thefatrat.application.events.*;
 import com.thefatrat.application.exceptions.BotException;
 import com.thefatrat.application.sources.Direct;
 import com.thefatrat.application.sources.Server;
@@ -173,7 +170,9 @@ public class Bot extends ListenerAdapter {
             Reply reply = Reply.defaultInteractionReply(hook);
 
             try {
-                direct.clickButton(event.getUser().getId(), event.getComponentId(), event.getMessage(), reply);
+                ButtonEvent<User> bE = new ButtonEvent<>(event.getUser(), event.getComponentId(), event.getMessage());
+                direct.getButtonHandler().handle(bE, reply);
+
             } catch (BotException e) {
                 reply.send(e.getColor(), e.getMessage());
             }
@@ -189,7 +188,7 @@ public class Bot extends ListenerAdapter {
                 String buttonId = event.getComponentId();
                 Message message = event.getMessage();
 
-                server.getButtonHandler().handle(new ButtonEvent(member, buttonId, message), reply);
+                server.getButtonHandler().handle(new ButtonEvent<>(member, buttonId, message), reply);
             } catch (BotException e) {
                 reply.send(e.getColor(), e.getMessage());
             }
@@ -206,8 +205,10 @@ public class Bot extends ListenerAdapter {
             Reply reply = Reply.defaultInteractionReply(hook);
 
             try {
-                direct.selectMenu(event.getUser().getId(), event.getComponentId(),
-                    event.getInteraction().getValues().get(0), event.getMessage(), reply);
+                StringSelectEvent selectEvent = new StringSelectEvent(event.getUser(), event.getMessage(),
+                    event.getComponentId(), event.getInteraction().getValues().get(0));
+                direct.getStringSelectHandler().handle(selectEvent, reply);
+
             } catch (BotException e) {
                 reply.send(e.getColor(), e.getMessage());
             }
@@ -230,7 +231,7 @@ public class Bot extends ListenerAdapter {
 
         try {
             servers.get(guild.getId())
-                .receiveInteraction(new InteractionEvent(message, event.getInteraction().getName()), reply);
+                .receiveInteraction(new MessageInteractionEvent(message, event.getInteraction().getName()), reply);
         } catch (BotException e) {
             reply.send(e.getColor(), e.getMessage());
         }
@@ -286,8 +287,7 @@ public class Bot extends ListenerAdapter {
         }
 
         Message message = event.getMessage();
-
-        Reply reply = Reply.defaultMessageReply(event.getMessage());
+        Reply reply = Reply.defaultMessageReply(message);
 
         try {
             direct.receiveMessage(message, reply);

@@ -10,15 +10,13 @@ public class DatabaseAction<T> {
 
     private static final Executor EXECUTOR = command -> new Thread(command).start();
     private final Query query;
-    private final Object[] args;
 
-    public DatabaseAction(Query query, Object... args) {
+    public DatabaseAction(Query query) {
         this.query = query;
-        this.args = args;
     }
 
     public DatabaseAction(String query, Object... args) {
-        this(Query.of(query), args);
+        this(Query.of(query, args));
     }
 
     public CompletableFuture<T> queue(Function<Table, T> callback) {
@@ -26,7 +24,7 @@ public class DatabaseAction<T> {
             AtomicReference<T> reference = new AtomicReference<>();
             Database database = Database.getInstance().connect();
             try {
-                database.queryStatement(table -> reference.set(callback.apply(table)), query, args);
+                database.queryStatement(table -> reference.set(callback.apply(table)), query);
             } finally {
                 database.close();
             }
@@ -38,7 +36,7 @@ public class DatabaseAction<T> {
         return CompletableFuture.runAsync(() -> {
             Database database = Database.getInstance().connect();
             try {
-                database.queryStatement(callback, query, args);
+                database.queryStatement(callback, query);
             } finally {
                 database.close();
             }
@@ -49,7 +47,7 @@ public class DatabaseAction<T> {
         return CompletableFuture.runAsync(() -> {
             Database database = Database.getInstance().connect();
             try {
-                database.executeStatement(query, args);
+                database.executeStatement(query);
             } finally {
                 database.close();
             }

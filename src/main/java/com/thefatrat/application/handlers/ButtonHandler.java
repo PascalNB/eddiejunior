@@ -7,17 +7,17 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
-public class ButtonHandler implements Handler<ButtonEvent> {
+public class ButtonHandler<T> implements Handler<ButtonEvent<T>> {
 
-    private final Set<BiConsumer<ButtonEvent, Reply>> set = new HashSet<>();
+    private final Set<BiConsumer<ButtonEvent<T>, Reply>> set = new HashSet<>();
 
-    public void addListener(BiConsumer<ButtonEvent, Reply> listener) {
+    public void addListener(BiConsumer<ButtonEvent<T>, Reply> listener) {
         set.add(listener);
     }
 
     @Override
-    public void handle(ButtonEvent event, Reply reply) {
-        for (BiConsumer<ButtonEvent, Reply> listener : set) {
+    public void handle(ButtonEvent<T> event, Reply reply) {
+        for (BiConsumer<ButtonEvent<T>, Reply> listener : set) {
             listener.accept(event, reply);
         }
     }

@@ -4,12 +4,11 @@ import com.thefatrat.application.Bot;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.entities.Interaction;
 import com.thefatrat.application.entities.Reply;
-import com.thefatrat.application.events.InteractionEvent;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
-import com.thefatrat.application.util.Icons;
+import com.thefatrat.application.util.Icon;
 import com.thefatrat.application.util.URLUtil;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
@@ -19,8 +18,14 @@ import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.Channel;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import net.dv8tion.jda.api.interactions.components.ActionRow;
+import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
+import net.dv8tion.jda.api.utils.messages.MessageCreateData;
+import net.dv8tion.jda.api.utils.messages.MessageEditBuilder;
 import net.dv8tion.jda.internal.utils.PermissionUtil;
 
 import java.net.URISyntaxException;
@@ -77,11 +82,20 @@ public class Feedback extends DirectComponent {
                     Submission submission = submissions.get(0);
                     submissions.remove(0);
 
-                    MessageEmbed embed = new EmbedBuilder()
-                        .setColor(Colors.BLUE)
-                        .setDescription(String.format("%s has won!", submission.user())).build();
+                    try (MessageCreateData data = new MessageCreateBuilder()
+                        .mention(submission.user())
+                        .addEmbeds(new EmbedBuilder()
+                            .setColor(Icon.WIN.getColor())
+                            .setDescription(String.format("%s has won!", submission.user().getAsMention()))
+                            .build()
+                        )
+                        .build()) {
 
-                    destination.sendMessageEmbeds(submission.submission()).queue(m -> reply.send(embed));
+                        destination.sendMessage(submission.submission()).queue(m -> reply.send(data));
+
+                    } catch (Exception e) {
+                        throw new BotErrorException("Something went wrong");
+                    }
                 }),
 
             new Command("reset", "allow submissions for users again")
@@ -89,9 +103,7 @@ public class Feedback extends DirectComponent {
                 .setAction((command, reply) -> {
                     if (!command.getArgs().containsKey("user")) {
                         users.clear();
-                        reply.send(Icons.RESET, Colors.GRAY,
-                            "Feedback session reset, users can submit again"
-                        );
+                        reply.send(Icon.RESET, "Feedback session reset, users can submit again");
                         return;
                     }
 
@@ -103,16 +115,16 @@ public class Feedback extends DirectComponent {
 
                     users.remove(member.getId());
 
-                    reply.send(Icons.RESET, Colors.GRAY, "Feedback session reset for %s, " +
-                        "they can submit again", member.getAsMention());
+                    reply.send(Icon.RESET, "Feedback session reset for %s, they can submit again",
+                        member.getAsMention());
                 }),
 
             new Command("domains", "manage the domain whitelist for feedback submissions")
                 .addOption(new OptionData(OptionType.STRING, "action", "action", true)
+                    .addChoice("show", "show")
                     .addChoice("add", "add")
                     .addChoice("remove", "remove")
                     .addChoice("clear", "clear")
-                    .addChoice("show", "show")
                 )
                 .addOption(new OptionData(OptionType.STRING, "domains",
                     "domains seperated by comma", false))
@@ -127,24 +139,18 @@ public class Feedback extends DirectComponent {
                         if (domains.isEmpty()) {
                             throw new BotWarningException("The domain whitelist is empty");
                         }
-                        StringBuilder builder = new StringBuilder();
 
                         String[] sorted = new String[domains.size()];
                         int i = 0;
                         for (String s : domains) {
-                            sorted[i] = s;
+                            sorted[i] = '`' + s + '`';
                             ++i;
                         }
                         Arrays.sort(sorted);
 
-                        for (String domain : sorted) {
-                            builder.append("`").append(domain).append("`\n");
-                        }
-                        builder.deleteCharAt(builder.length() - 1);
-
                         reply.send(new EmbedBuilder()
                             .setColor(Colors.BLUE)
-                            .addField("Whitelist", builder.toString(), false)
+                            .addField("Whitelist", String.join("\n", sorted), false)
                             .build());
                         return;
                     }
@@ -186,7 +192,7 @@ public class Feedback extends DirectComponent {
                             }
                             getDatabaseManager().addSetting("domains", domain);
                             this.domains.add(domain);
-                            changed.add(domain);
+                            changed.add('`' + domain + '`');
                         }
                     } else {
                         msg = "removed from";
@@ -199,7 +205,7 @@ public class Feedback extends DirectComponent {
                             }
                             getDatabaseManager().removeSetting("domains", domain);
                             this.domains.remove(domain);
-                            changed.add(domain);
+                            changed.add('`' + domain + '`');
                         }
                     }
 
@@ -207,16 +213,16 @@ public class Feedback extends DirectComponent {
                         return;
                     }
 
-                    reply.ok("Domain%s %s\n%s the whitelist", changed.size() == 1 ? "" : "s",
-                        concatObjects(changed.toArray(), s -> "\n`" + s + "`"), msg);
+                    reply.ok("Domain%s %s %s the whitelist", changed.size() == 1 ? "" : "s",
+                        String.join(", ", changed), msg);
                 }),
 
             new Command("filetypes", "manage discordapp filetypes filter, " +
                 "filetypes only work if discordapp.com is whitelisted")
                 .addOption(new OptionData(OptionType.STRING, "action", "action", true)
+                    .addChoice("show", "show")
                     .addChoice("add", "add")
                     .addChoice("remove", "remove")
-                    .addChoice("show", "show")
                     .addChoice("clear", "clear")
                 )
                 .addOption(new OptionData(OptionType.STRING, "filetypes",
@@ -282,7 +288,7 @@ public class Feedback extends DirectComponent {
                             }
                             getDatabaseManager().addSetting("filetypes", filetype);
                             this.filetypes.add(filetype);
-                            changed.add(filetype);
+                            changed.add('`' + filetype + '`');
                         }
                     } else {
                         msg = "removed from";
@@ -295,7 +301,7 @@ public class Feedback extends DirectComponent {
                             }
                             getDatabaseManager().removeSetting("filetypes", filetype);
                             this.filetypes.remove(filetype);
-                            changed.add(filetype);
+                            changed.add('`' + filetype + '`');
                         }
                     }
 
@@ -303,52 +309,67 @@ public class Feedback extends DirectComponent {
                         return;
                     }
 
-                    reply.ok("Filetype%s %s\n%s the filetype list", changed.size() == 1 ? "" : "s",
-                        concatObjects(changed.toArray(), s -> "\n`" + s + "`"), msg);
+                    reply.ok("Filetype%s %s %s the filetype list", changed.size() == 1 ? "" : "s",
+                        String.join(", ", changed), msg);
                 })
         );
 
         addInteractions(
             new Interaction("mark read")
                 .setAction((event, reply) -> {
-                    interactionCheck(event);
-
-                    MessageEmbed embed = event.getMessage().getEmbeds().get(0);
-                    if (embed.getColorRaw() != Colors.LIGHT) {
-                        throw new BotErrorException("Could not perform action");
-                    }
-                    event.getMessage().editMessageEmbeds(
-                        new EmbedBuilder(embed)
-                            .setColor(Colors.DARK)
-                            .build()
-                    ).queue();
-                    reply.ok("`%s` performed successfully", event.getAction());
+                    interactionCheck(event.getMessage());
+                    MessageEditBuilder builder = MessageEditBuilder.fromMessage(event.getMessage());
+                    EmbedBuilder embed = new EmbedBuilder(builder.getEmbeds().get(0));
+                    embed.setColor(Colors.TRANSPARENT);
+                    builder.setEmbeds(embed.build());
+                    builder.setComponents();
+                    event.getMessage().editMessage(builder.build()).queue();
+                    reply.ok("Submission marked as read");
                 }),
 
             new Interaction("mark unread")
                 .setAction((event, reply) -> {
-                    interactionCheck(event);
+                    interactionCheck(event.getMessage());
 
-                    MessageEmbed embed = event.getMessage().getEmbeds().get(0);
-                    if (embed.getColorRaw() != Colors.DARK) {
-                        throw new BotErrorException("Could not perform action");
-                    }
-                    event.getMessage().editMessageEmbeds(
-                        new EmbedBuilder(embed)
-                            .setColor(Colors.LIGHT)
-                            .build()
-                    ).queue();
-                    reply.ok("`%s` performed successfully", event.getAction());
+                    MessageEditBuilder builder = MessageEditBuilder.fromMessage(event.getMessage());
+                    EmbedBuilder embed = new EmbedBuilder(builder.getEmbeds().get(0));
+                    embed.setColor(Colors.GREEN);
+                    builder.setEmbeds(embed.build());
+                    builder.setComponents(ActionRow.of(
+                        Button.secondary("feedback-mark_read", "Mark as read").withEmoji(Emoji.fromUnicode("✅"))
+                    ));
+                    event.getMessage().editMessage(builder.build()).queue();
+                    reply.ok("Submission marked as unread");
                 })
         );
+
+        getServer().getButtonHandler().addListener((event, reply) -> {
+            String buttonId = event.getButtonId();
+            if (!buttonId.startsWith("feedback-")) {
+                return;
+            }
+
+            String[] split = buttonId.split("-");
+            String action = split[1];
+
+            if ("mark_read".equals(action)) {
+                MessageEditBuilder builder = MessageEditBuilder.fromMessage(event.getMessage());
+                EmbedBuilder embed = new EmbedBuilder(builder.getEmbeds().get(0));
+                embed.setColor(Colors.TRANSPARENT);
+                builder.setEmbeds(embed.build());
+                builder.setComponents();
+                event.getMessage().editMessage(builder.build()).queue();
+                reply.ok("Submission marked as read");
+            }
+        });
     }
 
-    private void interactionCheck(InteractionEvent event) {
+    private void interactionCheck(Message message) {
         if (!Bot.getInstance().getJDA().getSelfUser().getId()
-            .equals(event.getMessage().getAuthor().getId())) {
+            .equals(message.getAuthor().getId())) {
             throw new BotWarningException("Message was not send by me");
         }
-        List<MessageEmbed> embeds = event.getMessage().getEmbeds();
+        List<MessageEmbed> embeds = message.getEmbeds();
         if (embeds.isEmpty()) {
             throw new BotErrorException("Message does not contain embeds");
         }
@@ -423,22 +444,29 @@ public class Feedback extends DirectComponent {
             }
         }
 
+        MessageCreateBuilder builder = new MessageCreateBuilder();
+
         EmbedBuilder embed = new EmbedBuilder()
-            .setColor(Colors.LIGHT)
+            .setColor(Colors.GREEN)
             .setTimestamp(Instant.now())
             .setAuthor(author.getAsTag(), null, author.getEffectiveAvatarUrl())
             .addField("User", String.format("%s `(%s)`", author.getAsMention(), author.getId()), true)
             .addField("Submission", String.format("<%s>", url), true)
             .setFooter(getName());
         if (!URLUtil.isSafe(url)) {
-            embed.addField(Icons.WARNING,
+            embed.addField(Icon.WARNING.toString(),
                 "The source is not HTTPS and might not be safe",
                 true);
         }
 
         users.add(author.getId());
 
-        submissions.add(new Submission(author.getAsMention(), embed.build()));
+        builder.setEmbeds(embed.build());
+        builder.addActionRow(
+            Button.secondary("feedback-mark_read", "Mark as read").withEmoji(Emoji.fromUnicode("✅"))
+        );
+
+        submissions.add(new Submission(author, builder.build()));
         submissionCount++;
         reply.ok("Successfully submitted");
     }
@@ -455,10 +483,10 @@ public class Feedback extends DirectComponent {
         super.stop(reply);
         submissions.clear();
         submissionCount = 0;
-        reply.send(Icons.STOP, Colors.GREEN, "Feedback session stopped");
+        reply.send(Icon.STOP, "Feedback session stopped");
     }
 
-    private record Submission(String user, MessageEmbed submission) {
+    private record Submission(User user, MessageCreateData submission) {
     }
 
 }

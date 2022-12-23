@@ -5,7 +5,7 @@ import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
-import com.thefatrat.application.util.Icons;
+import com.thefatrat.application.util.Icon;
 import com.thefatrat.database.Database;
 import com.thefatrat.database.DatabaseException;
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -42,7 +42,7 @@ public class Manager extends Component {
             new Command("ping", "check the RTT of the connection in milliseconds")
                 .setAction((command, reply) -> reply.send(
                     new EmbedBuilder()
-                        .setColor(Colors.BLUE)
+                        .setColor(Colors.TRANSPARENT)
                         .addField("WebSocket", Bot.getInstance().getJDA().getGatewayPing() + " ms", true)
                         .build(),
                     message -> {
@@ -81,7 +81,7 @@ public class Manager extends Component {
                     component.getDatabaseManager().toggleComponent(true)
                         .thenRun(() -> {
                             getServer().toggleComponent(component, true);
-                            reply.send(Icons.ENABLE, Colors.WHITE, "Component `%s` enabled", componentString);
+                            reply.send(Icon.ENABLE, "Component `%s` enabled", componentString);
                         });
                 }),
 
@@ -110,7 +110,7 @@ public class Manager extends Component {
                         .thenRun(() -> {
                             getServer().toggleComponent(component, false);
 
-                            reply.send(Icons.DISABLE, Colors.WHITE, "Component `%s` disabled", componentString);
+                            reply.send(Icon.DISABLE, "Component `%s` disabled", componentString);
                         });
                 }),
 
@@ -124,10 +124,10 @@ public class Manager extends Component {
                         builder.append(component.getTitle());
 
                         if (component.isEnabled()) {
-                            builder.append(" ").append(Icons.ENABLE);
+                            builder.append(" ").append(Icon.ENABLE);
 
                             if (component instanceof DirectComponent direct && direct.isRunning()) {
-                                builder.append(" ").append(Icons.OK);
+                                builder.append(" ").append(Icon.OK);
                             }
                         }
                         builder.append("\n");

@@ -1,5 +1,7 @@
 package com.thefatrat.application.exceptions;
 
+import com.thefatrat.application.util.Icon;
+
 public abstract class BotException extends RuntimeException {
 
     public BotException(String message) {
@@ -17,6 +19,6 @@ public abstract class BotException extends RuntimeException {
 
     public abstract int getColor();
 
-    protected abstract String getIcon();
+    protected abstract Icon getIcon();
 
 }

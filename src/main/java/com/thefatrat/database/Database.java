@@ -121,20 +121,17 @@ public abstract class Database {
      *
      * @param callback          the consumer that accepts the result from the database
      * @param preparedStatement the prepared query
-     * @param variables         the variables that should be added to the query
      * @return the same {@link Database}
      */
-    public abstract Database queryStatement(Consumer<Table> callback, Query preparedStatement,
-        Object... variables);
+    public abstract Database queryStatement(Consumer<Table> callback, Query preparedStatement);
 
     /**
      * Executes a prepared statement on the database.
      *
      * @param preparedStatement the prepared statement
-     * @param variables         the variables that should be added to the query
      * @return the same {@link Database}
      */
-    public abstract Database executeStatement(Query preparedStatement, Object... variables);
+    public abstract Database executeStatement(Query preparedStatement);
 
     /**
      * Closes the connection to the database.

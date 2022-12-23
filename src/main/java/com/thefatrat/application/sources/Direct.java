@@ -4,17 +4,23 @@ import com.thefatrat.application.Bot;
 import com.thefatrat.application.entities.Reply;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
+import com.thefatrat.application.handlers.ButtonHandler;
 import com.thefatrat.application.handlers.MessageHandler;
+import com.thefatrat.application.handlers.StringSelectHandler;
 import com.thefatrat.application.util.Colors;
+import com.thefatrat.application.util.Icon;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.interactions.components.ActionRow;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.interactions.components.selections.StringSelectMenu;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 
+import javax.annotation.CheckReturnValue;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,10 +29,58 @@ import java.util.Set;
 public class Direct extends Source {
 
     private final Map<String, Message> cache = new HashMap<>();
+    private final StringSelectHandler stringSelectHandler = new StringSelectHandler();
+    private final ButtonHandler<User> buttonHandler = new ButtonHandler<>();
+
+    public Direct() {
+        stringSelectHandler.addListener((event, reply) -> {
+            if ("component".equals(event.getMenuId())) {
+                event.getMessage().delete().queue();
+                String[] split = event.getOption().split("-");
+                String serverId = split[0];
+                String component = split[1];
+
+                Message userMessage = cache.remove(event.getUser().getId());
+
+                Server server = Bot.getInstance().getServer(serverId);
+                if (server == null) {
+                    throw new BotErrorException("Something went wrong");
+                }
+
+                MessageHandler handler = server.getDirectHandler();
+
+                if (!handler.getKeys().contains(component)) {
+                    throw new BotErrorException("Could not send to the given service, try again");
+                }
+
+                handler.handle(component, userMessage, reply);
+
+            } else if ("server".equals(event.getMenuId())) {
+                event.getMessage().delete().queue();
+                MessageCreateData data = getComponentMenu(event.getUser().getId(), event.getOption());
+                reply.send(data);
+            }
+        });
+
+        buttonHandler.addListener((event, reply) -> {
+            if ("x".equals(event.getButtonId())) {
+                event.getMessage().delete().queue();
+                cache.remove(event.getUser().getId());
+                reply.send(Icon.STOP, "Successfully cancelled");
+            }
+        });
+    }
+
+    public StringSelectHandler getStringSelectHandler() {
+        return stringSelectHandler;
+    }
+
+    public ButtonHandler<User> getButtonHandler() {
+        return buttonHandler;
+    }
 
     @Override
     public void receiveMessage(Message message, Reply reply) {
-
         String userId = message.getAuthor().getId();
         List<Guild> mutualGuilds = Bot.getInstance().retrieveMutualGuilds(message.getAuthor()).complete();
 
@@ -36,35 +90,19 @@ public class Direct extends Source {
 
         cache.put(message.getAuthor().getId(), message);
 
+        MessageCreateData data;
         if (mutualGuilds.size() == 1) {
             String serverId = mutualGuilds.get(0).getId();
-            sendComponentMenu(userId, serverId, reply);
-            return;
+            data = getComponentMenu(userId, serverId);
+        } else {
+            data = getServerMenu(mutualGuilds);
         }
 
-        StringSelectMenu.Builder menu = StringSelectMenu.create("server")
-            .setMaxValues(1);
-
-        for (Guild guild : mutualGuilds) {
-            menu.addOption(guild.getName(), guild.getId());
-        }
-
-        MessageCreateData data = new MessageCreateBuilder()
-            .addEmbeds(new EmbedBuilder()
-                .setColor(Colors.BLUE)
-                .setDescription("What server do you want to send this to?")
-                .build()
-            )
-            .setComponents(
-                ActionRow.of(menu.build()),
-                ActionRow.of(Button.danger("x", "Cancel"))
-            )
-            .build();
-
-        message.reply(data).queue();
+        reply.send(data);
     }
 
-    private void sendComponentMenu(String userId, String serverId, Reply reply) {
+    @CheckReturnValue
+    private MessageCreateData getComponentMenu(String userId, String serverId) {
         Server server = Bot.getInstance().getServer(serverId);
         if (server == null) {
             throw new BotErrorException("Something went wrong");
@@ -84,55 +122,38 @@ public class Direct extends Source {
             menu.addOption(name, serverId + "-" + key);
         }
 
-        MessageCreateData data = new MessageCreateBuilder()
+        return new MessageCreateBuilder()
             .addEmbeds(new EmbedBuilder()
-                .setColor(Colors.BLUE)
-                .setDescription("What service do you want to send this to?")
+                .setColor(Colors.TRANSPARENT)
+                .setTitle("What service do you want to send this to?")
                 .build()
             )
             .setComponents(
                 ActionRow.of(menu.build()),
-                ActionRow.of(Button.danger("x", "Cancel"))
+                ActionRow.of(Button.danger("x", "Cancel").withEmoji(Emoji.fromUnicode("✖")))
             )
             .build();
-
-        reply.send(data);
     }
 
-    public void selectMenu(String userId, String menuId, String option, Message message, Reply reply) {
-        if ("component".equals(menuId)) {
-            message.delete().queue();
-            String[] split = option.split("-");
-            String serverId = split[0];
-            String component = split[1];
+    @CheckReturnValue
+    public MessageCreateData getServerMenu(List<Guild> guilds) {
+        StringSelectMenu.Builder menu = StringSelectMenu.create("server").setRequiredRange(1, 1);
 
-            Message userMessage = cache.remove(userId);
-
-            Server server = Bot.getInstance().getServer(serverId);
-            if (server == null) {
-                throw new BotErrorException("Something went wrong");
-            }
-
-            MessageHandler handler = server.getDirectHandler();
-
-            if (!handler.getKeys().contains(component)) {
-                throw new BotErrorException("Could not send to the given service, try again");
-            }
-
-            handler.handle(component, userMessage, reply);
-
-        } else if ("server".equals(menuId)) {
-            message.delete().queue();
-            sendComponentMenu(userId, option, reply);
+        for (Guild guild : guilds) {
+            menu.addOption(guild.getName(), guild.getId());
         }
-    }
 
-    public void clickButton(String userId, String buttonId, Message message, Reply reply) {
-        if ("x".equals(buttonId)) {
-            message.delete().queue();
-            cache.remove(userId);
-            reply.send(Colors.BLUE, ":stop_sign: Successfully cancelled");
-        }
+        return new MessageCreateBuilder()
+            .addEmbeds(new EmbedBuilder()
+                .setColor(Colors.TRANSPARENT)
+                .setTitle("What server do you want to send this to?")
+                .build()
+            )
+            .setComponents(
+                ActionRow.of(menu.build()),
+                ActionRow.of(Button.danger("x", "Cancel").withEmoji(Emoji.fromUnicode("✖")))
+            )
+            .build();
     }
 
 }

@@ -1,13 +1,13 @@
 package com.thefatrat.application.entities;
 
-import com.thefatrat.application.events.InteractionEvent;
+import com.thefatrat.application.events.MessageInteractionEvent;
 
 import java.util.function.BiConsumer;
 
 public class Interaction {
 
     private String name;
-    private BiConsumer<InteractionEvent, Reply> action = (__, ___) -> {};
+    private BiConsumer<MessageInteractionEvent, Reply> action = (__, ___) -> {};
 
     public Interaction(String name) {this.name = name;}
 
@@ -19,11 +19,11 @@ public class Interaction {
         this.name = name;
     }
 
-    public BiConsumer<InteractionEvent, Reply> getAction() {
+    public BiConsumer<MessageInteractionEvent, Reply> getAction() {
         return action;
     }
 
-    public Interaction setAction(BiConsumer<InteractionEvent, Reply> action) {
+    public Interaction setAction(BiConsumer<MessageInteractionEvent, Reply> action) {
         this.action = action;
         return this;
     }

@@ -5,7 +5,7 @@ import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
-import com.thefatrat.application.util.Icons;
+import com.thefatrat.application.util.Icon;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
@@ -236,7 +236,7 @@ public class Session extends Component {
                     String[] array = channels.toArray(String[]::new);
                     String joined = String.join(", ", array);
 
-                    reply.send(Icons.STOP, Colors.GREEN, "Session `%s` stopped.%n" +
+                    reply.send(Icon.STOP, "Session `%s` stopped.%n" +
                         "The following channels have been made private:%n%s", string, joined);
                 })
         );

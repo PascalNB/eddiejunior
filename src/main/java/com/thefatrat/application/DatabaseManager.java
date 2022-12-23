@@ -49,7 +49,7 @@ public class DatabaseManager {
     public CompletableFuture<Void> setSetting(String setting, String value) {
         return new DatabaseAction<Void>(REMOVE_SETTING, server, component, setting).execute()
             .thenRun(() -> Database.getInstance().connect()
-                .executeStatement(Query.of(ADD_SETTING), server, component, setting, value)
+                .executeStatement(Query.of(ADD_SETTING, server, component, setting, value))
                 .close()
             );
     }

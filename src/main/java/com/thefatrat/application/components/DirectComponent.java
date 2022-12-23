@@ -6,7 +6,7 @@ import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
-import com.thefatrat.application.util.Icons;
+import com.thefatrat.application.util.Icon;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.*;
@@ -82,7 +82,7 @@ public abstract class DirectComponent extends Component {
 
                         setDestination(newDestination.getId());
 
-                        reply.send(Icons.SETTING, Colors.GRAY, "Destination set to %s `(%s)`%n",
+                        reply.send(Icon.SETTING, "Destination set to %s `(%s)`%n",
                             getDestination().getAsMention(), getDestination().getId()
                         );
                     }
@@ -115,7 +115,7 @@ public abstract class DirectComponent extends Component {
 
                     setDestination(newDestination.getId());
 
-                    reply.send(Icons.SETTING, Colors.GRAY, "Destination set to %s `(%s)`%n",
+                    reply.send(Icon.SETTING, "Destination set to %s `(%s)`%n",
                         newDestination.getAsMention(), newDestination.getId());
                 }),
             new Command("blacklist", "manages the blacklist")
@@ -151,8 +151,7 @@ public abstract class DirectComponent extends Component {
                                     IMentionable::getAsMention).toArray(String[]::new);
                                 reply.send(new EmbedBuilder()
                                     .setColor(Colors.BLUE)
-                                    .addField("Blacklist",
-                                        String.join("\n", strings), false)
+                                    .addField("Blacklist", String.join("\n", strings), false)
                                     .build());
                             });
                         return;
@@ -226,7 +225,7 @@ public abstract class DirectComponent extends Component {
     protected abstract void handleDirect(Message message, Reply reply);
 
     protected void stop(Reply reply) {
-        getServer().getDirectHandler().removeListener(getTitle());
+        getServer().getDirectHandler().removeListener(getName());
         this.running = false;
         if (autoRun) {
             getDatabaseManager().setSetting("running", "false");
@@ -235,7 +234,7 @@ public abstract class DirectComponent extends Component {
 
     protected void start(Reply reply) {
         this.running = true;
-        getServer().getDirectHandler().addListener(getTitle(), receiver);
+        getServer().getDirectHandler().addListener(getName(), receiver);
         if (autoRun) {
             getDatabaseManager().setSetting("running", "true");
         }

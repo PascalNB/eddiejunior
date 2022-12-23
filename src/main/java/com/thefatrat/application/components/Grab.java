@@ -42,7 +42,7 @@ public class Grab extends Component {
 
                     String url = icon.getUrl(1024);
                     reply.send(new EmbedBuilder()
-                        .setColor(Colors.BLUE)
+                        .setColor(Colors.TRANSPARENT)
                         .setImage(url)
                         .build());
                 })
@@ -53,7 +53,7 @@ public class Grab extends Component {
                     User user = getEffectiveUser(command);
                     String url = user.getEffectiveAvatar().getUrl(1024);
                     reply.send(new EmbedBuilder()
-                        .setColor(Colors.BLUE)
+                        .setColor(Colors.TRANSPARENT)
                         .setAuthor(user.getAsTag(), null)
                         .setImage(url)
                         .build());
@@ -68,7 +68,7 @@ public class Grab extends Component {
 
                     String url = banner.getUrl(1024);
                     reply.send(new EmbedBuilder()
-                        .setColor(Colors.BLUE)
+                        .setColor(Colors.TRANSPARENT)
                         .setImage(url)
                         .build());
                 })
@@ -82,7 +82,7 @@ public class Grab extends Component {
 
                     String url = splash.getUrl(1024);
                     reply.send(new EmbedBuilder()
-                        .setColor(Colors.BLUE)
+                        .setColor(Colors.TRANSPARENT)
                         .setImage(url)
                         .build());
                 })
@@ -220,7 +220,7 @@ public class Grab extends Component {
                     String url = emoji.getImageUrl();
 
                     reply.send(new EmbedBuilder()
-                        .setColor(Colors.BLUE)
+                        .setColor(Colors.TRANSPARENT)
                         .setTitle(emoji.getName())
                         .setImage(url)
                         .setFooter(emoji.getId())
@@ -231,7 +231,7 @@ public class Grab extends Component {
                 .addOption(new OptionData(OptionType.MENTIONABLE, "mention", "mention", true))
                 .setAction((command, reply) -> {
                     IMentionable mention = command.getArgs().get("mention").getAsMentionable();
-                    reply.send(Colors.BLUE, mention.getId());
+                    reply.send(Colors.TRANSPARENT, mention.getId());
                 })
             )
         );

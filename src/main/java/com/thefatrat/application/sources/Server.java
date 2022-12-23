@@ -7,11 +7,12 @@ import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.entities.Interaction;
 import com.thefatrat.application.entities.Reply;
 import com.thefatrat.application.events.CommandEvent;
-import com.thefatrat.application.events.InteractionEvent;
+import com.thefatrat.application.events.MessageInteractionEvent;
 import com.thefatrat.application.exceptions.BotException;
 import com.thefatrat.application.handlers.*;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
@@ -32,10 +33,10 @@ public class Server extends Source {
 
     private final String id;
     private final CommandHandler commandHandler = new CommandHandler();
-    private final InteractionHandler interactionHandler = new InteractionHandler();
+    private final MessageInteractionHandler messageInteractionHandler = new MessageInteractionHandler();
     private final MessageHandler directHandler = new MessageHandler();
     private final ArchiveHandler archiveHandler = new ArchiveHandler();
-    private final ButtonHandler buttonHandler = new ButtonHandler();
+    private final ButtonHandler<Member> buttonHandler = new ButtonHandler<>();
     private final Map<String, Component> components = new HashMap<>();
 
     public static Server dummy() {
@@ -138,20 +139,20 @@ public class Server extends Source {
         return commandHandler;
     }
 
-    public InteractionHandler getInteractionHandler() {
-        return interactionHandler;
+    public MessageInteractionHandler getInteractionHandler() {
+        return messageInteractionHandler;
     }
 
     public ArchiveHandler getArchiveHandler() {
         return archiveHandler;
     }
 
-    public ButtonHandler getButtonHandler() {
+    public ButtonHandler<Member> getButtonHandler() {
         return buttonHandler;
     }
 
-    public void receiveInteraction(InteractionEvent message, Reply reply) {
-        interactionHandler.handle(message, reply);
+    public void receiveInteraction(MessageInteractionEvent message, Reply reply) {
+        messageInteractionHandler.handle(message, reply);
     }
 
     public void receiveCommand(CommandEvent event, Reply reply) {

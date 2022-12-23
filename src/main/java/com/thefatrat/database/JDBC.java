@@ -95,15 +95,14 @@ public class JDBC extends Database {
     }
 
     @Override
-    public Database queryStatement(Consumer<Table> callback, Query statement,
-        Object... variables) {
+    public Database queryStatement(Consumer<Table> callback, Query statement) {
         checkConnection();
 
         try {
             callback.accept(
                 parseResult(setVariables(
                     connection.prepareStatement(statement.toString()),
-                    variables
+                    statement.getArgs()
                 ).executeQuery()));
         } catch (SQLException e) {
             throw new DatabaseException(e);
@@ -113,11 +112,11 @@ public class JDBC extends Database {
     }
 
     @Override
-    public Database executeStatement(Query statement, Object... variables) {
+    public Database executeStatement(Query statement) {
         checkConnection();
 
         try {
-            setVariables(connection.prepareStatement(statement.toString()), variables).execute();
+            setVariables(connection.prepareStatement(statement.toString()), statement.getArgs()).execute();
         } catch (SQLException e) {
             throw new DatabaseException(e);
         }

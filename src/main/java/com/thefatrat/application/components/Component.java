@@ -7,7 +7,7 @@ import com.thefatrat.application.entities.Interaction;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotException;
 import com.thefatrat.application.handlers.CommandHandler;
-import com.thefatrat.application.handlers.InteractionHandler;
+import com.thefatrat.application.handlers.MessageInteractionHandler;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
 import net.dv8tion.jda.api.entities.MessageEmbed;
@@ -120,10 +120,10 @@ public abstract class Component {
             }
         }
 
-        InteractionHandler interactionHandler = getServer().getInteractionHandler();
+        MessageInteractionHandler messageInteractionHandler = getServer().getInteractionHandler();
 
         for (Interaction interaction : interactions) {
-            interactionHandler.addListener(interaction.getName(), interaction.getAction());
+            messageInteractionHandler.addListener(interaction.getName(), interaction.getAction());
         }
 
         help = new HelpBuilder(getName(), getCommands()).build(Colors.BLUE);
@@ -226,18 +226,6 @@ public abstract class Component {
             result.add(found.getOrDefault(t, t));
         }
         return result;
-    }
-
-    public static <T> String concatObjects(T[] objects, Function<T, String> toString) {
-        if (objects.length == 0) {
-            return "";
-        }
-        StringBuilder builder = new StringBuilder();
-        for (T o : objects) {
-            builder.append(toString.apply(o)).append(", ");
-        }
-        builder.delete(builder.length() - 2, builder.length());
-        return builder.toString();
     }
 
 }

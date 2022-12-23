@@ -6,7 +6,7 @@ import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
-import com.thefatrat.application.util.Icons;
+import com.thefatrat.application.util.Icon;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Message;
@@ -16,8 +16,11 @@ import net.dv8tion.jda.api.entities.channel.Channel;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
+import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.internal.utils.PermissionUtil;
 
 import java.time.Instant;
@@ -25,7 +28,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ModMail extends DirectComponent {
@@ -162,6 +164,37 @@ public class ModMail extends DirectComponent {
                 }
             });
         });
+
+        getServer().getButtonHandler().addListener((event, reply) -> {
+            String buttonId = event.getButtonId();
+            if (!buttonId.startsWith("modmail-")) {
+                return;
+            }
+
+            String[] split = buttonId.split("-");
+            String action = split[1];
+
+            if ("archive".equals(action)) {
+                String threadId = split[2];
+                ThreadChannel thread = getServer().getGuild().getThreadChannelById(threadId);
+
+                if (thread == null) {
+                    throw new BotErrorException("Thread not found");
+                }
+
+                if (!PermissionUtil.checkPermission(thread.getParentChannel(), getServer().getGuild().getSelfMember(),
+                    Permission.MANAGE_THREADS)) {
+                    throw new BotErrorException("Requires permission `%s`", Permission.MANAGE_THREADS.getName());
+                }
+
+                reply.ok(callback ->
+                        thread.getManager().setLocked(true).queue(success ->
+                            thread.getManager().setArchived(true).queue()
+                        ),
+                    "Current thread archived");
+            }
+
+        });
     }
 
     @Override
@@ -186,8 +219,14 @@ public class ModMail extends DirectComponent {
     @Override
     protected synchronized void handleDirect(Message message, Reply reply) {
         String content = message.getContentRaw();
-        if (content.length() < 20 || content.length() > 1018) {
-            throw new BotWarningException("Messages have to be between 20 and 1018 characters");
+        if (content.length() < 20) {
+            throw new BotWarningException("Messages have to be between at least 20 characters");
+        }
+        if (content.length() > 4090) {
+            throw new BotWarningException("Message cannot be longer than 4090 characters");
+        }
+        if (!content.matches(" +")) {
+            throw new BotWarningException("Spam is not allowed");
         }
 
         if (maxTickets != 0 && tickets == maxTickets) {
@@ -215,7 +254,7 @@ public class ModMail extends DirectComponent {
         timeouts.put(author.getId(), System.currentTimeMillis());
         userCount.put(author.getId(), userCount.getOrDefault(author.getId(), 0) + 1);
         ++threadId;
-        CompletableFuture<Void> future = getDatabaseManager().setSetting("threadid", String.valueOf(threadId));
+        getDatabaseManager().setSetting("threadid", String.valueOf(threadId));
         String topic = String.format("t%d-%s", threadId, author.getAsTag());
         topic = topic.substring(0, Math.min(topic.length(), 25));
 
@@ -228,29 +267,51 @@ public class ModMail extends DirectComponent {
 
             String urls = String.join("\n", list.toArray(new String[0]));
 
-            EmbedBuilder embed = new EmbedBuilder()
-                .setColor(Colors.LIGHT)
+            MessageCreateBuilder builder = new MessageCreateBuilder();
+
+            EmbedBuilder userEmbed = new EmbedBuilder()
+                .setColor(Colors.TRANSPARENT)
                 .setAuthor(author.getAsTag(), null, author.getEffectiveAvatarUrl())
-                .addField("User", String.format("%s `%s`", author.getAsMention(), author.getId()), false)
-                .addField("Message", String.format("```%s```", content), false)
+                .setDescription(String.format("%s `%s`", author.getAsMention(), author.getId()))
                 .setFooter(getName())
                 .setTimestamp(Instant.now());
 
+            EmbedBuilder messageEmbed = new EmbedBuilder()
+                .setColor(Colors.TRANSPARENT)
+                .setTitle("Message")
+                .setDescription(String.format("```%s```", content));
+
             if (urls.length() > 1) {
-                embed.addField("Attachments", String.format("```%s```", urls), false);
+                messageEmbed.addField("Attachments", String.format("```%s```", urls), false);
             }
 
-            thread.sendMessageEmbeds(embed.build()).queue();
-            thread.addThreadMember(author).queue();
+            builder.addEmbeds(userEmbed.build(), messageEmbed.build())
+                .addActionRow(
+                    Button.secondary("modmail-archive-" + thread.getId(), "Archive ticket")
+                        .withEmoji(Emoji.fromUnicode("\uD83D\uDCE5"))
+                );
+
+            thread.addThreadMember(author).queue(success ->
+                thread.sendMessage(builder.build()).queue()
+            );
+
+            reply.send(new MessageCreateBuilder()
+                .addEmbeds(new EmbedBuilder()
+                    .setColor(Colors.GREEN)
+                    .setDescription(Icon.OK + " Message successfully submitted")
+                    .build()
+                )
+                .addActionRow(Button.link(thread.getJumpUrl(), "Go to ticket"))
+                .build()
+            );
         });
 
         ++tickets;
-        future.thenRun(() -> reply.ok("Message successfully submitted"));
     }
 
     protected void stop(Reply reply) {
         super.stop(reply);
-        reply.send(Icons.STOP, Colors.GREEN, "Mod mail service stopped");
+        reply.send(Icon.STOP, "Mod mail service stopped");
     }
 
     protected void start(Reply reply) {

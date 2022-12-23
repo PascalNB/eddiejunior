@@ -8,18 +8,20 @@ import java.util.regex.Matcher;
 public class Query {
 
     private final String query;
+    private final Object[] args;
 
     /**
      * Creates a new query object for the given query string.
      *
      * @param query the query
      */
-    private Query(String query) {
+    private Query(String query, Object... args) {
         this.query = query;
+        this.args = args;
     }
 
-    public static Query of(String query) {
-        return new Query(query);
+    public static Query of(String query, Object... args) {
+        return new Query(query, args);
     }
 
     /**
@@ -42,6 +44,10 @@ public class Query {
     @Override
     public String toString() {
         return query;
+    }
+
+    public Object[] getArgs() {
+        return args;
     }
 
 }

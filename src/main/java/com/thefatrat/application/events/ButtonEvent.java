@@ -1,22 +1,21 @@
 package com.thefatrat.application.events;
 
-import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 
-public class ButtonEvent {
+public class ButtonEvent<T> {
 
-    private final Member member;
+    private final T user;
     private final String buttonId;
     private final Message message;
 
-    public ButtonEvent(Member member, String buttonId, Message message) {
-        this.member = member;
+    public ButtonEvent(T user, String buttonId, Message message) {
+        this.user = user;
         this.buttonId = buttonId;
         this.message = message;
     }
 
-    public Member getMember() {
-        return member;
+    public T getUser() {
+        return user;
     }
 
     public String getButtonId() {

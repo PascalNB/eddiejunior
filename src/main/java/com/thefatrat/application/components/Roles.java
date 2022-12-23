@@ -54,7 +54,7 @@ public class Roles extends Component {
                 throw new BotErrorException("No permission to interact with role %s", role.getAsMention());
             }
 
-            Member member = event.getMember();
+            Member member = event.getUser();
 
             if ("1".equals(split[1])) {
                 getServer().getGuild().addRoleToMember(member, role).queue(success ->
