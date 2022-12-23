@@ -5,6 +5,7 @@ import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
+import com.thefatrat.application.util.Icons;
 import com.thefatrat.database.Database;
 import com.thefatrat.database.DatabaseException;
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -80,8 +81,7 @@ public class Manager extends Component {
                     component.getDatabaseManager().toggleComponent(true)
                         .thenRun(() -> {
                             getServer().toggleComponent(component, true);
-                            reply.send(Colors.BLUE,
-                                ":ballot_box_with_check: Component `%s` enabled", componentString);
+                            reply.send(Icons.ENABLE, Colors.WHITE, "Component `%s` enabled", componentString);
                         });
                 }),
 
@@ -110,8 +110,7 @@ public class Manager extends Component {
                         .thenRun(() -> {
                             getServer().toggleComponent(component, false);
 
-                            reply.send(Colors.BLUE, ":no_entry: Component `%s` disabled",
-                                componentString);
+                            reply.send(Icons.DISABLE, Colors.WHITE, "Component `%s` disabled", componentString);
                         });
                 }),
 
@@ -125,17 +124,17 @@ public class Manager extends Component {
                         builder.append(component.getTitle());
 
                         if (component.isEnabled()) {
-                            builder.append(" :ballot_box_with_check:");
+                            builder.append(" ").append(Icons.ENABLE);
 
                             if (component instanceof DirectComponent direct && direct.isRunning()) {
-                                builder.append(" :white_check_mark:");
+                                builder.append(" ").append(Icons.OK);
                             }
                         }
                         builder.append("\n");
                     }
                     builder.deleteCharAt(builder.length() - 1);
                     reply.send(new EmbedBuilder()
-                        .setColor(Colors.WHITE)
+                        .setColor(Colors.BLUE)
                         .addField("Components", builder.toString(), false)
                         .build()
                     );

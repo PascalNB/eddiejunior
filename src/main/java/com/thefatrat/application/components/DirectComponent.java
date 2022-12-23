@@ -1,12 +1,12 @@
 package com.thefatrat.application.components;
 
-import com.thefatrat.application.Bot;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.entities.Reply;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
+import com.thefatrat.application.util.Icons;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.*;
@@ -82,7 +82,7 @@ public abstract class DirectComponent extends Component {
 
                         setDestination(newDestination.getId());
 
-                        reply.send(Colors.GRAY, ":gear: Destination set to %s `(%s)`%n",
+                        reply.send(Icons.SETTING, Colors.GRAY, "Destination set to %s `(%s)`%n",
                             getDestination().getAsMention(), getDestination().getId()
                         );
                     }
@@ -115,8 +115,8 @@ public abstract class DirectComponent extends Component {
 
                     setDestination(newDestination.getId());
 
-                    reply.send(Colors.GRAY, ":gear: Destination set to %s `(%s)`%n",
-                        getDestination().getAsMention(), getDestination().getId());
+                    reply.send(Icons.SETTING, Colors.GRAY, "Destination set to %s `(%s)`%n",
+                        newDestination.getAsMention(), newDestination.getId());
                 }),
             new Command("blacklist", "manages the blacklist")
                 .addOption(new OptionData(OptionType.STRING, "action", "action", true)
@@ -135,8 +135,7 @@ public abstract class DirectComponent extends Component {
 
                     if ("show".equals(action)) {
                         if (blacklist.isEmpty()) {
-                            throw new BotWarningException(
-                                "No users are added to the blacklist");
+                            throw new BotWarningException("No users are added to the blacklist");
                         }
 
                         long[] blacklistIds = new long[blacklist.size()];
@@ -151,7 +150,7 @@ public abstract class DirectComponent extends Component {
                                 String[] strings = fillAbsent(blacklist, list, ISnowflake::getId,
                                     IMentionable::getAsMention).toArray(String[]::new);
                                 reply.send(new EmbedBuilder()
-                                    .setColor(Colors.WHITE)
+                                    .setColor(Colors.BLUE)
                                     .addField("Blacklist",
                                         String.join("\n", strings), false)
                                     .build());
@@ -167,7 +166,7 @@ public abstract class DirectComponent extends Component {
                         blacklist.clear();
                         getDatabaseManager().removeSetting("blacklist")
                             .thenRun(() ->
-                                reply.send(Colors.GREEN, ":white_check_mark: Blacklist cleared")
+                                reply.ok("Blacklist cleared")
                             );
                         return;
                     }
@@ -198,24 +197,21 @@ public abstract class DirectComponent extends Component {
 
         if (add) {
             if (blacklist.contains(userId)) {
-                throw new BotWarningException(String.format("%s is already on the blacklist",
-                    member.getAsMention()));
+                throw new BotWarningException("%s is already on the blacklist", member.getAsMention());
             }
 
             blacklist.add(userId);
             getDatabaseManager().addSetting("blacklist", userId);
         } else {
             if (!blacklist.contains(userId)) {
-                throw new BotWarningException(String.format("%s is not on the blacklist",
-                    member.getAsMention()));
+                throw new BotWarningException("%s is not on the blacklist", member.getAsMention());
             }
 
             blacklist.remove(userId);
             getDatabaseManager().removeSetting("blacklist", userId);
         }
 
-        reply.send(Colors.GREEN, ":white_check_mark: %s %s the blacklist",
-            user.getAsMention(), msg);
+        reply.ok("%s %s the blacklist", user.getAsMention(), msg);
     }
 
     @Override
@@ -245,16 +241,16 @@ public abstract class DirectComponent extends Component {
         }
     }
 
-    public void setDestination(String destination) {
+    public final void setDestination(String destination) {
         this.destination = destination;
         getDatabaseManager().setSetting("destination", destination);
     }
 
-    public TextChannel getDestination() {
+    public final TextChannel getDestination() {
         if (destination == null) {
             return null;
         }
-        return Bot.getInstance().getJDA().getChannelById(TextChannel.class, destination);
+        return getServer().getGuild().getTextChannelById(destination);
     }
 
     public boolean isRunning() {

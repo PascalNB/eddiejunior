@@ -5,6 +5,7 @@ import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
+import com.thefatrat.application.util.Icons;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
@@ -82,8 +83,7 @@ public class Session extends Component {
                     sessions.get(session).add(channel.getId());
                     getDatabaseManager().addSetting("session_" + session, channel.getId());
 
-                    reply.send(Colors.GREEN, ":white_check_mark: %s added to session `%s`",
-                        channel.getAsMention(), session);
+                    reply.ok("%s added to session `%s`", channel.getAsMention(), session);
                 }),
             new Command("remove",
                 "removes a channel from a session, removes the session if no channels are left")
@@ -108,8 +108,7 @@ public class Session extends Component {
                         sessions.remove(string);
                         removeSessionFromDatabase(string);
                     }
-                    reply.send(Colors.GREEN, ":white_check_mark: %s removed from session `%s`",
-                        channel.getAsMention(), string);
+                    reply.ok("%s removed from session `%s`", channel.getAsMention(), string);
                 }),
             new Command("show", "shows the channels of the given session")
                 .addOption(new OptionData(OptionType.STRING, "session", "session name", true)
@@ -192,9 +191,8 @@ public class Session extends Component {
                     String[] array = channels.toArray(String[]::new);
                     String joined = String.join(", ", array);
 
-                    reply.send(Colors.GREEN, ":white_check_mark: session `%s` started.%n" +
-                            "The following channels have been made public:%n%s",
-                        string, joined);
+                    reply.ok("Session `%s` started.%n" +
+                        "The following channels have been made public:%n%s", string, joined);
                 }),
             new Command("close", "closes channels of a session")
                 .addOption(new OptionData(OptionType.STRING, "session", "session name", true)
@@ -238,9 +236,8 @@ public class Session extends Component {
                     String[] array = channels.toArray(String[]::new);
                     String joined = String.join(", ", array);
 
-                    reply.send(Colors.GREEN, ":stop_sign: session `%s` stopped.%n" +
-                            "The following channels have been made private:%n%s",
-                        string, joined);
+                    reply.send(Icons.STOP, Colors.GREEN, "Session `%s` stopped.%n" +
+                        "The following channels have been made private:%n%s", string, joined);
                 })
         );
 
@@ -251,10 +248,8 @@ public class Session extends Component {
             if (!PermissionUtil.checkPermission(channel.getPermissionContainer(),
                 getServer().getGuild().getSelfMember(), permission)) {
 
-                throw new BotErrorException(String.format(
-                    "Insufficient permissions, requires `%s` in %s",
-                    permission.getName(), channel.getAsMention()
-                ));
+                throw new BotErrorException("Insufficient permissions, requires `%s` in %s",
+                    permission.getName(), channel.getAsMention());
             }
         }
     }

@@ -58,7 +58,8 @@ public class Initializer {
             Feedback.class,
             Grab.class,
             Session.class,
-            Roles.class
+            Roles.class,
+            Edit.class
         );
 
         jda = JDABuilder.createLight(token,

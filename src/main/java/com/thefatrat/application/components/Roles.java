@@ -5,6 +5,7 @@ import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
 import com.thefatrat.application.util.EmojiChecker;
+import com.thefatrat.application.util.URLUtil;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
@@ -12,9 +13,7 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
-import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
-import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
@@ -24,8 +23,6 @@ import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import net.dv8tion.jda.internal.utils.PermissionUtil;
-
-import java.util.regex.Matcher;
 
 public class Roles extends Component {
 
@@ -51,25 +48,22 @@ public class Roles extends Component {
             }
 
             if (!PermissionUtil.checkPermission(getServer().getGuild().getSelfMember(), Permission.MANAGE_ROLES)) {
-                throw new BotErrorException(String.format("Permission `%s` required",
-                    Permission.MANAGE_ROLES.getName()));
+                throw new BotErrorException("Permission `%s` required", Permission.MANAGE_ROLES.getName());
             }
             if (!PermissionUtil.canInteract(getServer().getGuild().getSelfMember(), role)) {
-                throw new BotErrorException(String.format("No permission to interact with role %s",
-                    role.getAsMention()));
+                throw new BotErrorException("No permission to interact with role %s", role.getAsMention());
             }
 
             Member member = event.getMember();
 
             if ("1".equals(split[1])) {
                 getServer().getGuild().addRoleToMember(member, role).queue(success ->
-                    reply.send(Colors.GREEN, ":white_check_mark: You received role " + role.getAsMention())
+                    reply.ok("You received role " + role.getAsMention())
                 );
             } else {
                 getServer().getGuild().removeRoleFromMember(member, role).queue(success ->
-                    reply.send(Colors.GREEN, ":white_check_mark: Role " + role.getAsMention() + " has been removed")
+                    reply.ok("Role " + role.getAsMention() + " has been removed")
                 );
-
             }
         });
 
@@ -99,18 +93,16 @@ public class Roles extends Component {
                     Member member = command.getMember();
 
                     if (!member.hasPermission(Permission.MANAGE_ROLES)) {
-                        throw new BotErrorException(String.format("You need permission `%s`",
-                            Permission.MANAGE_ROLES.getName()));
+                        throw new BotErrorException("You need permission `%s`", Permission.MANAGE_ROLES.getName());
                     }
 
                     Role role = command.getArgs().get("role").getAsRole();
 
                     if (role.equals(getServer().getGuild().getPublicRole())) {
-                        throw new BotErrorException(String.format("Cannot use %s as a role", role.getAsMention()));
+                        throw new BotErrorException("Cannot use %s as a role", role.getAsMention());
                     }
                     if (role.isManaged()) {
-                        throw new BotErrorException(String.format("%s is managed by an integration",
-                            role.getAsMention()));
+                        throw new BotErrorException("%s is managed by an integration", role.getAsMention());
                     }
 
                     OptionMapping labelAddObject = command.getArgs().get("label_add");
@@ -147,30 +139,7 @@ public class Roles extends Component {
                         }
                     } else {
                         String embedUrl = messageOption.getAsString();
-                        Matcher matcher = Message.JUMP_URL_PATTERN.matcher(embedUrl);
-                        String[] jump;
-                        if (matcher.find()) {
-                            jump = new String[]{matcher.group(1), matcher.group(2), matcher.group(3)};
-                        } else {
-                            throw new BotErrorException("Please use a proper jump url for the message");
-                        }
-                        if (!getServer().getId().equals(jump[0])) {
-                            throw new BotErrorException("Please reference a message from this server");
-                        }
-                        MessageChannel channel = getServer().getGuild().getTextChannelById(jump[1]);
-                        if (channel == null) {
-                            throw new BotErrorException("Channel of referenced message not found");
-                        }
-                        Message message;
-                        try {
-                            message = channel.retrieveMessageById(jump[2]).complete();
-                            if (message == null) {
-                                throw new BotErrorException("Referenced message not found");
-                            }
-                        } catch (InsufficientPermissionException e) {
-                            throw new BotErrorException(String.format("Requires permission %s",
-                                Permission.MESSAGE_HISTORY.getName()));
-                        }
+                        Message message = URLUtil.messageFromURL(embedUrl, getServer().getGuild());
 
                         try (MessageCreateData data = MessageCreateData.fromMessage(message)) {
                             builder.applyData(data);
@@ -230,7 +199,7 @@ public class Roles extends Component {
                     }
 
                     channel.sendMessage(builder.build()).queue();
-                    reply.send(Colors.GREEN, ":white_check_mark: Message sent in %s", channel.getAsMention());
+                    reply.ok("Message sent in %s", channel.getAsMention());
                 })
         );
     }

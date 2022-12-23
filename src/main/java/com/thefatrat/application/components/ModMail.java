@@ -6,6 +6,7 @@ import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
+import com.thefatrat.application.util.Icons;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Message;
@@ -13,6 +14,7 @@ import net.dv8tion.jda.api.entities.ThreadMember;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.Channel;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
@@ -67,15 +69,14 @@ public class ModMail extends DirectComponent {
 
         addSubcommands(
             new Command("timeout", "sets the timeout")
-                .addOption(new OptionData(OptionType.INTEGER, "timeout", "timeout in ms", true)
+                .addOption(new OptionData(OptionType.INTEGER, "timeout", "timeout in seconds", true)
                     .setRequiredRange(0, Integer.MAX_VALUE)
                 )
                 .setAction((command, reply) -> {
                     long timeout = command.getArgs().get("timeout").getAsInt();
                     this.timeout = timeout;
                     getDatabaseManager().setSetting("timeout", String.valueOf(timeout))
-                        .thenRun(() -> reply.send(Colors.GREEN,
-                            ":white_check_mark: Timout set to %d seconds", timeout));
+                        .thenRun(() -> reply.ok("Timout set to %d seconds", timeout));
                 }),
 
             new Command("archive", "archives the current ticket thread")
@@ -84,10 +85,10 @@ public class ModMail extends DirectComponent {
                         && !command.getChannel().getType().equals(ChannelType.GUILD_PUBLIC_THREAD)) {
                         throw new BotErrorException("Cannot archive this channel");
                     }
-                    reply.send(callback ->
+                    reply.ok(callback ->
                         command.getChannel().asThreadChannel().getManager().setLocked(true).queue(success ->
                             command.getChannel().asThreadChannel().getManager().setArchived(true).queue()
-                        ), Colors.GREEN, ":white_check_mark: Current thread archived");
+                        ), "Current thread archived");
                 }),
 
             new Command("maxperuser", "sets the maximum number of active tickets per user")
@@ -98,8 +99,7 @@ public class ModMail extends DirectComponent {
                     int max = command.getArgs().get("max").getAsInt();
                     this.maxTicketsPerUser = max;
                     getDatabaseManager().setSetting("maxticketsperuser", String.valueOf(max))
-                        .thenRun(() -> reply.send(Colors.GREEN,
-                            ":white_check_mark: Maximum set to %d tickets", max));
+                        .thenRun(() -> reply.ok("Maximum set to %d tickets", max));
                 }),
 
             new Command("maxtickets", "sets the maximum number of overall tickets")
@@ -110,8 +110,7 @@ public class ModMail extends DirectComponent {
                     int max = command.getArgs().get("max").getAsInt();
                     this.maxTickets = max;
                     getDatabaseManager().setSetting("maxtickets", String.valueOf(max))
-                        .thenRun(() -> reply.send(Colors.GREEN,
-                            ":white_check_mark: Maximum set to %d tickets", max));
+                        .thenRun(() -> reply.ok("Maximum set to %d tickets", max));
                 }),
 
             new Command("privatethreads", "determines if the created threads are private or public")
@@ -120,8 +119,7 @@ public class ModMail extends DirectComponent {
                     boolean value = command.getArgs().get("value").getAsBoolean();
                     this.privateThreads = value;
                     getDatabaseManager().setSetting("privatethreads", String.valueOf(value))
-                        .thenRun(() -> reply.send(Colors.GREEN,
-                            ":white_check_mark: Thread creation set to %s", value ? "private" : "public"));
+                        .thenRun(() -> reply.ok("Thread creation set to %s", value ? "private" : "public"));
                 }),
 
             new Command("recheck", "rechecks the amount of open tickets")
@@ -135,8 +133,7 @@ public class ModMail extends DirectComponent {
                             tickets++;
                         }
                     }
-                    reply.send(Colors.GREEN,
-                        ":white_check_mark: Recheck completed, found **%d** open tickets", tickets);
+                    reply.ok("Recheck completed, found **%d** open tickets", tickets);
                 })
         );
 
@@ -189,8 +186,8 @@ public class ModMail extends DirectComponent {
     @Override
     protected synchronized void handleDirect(Message message, Reply reply) {
         String content = message.getContentRaw();
-        if (content.length() < 20 || content.length() > 1024) {
-            throw new BotWarningException("Messages have to be between 20 and 1024 characters");
+        if (content.length() < 20 || content.length() > 1018) {
+            throw new BotWarningException("Messages have to be between 20 and 1018 characters");
         }
 
         if (maxTickets != 0 && tickets == maxTickets) {
@@ -200,16 +197,16 @@ public class ModMail extends DirectComponent {
         User author = message.getAuthor();
         if (maxTicketsPerUser != 0 && userCount.containsKey(author.getId())
             && userCount.get(author.getId()) >= maxTicketsPerUser) {
-            throw new BotWarningException(
-                String.format("You can only have %d open tickets at the same time", maxTicketsPerUser));
+            throw new BotWarningException("You can only have %d open tickets at the same time", maxTicketsPerUser);
         }
 
         if (System.currentTimeMillis() - timeouts.getOrDefault(author.getId(), 0L) < timeout * 1000L) {
-            throw new BotWarningException(
-                String.format("You can only send a message every %d seconds", timeout));
+            throw new BotWarningException("You can only send a message every %d seconds", timeout);
         }
 
-        if (!PermissionUtil.checkPermission(getDestination().getPermissionContainer(),
+        TextChannel destination = getDestination();
+
+        if (destination == null || !PermissionUtil.checkPermission(destination.getPermissionContainer(),
             getServer().getGuild().getSelfMember(), Permission.MESSAGE_EMBED_LINKS, Permission.MANAGE_THREADS,
             (privateThreads ? Permission.CREATE_PRIVATE_THREADS : Permission.CREATE_PUBLIC_THREADS))) {
             throw new BotErrorException("If you see this error, the server admins messed up");
@@ -222,52 +219,43 @@ public class ModMail extends DirectComponent {
         String topic = String.format("t%d-%s", threadId, author.getAsTag());
         topic = topic.substring(0, Math.min(topic.length(), 25));
 
-        getDestination()
-            .createThreadChannel(topic, privateThreads)
-            .queue(thread -> {
-                List<String> list = new ArrayList<>();
+        destination.createThreadChannel(topic, privateThreads).queue(thread -> {
+            List<String> list = new ArrayList<>();
 
-                for (Message.Attachment attachment : message.getAttachments()) {
-                    list.add(attachment.getUrl());
-                }
+            for (Message.Attachment attachment : message.getAttachments()) {
+                list.add(attachment.getUrl());
+            }
 
-                String urls = String.join("\n", list.toArray(new String[0]));
+            String urls = String.join("\n", list.toArray(new String[0]));
 
-                EmbedBuilder embed = new EmbedBuilder()
-                    .setColor(Colors.LIGHT)
-                    .setAuthor(author.getAsTag(), null, author.getEffectiveAvatarUrl())
-                    .addField("User", String.format("%s `%s`", author.getAsMention(), author.getId()), false)
-                    .addField("Message", String.format("```%s```", content), false)
-                    .setFooter(getName())
-                    .setTimestamp(Instant.now());
+            EmbedBuilder embed = new EmbedBuilder()
+                .setColor(Colors.LIGHT)
+                .setAuthor(author.getAsTag(), null, author.getEffectiveAvatarUrl())
+                .addField("User", String.format("%s `%s`", author.getAsMention(), author.getId()), false)
+                .addField("Message", String.format("```%s```", content), false)
+                .setFooter(getName())
+                .setTimestamp(Instant.now());
 
-                if (urls.length() > 1) {
-                    embed.addField("Attachments", String.format("```%s```", urls), false);
-                }
+            if (urls.length() > 1) {
+                embed.addField("Attachments", String.format("```%s```", urls), false);
+            }
 
-                thread.sendMessageEmbeds(embed.build()).queue();
-                thread.addThreadMember(author).queue();
-            });
+            thread.sendMessageEmbeds(embed.build()).queue();
+            thread.addThreadMember(author).queue();
+        });
 
         ++tickets;
-        future.thenRun(() -> reply.send(Colors.GREEN,
-            ":white_check_mark: Message successfully submitted"));
+        future.thenRun(() -> reply.ok("Message successfully submitted"));
     }
 
     protected void stop(Reply reply) {
         super.stop(reply);
-        reply.send(Colors.GREEN,
-            ":stop_sign: Mod mail service stopped",
-            getDestination().getId()
-        );
+        reply.send(Icons.STOP, Colors.GREEN, "Mod mail service stopped");
     }
 
     protected void start(Reply reply) {
         super.start(reply);
-        reply.send(Colors.GREEN,
-            ":white_check_mark: Mod mail service started",
-            getDestination().getId()
-        );
+        reply.ok("Mod mail service started");
     }
 
 }

@@ -1,13 +1,16 @@
 package com.thefatrat.application.exceptions;
 
 import com.thefatrat.application.util.Colors;
+import com.thefatrat.application.util.Icons;
 
 public class BotWarningException extends BotException {
 
-    public static final String icon = ":warning:";
-
     public BotWarningException(String message) {
         super(message);
+    }
+
+    public BotWarningException(String message, Object... values) {
+        super(message, values);
     }
 
     @Override
@@ -17,7 +20,7 @@ public class BotWarningException extends BotException {
 
     @Override
     protected String getIcon() {
-        return icon;
+        return Icons.WARNING;
     }
 
 }

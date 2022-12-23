@@ -6,6 +6,10 @@ public abstract class BotException extends RuntimeException {
         super(message);
     }
 
+    public BotException(String message, Object... values) {
+        super(String.format(message, values));
+    }
+
     @Override
     public String getMessage() {
         return getIcon() + " " + super.getMessage();
