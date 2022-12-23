@@ -26,7 +26,6 @@ import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import net.dv8tion.jda.api.utils.messages.MessageEditBuilder;
-import net.dv8tion.jda.internal.utils.PermissionUtil;
 
 import java.net.URISyntaxException;
 import java.time.Instant;
@@ -69,13 +68,7 @@ public class Feedback extends DirectComponent {
                         throw new BotErrorException("Destination not set yet");
                     }
 
-                    if (!getDestination().canTalk() ||
-                        !PermissionUtil.checkPermission(getDestination().getPermissionContainer(),
-                            getServer().getGuild().retrieveMember(Bot.getInstance().getJDA().getSelfUser()).complete(),
-                            Permission.MESSAGE_EMBED_LINKS)) {
-
-                        throw new BotErrorException("Could not send submission to destination channel");
-                    }
+                    Bot.getInstance().requirePermission(getDestination(), Permission.MESSAGE_EMBED_LINKS);
 
                     Collections.shuffle(submissions);
 
@@ -174,9 +167,6 @@ public class Feedback extends DirectComponent {
                         msg = "added to";
                         for (String domain : domains) {
                             if (this.domains.contains(domain)) {
-                                reply.except(
-                                    new BotWarningException("Domain %s is already in the domain whitelist", domain)
-                                );
                                 continue;
                             }
                             getDatabaseManager().addSetting("domains", domain);
@@ -187,9 +177,6 @@ public class Feedback extends DirectComponent {
                         msg = "removed from";
                         for (String domain : domains) {
                             if (!this.domains.contains(domain)) {
-                                reply.except(
-                                    new BotWarningException("Domain %s is not in the domain whitelist", domain)
-                                );
                                 continue;
                             }
                             getDatabaseManager().removeSetting("domains", domain);
@@ -271,9 +258,6 @@ public class Feedback extends DirectComponent {
                         msg = "added to";
                         for (String filetype : filetypes) {
                             if (this.filetypes.contains(filetype)) {
-                                reply.except(
-                                    new BotWarningException("Filetype %s is already in the filetype list", filetype)
-                                );
                                 continue;
                             }
                             getDatabaseManager().addSetting("filetypes", filetype);
@@ -284,9 +268,6 @@ public class Feedback extends DirectComponent {
                         msg = "removed from";
                         for (String filetype : filetypes) {
                             if (!this.filetypes.contains(filetype)) {
-                                reply.except(
-                                    new BotWarningException("Filetype %s is not in the filetype list", filetype)
-                                );
                                 continue;
                             }
                             getDatabaseManager().removeSetting("filetypes", filetype);
@@ -343,6 +324,10 @@ public class Feedback extends DirectComponent {
             String action = split[1];
 
             if ("mark_read".equals(action)) {
+                Bot.getInstance().requirePermission(
+                    event.getMessage().getChannel().asGuildMessageChannel().getPermissionContainer(),
+                    Permission.MESSAGE_EMBED_LINKS);
+
                 MessageEditBuilder builder = MessageEditBuilder.fromMessage(event.getMessage());
                 EmbedBuilder embed = new EmbedBuilder(builder.getEmbeds().get(0));
                 embed.setColor(Colors.TRANSPARENT);
@@ -367,6 +352,9 @@ public class Feedback extends DirectComponent {
         if (embed.getFooter() == null || !getName().equals(embed.getFooter().getText())) {
             throw new BotErrorException("Could not perform action");
         }
+
+        Bot.getInstance().requirePermission(message.getChannel().asGuildMessageChannel().getPermissionContainer(),
+            Permission.MESSAGE_EMBED_LINKS);
     }
 
     @Override

@@ -1,9 +1,11 @@
 package com.thefatrat.application.components;
 
+import com.thefatrat.application.Bot;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.URLUtil;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
@@ -40,6 +42,10 @@ public class Edit extends Component {
                 if (!message.getAuthor().getId().equals(getServer().getGuild().getSelfMember().getId())) {
                     throw new BotErrorException("Message was not sent by me");
                 }
+
+                Bot.getInstance().requirePermission(
+                    message.getChannel().asGuildMessageChannel().getPermissionContainer(),
+                    Permission.MESSAGE_EMBED_LINKS);
 
                 MessageEditBuilder builder = new MessageEditBuilder();
 

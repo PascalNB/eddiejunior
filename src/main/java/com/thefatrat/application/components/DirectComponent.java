@@ -1,5 +1,6 @@
 package com.thefatrat.application.components;
 
+import com.thefatrat.application.Bot;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.entities.Reply;
 import com.thefatrat.application.exceptions.BotErrorException;
@@ -15,7 +16,6 @@ import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
-import net.dv8tion.jda.internal.utils.PermissionUtil;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -75,11 +75,7 @@ public abstract class DirectComponent extends Component {
 
                     if (currentDestination == null || !newDestination.getId().equals(currentDestination.getId())) {
 
-                        if (!PermissionUtil.checkPermission(newDestination.getPermissionContainer(),
-                            getServer().getGuild().getSelfMember(), Permission.MESSAGE_EMBED_LINKS,
-                            Permission.MESSAGE_SEND, Permission.VIEW_CHANNEL)) {
-                            throw new BotErrorException("I do not have the right permissions for that channel");
-                        }
+                        Bot.getInstance().requirePermission(newDestination, Permission.MESSAGE_EMBED_LINKS);
 
                         setDestination(newDestination.getId());
 
@@ -108,11 +104,7 @@ public abstract class DirectComponent extends Component {
                         }
                     }
 
-                    if (!PermissionUtil.checkPermission(newDestination.getPermissionContainer(),
-                        getServer().getGuild().getSelfMember(), Permission.MESSAGE_EMBED_LINKS,
-                        Permission.MESSAGE_SEND, Permission.VIEW_CHANNEL)) {
-                        throw new BotErrorException("I do not have the right permissions for that channel");
-                    }
+                    Bot.getInstance().requirePermission(newDestination, Permission.MESSAGE_EMBED_LINKS);
 
                     setDestination(newDestination.getId());
 

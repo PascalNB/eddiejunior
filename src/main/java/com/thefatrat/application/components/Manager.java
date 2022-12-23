@@ -9,6 +9,7 @@ import com.thefatrat.application.util.Icon;
 import com.thefatrat.database.Database;
 import com.thefatrat.database.DatabaseException;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
@@ -40,30 +41,33 @@ public class Manager extends Component {
                 }),
 
             new Command("ping", "check the RTT of the connection in milliseconds")
-                .setAction((command, reply) -> reply.send(
-                    new EmbedBuilder()
-                        .setColor(Colors.TRANSPARENT)
-                        .addField("WebSocket", Bot.getInstance().getJDA().getGatewayPing() + " ms", true)
-                        .build(),
-                    message -> {
-                        MessageEmbed embed = message.getEmbeds().get(0);
-                        try {
-                            long start2 = System.currentTimeMillis();
-                            Database database = Database.getInstance().connect();
-                            long time2 = System.currentTimeMillis() - start2;
-                            message.editMessageEmbeds(new EmbedBuilder(embed)
-                                .addField("Database", time2 + " ms", true)
-                                .build()
-                            ).queue();
-                            database.close();
-                        } catch (DatabaseException e) {
-                            message.editMessageEmbeds(new EmbedBuilder(embed)
-                                .addField("Database", ":x:", true)
-                                .build()
-                            ).queue();
-                        }
-                    }
-                )),
+                .setAction((command, reply) -> {
+                    Bot.getInstance().requirePermission(command.getChannel().getPermissionContainer(),
+                        Permission.MESSAGE_EMBED_LINKS);
+
+                    reply.send(new EmbedBuilder()
+                            .setColor(Colors.TRANSPARENT)
+                            .addField("WebSocket", Bot.getInstance().getJDA().getGatewayPing() + " ms", true)
+                            .build(),
+                        message -> {
+                            MessageEmbed embed = message.getEmbeds().get(0);
+                            try {
+                                long start2 = System.currentTimeMillis();
+                                Database database = Database.getInstance().connect();
+                                long time2 = System.currentTimeMillis() - start2;
+                                message.editMessageEmbeds(new EmbedBuilder(embed)
+                                    .addField("Database", time2 + " ms", true)
+                                    .build()
+                                ).queue();
+                                database.close();
+                            } catch (DatabaseException e) {
+                                message.editMessageEmbeds(new EmbedBuilder(embed)
+                                    .addField("Database", ":x:", true)
+                                    .build()
+                                ).queue();
+                            }
+                        });
+                }),
 
             new Command("enable", "enable a specific component by name")
                 .addOption(new OptionData(OptionType.STRING, "component", "component name", true))

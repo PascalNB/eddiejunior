@@ -1,5 +1,6 @@
 package com.thefatrat.application.components;
 
+import com.thefatrat.application.Bot;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.entities.Reply;
 import com.thefatrat.application.exceptions.BotErrorException;
@@ -182,10 +183,7 @@ public class ModMail extends DirectComponent {
                     throw new BotErrorException("Thread not found");
                 }
 
-                if (!PermissionUtil.checkPermission(thread.getParentChannel(), getServer().getGuild().getSelfMember(),
-                    Permission.MANAGE_THREADS)) {
-                    throw new BotErrorException("Requires permission `%s`", Permission.MANAGE_THREADS.getName());
-                }
+                Bot.getInstance().requirePermission(thread.getParentChannel(), Permission.MANAGE_THREADS);
 
                 reply.ok(callback ->
                         thread.getManager().setLocked(true).queue(success ->

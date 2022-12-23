@@ -10,6 +10,7 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.IMentionable;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.PermissionOverride;
 import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
@@ -244,10 +245,9 @@ public class Session extends Component {
     }
 
     private void checkPermissions(GuildChannel channel) {
+        Member member = getServer().getGuild().getSelfMember();
         for (Permission permission : PERMISSIONS) {
-            if (!PermissionUtil.checkPermission(channel.getPermissionContainer(),
-                getServer().getGuild().getSelfMember(), permission)) {
-
+            if (!PermissionUtil.checkPermission(channel.getPermissionContainer(), member, permission)) {
                 throw new BotErrorException("Insufficient permissions, requires `%s` in %s",
                     permission.getName(), channel.getAsMention());
             }

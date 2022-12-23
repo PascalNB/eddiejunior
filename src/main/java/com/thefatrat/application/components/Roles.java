@@ -1,5 +1,6 @@
 package com.thefatrat.application.components;
 
+import com.thefatrat.application.Bot;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.sources.Server;
@@ -194,9 +195,8 @@ public class Roles extends Component {
                     }
 
                     TextChannel channel = channelObject.getAsChannel().asTextChannel();
-                    if (!channel.canTalk()) {
-                        throw new BotErrorException("Cannot send message");
-                    }
+
+                    Bot.getInstance().requirePermission(channel, Permission.MESSAGE_EMBED_LINKS);
 
                     channel.sendMessage(builder.build()).queue();
                     reply.ok("Message sent in %s", channel.getAsMention());
