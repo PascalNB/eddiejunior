@@ -31,7 +31,8 @@ public class Grab extends Component {
 
         setComponentCommand();
 
-        addSubcommands(new Command("servericon", "Get the server icon")
+        addSubcommands(
+            new Command("servericon", "Get the server icon")
                 .setAction((command, reply) -> {
                     ImageProxy icon = getServer().getGuild().getIcon();
                     if (icon == null) {
@@ -44,6 +45,7 @@ public class Grab extends Component {
                         .setImage(url)
                         .build());
                 }),
+
             new Command("usericon", "Get a user's icon")
                 .addOption(new OptionData(OptionType.USER, "user", "user", false))
                 .setAction((command, reply) -> {
@@ -55,6 +57,7 @@ public class Grab extends Component {
                         .setImage(url)
                         .build());
                 }),
+
             new Command("banner", "Get the server banner")
                 .setAction((command, reply) -> {
                     ImageProxy banner = getServer().getGuild().getBanner();
@@ -68,6 +71,7 @@ public class Grab extends Component {
                         .setImage(url)
                         .build());
                 }),
+
             new Command("splash", "Get the server splash image")
                 .setAction((command, reply) -> {
                     ImageProxy splash = getServer().getGuild().getSplash();
@@ -81,6 +85,7 @@ public class Grab extends Component {
                         .setImage(url)
                         .build());
                 }),
+
             new Command("profile", "Get a user's profile")
                 .addOption(new OptionData(OptionType.USER, "user", "user", false))
                 .setAction((command, reply) -> {
@@ -145,6 +150,7 @@ public class Grab extends Component {
 
                     reply.send(embed.build());
                 }),
+
             new Command("role", "Get a role's info")
                 .addOption(new OptionData(OptionType.ROLE, "role", "role", true))
                 .setAction((command, reply) -> {
@@ -171,6 +177,7 @@ public class Grab extends Component {
 
                     reply.send(embed.build());
                 }),
+
             new Command("permissions", "Get a user's permissions")
                 .addOption(new OptionData(OptionType.USER, "user", "user", false))
                 .setAction((command, reply) -> {
@@ -198,6 +205,7 @@ public class Grab extends Component {
 
                     reply.send(embed.build());
                 }),
+
             new Command("emoji", "Get an emoji")
                 .addOption(new OptionData(OptionType.STRING, "emoji", "emoji", true))
                 .setAction((command, reply) -> {
@@ -217,11 +225,12 @@ public class Grab extends Component {
                         .setFooter(emoji.getId())
                         .build());
                 }),
+
             new Command("id", "Get an id")
                 .addOption(new OptionData(OptionType.MENTIONABLE, "mention", "mention", true))
                 .setAction((command, reply) -> {
                     IMentionable mention = command.getArgs().get("mention").getAsMentionable();
-                    reply.send(Colors.TRANSPARENT, mention.getId());
+                    reply.send(mention.getId());
                 })
         );
 

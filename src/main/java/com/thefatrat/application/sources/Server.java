@@ -6,10 +6,12 @@ import com.thefatrat.application.components.Component;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.entities.Interaction;
 import com.thefatrat.application.entities.Reply;
+import com.thefatrat.application.events.ArchiveEvent;
+import com.thefatrat.application.events.ButtonEvent;
 import com.thefatrat.application.events.CommandEvent;
 import com.thefatrat.application.events.MessageInteractionEvent;
-import com.thefatrat.application.exceptions.BotException;
-import com.thefatrat.application.handlers.*;
+import com.thefatrat.application.handlers.MapHandler;
+import com.thefatrat.application.handlers.SetHandler;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -25,18 +27,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class Server extends Source {
+public class Server {
 
     private static final DefaultMemberPermissions PERMISSIONS = DefaultMemberPermissions.enabledFor(
         Permission.USE_APPLICATION_COMMANDS
     );
 
     private final String id;
-    private final CommandHandler commandHandler = new CommandHandler();
-    private final MessageInteractionHandler messageInteractionHandler = new MessageInteractionHandler();
-    private final MessageHandler directHandler = new MessageHandler();
-    private final ArchiveHandler archiveHandler = new ArchiveHandler();
-    private final ButtonHandler<Member> buttonHandler = new ButtonHandler<>();
+    private final MapHandler<CommandEvent> commandHandler = new MapHandler<>();
+    private final MapHandler<MessageInteractionEvent> messageInteractionHandler = new MapHandler<>();
+    private final MapHandler<Message> directHandler = new MapHandler<>();
+    private final SetHandler<ArchiveEvent> archiveHandler = new SetHandler<>();
+    private final SetHandler<ButtonEvent<Member>> buttonHandler = new SetHandler<>();
     private final Map<String, Component> components = new HashMap<>();
 
     public static Server dummy() {
@@ -60,7 +62,7 @@ public class Server extends Source {
         return id;
     }
 
-    public MessageHandler getDirectHandler() {
+    public MapHandler<Message> getDirectHandler() {
         return directHandler;
     }
 
@@ -135,19 +137,19 @@ public class Server extends Source {
         }
     }
 
-    public CommandHandler getCommandHandler() {
+    public MapHandler<CommandEvent> getCommandHandler() {
         return commandHandler;
     }
 
-    public MessageInteractionHandler getInteractionHandler() {
+    public MapHandler<MessageInteractionEvent> getInteractionHandler() {
         return messageInteractionHandler;
     }
 
-    public ArchiveHandler getArchiveHandler() {
+    public SetHandler<ArchiveEvent> getArchiveHandler() {
         return archiveHandler;
     }
 
-    public ButtonHandler<Member> getButtonHandler() {
+    public SetHandler<ButtonEvent<Member>> getButtonHandler() {
         return buttonHandler;
     }
 
@@ -156,11 +158,7 @@ public class Server extends Source {
     }
 
     public void receiveCommand(CommandEvent event, Reply reply) {
-        commandHandler.handle(event, reply);
-    }
-
-    @Override
-    public void receiveMessage(Message message, Reply reply) throws BotException {
+        commandHandler.handleOne(event.getCommand(), event, reply);
     }
 
 }

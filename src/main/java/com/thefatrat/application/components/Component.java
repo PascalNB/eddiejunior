@@ -4,10 +4,11 @@ import com.thefatrat.application.DatabaseManager;
 import com.thefatrat.application.builders.HelpBuilder;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.entities.Interaction;
+import com.thefatrat.application.events.CommandEvent;
+import com.thefatrat.application.events.MessageInteractionEvent;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotException;
-import com.thefatrat.application.handlers.CommandHandler;
-import com.thefatrat.application.handlers.MessageInteractionHandler;
+import com.thefatrat.application.handlers.MapHandler;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
 import net.dv8tion.jda.api.entities.MessageEmbed;
@@ -25,7 +26,7 @@ public abstract class Component {
     private final DatabaseManager databaseManager;
     private final List<Command> commands = new ArrayList<>();
     private final List<Interaction> interactions = new ArrayList<>();
-    private final CommandHandler subHandler = new CommandHandler();
+    private final MapHandler<CommandEvent> subHandler = new MapHandler<>();
     private MessageEmbed help = null;
 
     /**
@@ -110,7 +111,7 @@ public abstract class Component {
      * Will register all the commands and interactions to the server.
      */
     public final void register() {
-        CommandHandler handler = getServer().getCommandHandler();
+        MapHandler<CommandEvent> handler = getServer().getCommandHandler();
 
         for (Command command : commands) {
             handler.addListener(command.getName(), command.getAction());
@@ -120,7 +121,7 @@ public abstract class Component {
             }
         }
 
-        MessageInteractionHandler messageInteractionHandler = getServer().getInteractionHandler();
+        MapHandler<MessageInteractionEvent> messageInteractionHandler = getServer().getInteractionHandler();
 
         for (Interaction interaction : interactions) {
             messageInteractionHandler.addListener(interaction.getName(), interaction.getAction());
@@ -130,8 +131,12 @@ public abstract class Component {
     }
 
     public final void setComponentCommand() {
-        addCommands(new Command(getName(), "component command")
-            .setAction((command, reply) -> getSubCommandHandler().handle(command.toSub(), reply)));
+        commands.add(new Command(getName(), "component command")
+            .setAction((command, reply) -> {
+                CommandEvent event = command.toSub();
+                getSubCommandHandler().handleOne(event.getCommand(), event, reply);
+            })
+        );
     }
 
     /**
@@ -146,7 +151,7 @@ public abstract class Component {
     /**
      * @return the component's subcommand handler
      */
-    protected CommandHandler getSubCommandHandler() {
+    protected MapHandler<CommandEvent> getSubCommandHandler() {
         return subHandler;
     }
 

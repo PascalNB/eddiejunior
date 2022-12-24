@@ -2,11 +2,13 @@ package com.thefatrat.application.sources;
 
 import com.thefatrat.application.Bot;
 import com.thefatrat.application.entities.Reply;
+import com.thefatrat.application.events.ButtonEvent;
+import com.thefatrat.application.events.StringSelectEvent;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
-import com.thefatrat.application.handlers.ButtonHandler;
-import com.thefatrat.application.handlers.MessageHandler;
-import com.thefatrat.application.handlers.StringSelectHandler;
+import com.thefatrat.application.handlers.Handler;
+import com.thefatrat.application.handlers.MapHandler;
+import com.thefatrat.application.handlers.SetHandler;
 import com.thefatrat.application.util.Colors;
 import com.thefatrat.application.util.Icon;
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -26,11 +28,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class Direct extends Source {
+public class Direct {
 
     private final Map<String, Message> cache = new HashMap<>();
-    private final StringSelectHandler stringSelectHandler = new StringSelectHandler();
-    private final ButtonHandler<User> buttonHandler = new ButtonHandler<>();
+    private final SetHandler<StringSelectEvent> stringSelectHandler = new SetHandler<>();
+    private final SetHandler<ButtonEvent<User>> buttonHandler = new SetHandler<>();
 
     public Direct() {
         stringSelectHandler.addListener((event, reply) -> {
@@ -47,13 +49,13 @@ public class Direct extends Source {
                     throw new BotErrorException("Something went wrong");
                 }
 
-                MessageHandler handler = server.getDirectHandler();
+                MapHandler<Message> handler = server.getDirectHandler();
 
                 if (!handler.getKeys().contains(component)) {
                     throw new BotErrorException("Could not send to the given service, try again");
                 }
 
-                handler.handle(component, userMessage, reply);
+                handler.handleOne(component, userMessage, reply);
 
             } else if ("server".equals(event.getMenuId())) {
                 event.getMessage().delete().queue();
@@ -71,15 +73,14 @@ public class Direct extends Source {
         });
     }
 
-    public StringSelectHandler getStringSelectHandler() {
+    public Handler<StringSelectEvent> getStringSelectHandler() {
         return stringSelectHandler;
     }
 
-    public ButtonHandler<User> getButtonHandler() {
+    public Handler<ButtonEvent<User>> getButtonHandler() {
         return buttonHandler;
     }
 
-    @Override
     public void receiveMessage(Message message, Reply reply) {
         String userId = message.getAuthor().getId();
         List<Guild> mutualGuilds = Bot.getInstance().retrieveMutualGuilds(message.getAuthor()).complete();

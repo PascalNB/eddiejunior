@@ -97,7 +97,7 @@ public class Bot extends ListenerAdapter {
     }
 
     public RestAction<List<Guild>> retrieveMutualGuilds(UserSnowflake user) {
-        List<RestAction<Result<Member>>> actions = new ArrayList<>();
+        List<RestAction<Result<Member>>> actions = new ArrayList<>(jda.getGuilds().size());
 
         for (Guild guild : jda.getGuilds()) {
             actions.add(guild.retrieveMemberById(user.getId()).mapToResult());
@@ -105,15 +105,15 @@ public class Bot extends ListenerAdapter {
 
         return RestAction.allOf(actions)
             .map(list -> {
-                List<Guild> guilds = new ArrayList<>();
+                List<Guild> mutualGuilds = new ArrayList<>();
 
                 for (Result<Member> result : list) {
                     if (result.isSuccess()) {
-                        guilds.add(result.get().getGuild());
+                        mutualGuilds.add(result.get().getGuild());
                     }
                 }
 
-                return guilds;
+                return mutualGuilds;
             });
     }
 
@@ -177,7 +177,7 @@ public class Bot extends ListenerAdapter {
                 direct.getButtonHandler().handle(bE, reply);
 
             } catch (BotException e) {
-                reply.send(e.getColor(), e.getMessage());
+                reply.except(e);
             }
         } else {
             InteractionHook hook = event.deferReply(true).complete();
@@ -193,7 +193,7 @@ public class Bot extends ListenerAdapter {
 
                 server.getButtonHandler().handle(new ButtonEvent<>(member, buttonId, message), reply);
             } catch (BotException e) {
-                reply.send(e.getColor(), e.getMessage());
+                reply.except(e);
             }
         }
     }
@@ -213,7 +213,7 @@ public class Bot extends ListenerAdapter {
                 direct.getStringSelectHandler().handle(selectEvent, reply);
 
             } catch (BotException e) {
-                reply.send(e.getColor(), e.getMessage());
+                reply.except(e);
             }
         }
     }
@@ -236,7 +236,7 @@ public class Bot extends ListenerAdapter {
             servers.get(guild.getId())
                 .receiveInteraction(new MessageInteractionEvent(message, event.getInteraction().getName()), reply);
         } catch (BotException e) {
-            reply.send(e.getColor(), e.getMessage());
+            reply.except(e);
         }
     }
 
@@ -262,7 +262,7 @@ public class Bot extends ListenerAdapter {
         try {
             servers.get(guild.getId()).receiveCommand(commandEvent, reply);
         } catch (BotException e) {
-            reply.send(e.getColor(), e.getMessage());
+            reply.except(e);
         }
     }
 
@@ -280,7 +280,7 @@ public class Bot extends ListenerAdapter {
 
         ArchiveEvent archiveEvent = new ArchiveEvent(event.getChannel().asThreadChannel());
 
-        servers.get(guild.getId()).getArchiveHandler().handle(archiveEvent);
+        servers.get(guild.getId()).getArchiveHandler().handle(archiveEvent, Reply.empty());
     }
 
     @Override
@@ -295,7 +295,7 @@ public class Bot extends ListenerAdapter {
         try {
             direct.receiveMessage(message, reply);
         } catch (BotException e) {
-            reply.send(e.getColor(), e.getMessage());
+            reply.except(e);
         }
     }
 

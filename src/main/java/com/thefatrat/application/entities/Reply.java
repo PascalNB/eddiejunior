@@ -1,6 +1,7 @@
 package com.thefatrat.application.entities;
 
 import com.thefatrat.application.exceptions.BotException;
+import com.thefatrat.application.util.Colors;
 import com.thefatrat.application.util.Icon;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
@@ -26,6 +27,14 @@ public interface Reply {
 
     default void send(MessageCreateData data) {
         send(data, __ -> {});
+    }
+
+    default void send(Consumer<Message> callback, String content, Object... variables) {
+        send(callback, Colors.TRANSPARENT, content, variables);
+    }
+
+    default void send(String content, Object... variables) {
+        send(__ -> {}, content, variables);
     }
 
     default void send(Consumer<Message> callback, int color, String content,
