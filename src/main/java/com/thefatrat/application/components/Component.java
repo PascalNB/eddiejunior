@@ -135,7 +135,7 @@ public abstract class Component {
         commands.add(new Command(getName(), "component command")
             .setAction((command, reply) -> {
                 CommandEvent event = command.toSub();
-                getSubCommandHandler().handleOne(event.getCommand(), event, reply);
+                getSubCommandHandler().handle(event.getCommand(), event, reply);
             })
         );
     }

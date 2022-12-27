@@ -166,12 +166,11 @@ public class Bot extends ListenerAdapter {
             return;
         }
         if (!event.isFromGuild()) {
-
             ComponentReply reply = new ComponentReply(event);
 
             try {
                 ButtonEvent<User> bE = new ButtonEvent<>(event.getUser(), event.getComponentId(), event.getMessage());
-                direct.getButtonHandler().handle(bE, reply);
+                direct.getButtonHandler().handle(event.getComponentId(), bE, reply);
 
             } catch (BotException e) {
                 reply.getEditor().hide().except(e);
@@ -204,7 +203,7 @@ public class Bot extends ListenerAdapter {
             try {
                 StringSelectEvent selectEvent = new StringSelectEvent(event.getUser(), event.getMessage(),
                     event.getComponentId(), event.getInteraction().getValues().get(0));
-                direct.getStringSelectHandler().handle(selectEvent, reply);
+                direct.getStringSelectHandler().handle(event.getComponentId(), selectEvent, reply);
 
             } catch (BotException e) {
                 reply.getEditor().hide().except(e);
@@ -225,7 +224,7 @@ public class Bot extends ListenerAdapter {
 
         try {
             String interaction = event.getName();
-            servers.get(guild.getId()).getInteractionHandler().handleOne(interaction,
+            servers.get(guild.getId()).getInteractionHandler().handle(interaction,
                 new MessageInteractionEvent(message, interaction), reply);
         } catch (BotException e) {
             reply.hide().except(e);
@@ -252,7 +251,7 @@ public class Bot extends ListenerAdapter {
             options, guild, event.getGuildChannel(), Objects.requireNonNull(event.getMember()));
 
         try {
-            servers.get(guild.getId()).getCommandHandler().handleOne(event.getName(), commandEvent, reply);
+            servers.get(guild.getId()).getCommandHandler().handle(event.getName(), commandEvent, reply);
         } catch (BotException e) {
             reply.hide().except(e);
         }

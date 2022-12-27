@@ -5,9 +5,7 @@ import com.thefatrat.application.events.ButtonEvent;
 import com.thefatrat.application.events.StringSelectEvent;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
-import com.thefatrat.application.handlers.Handler;
 import com.thefatrat.application.handlers.MapHandler;
-import com.thefatrat.application.handlers.SetHandler;
 import com.thefatrat.application.reply.ComponentReply;
 import com.thefatrat.application.reply.Reply;
 import com.thefatrat.application.util.Colors;
@@ -32,55 +30,51 @@ import java.util.Set;
 public class Direct {
 
     private final Map<String, Message> cache = new HashMap<>();
-    private final SetHandler<StringSelectEvent, ComponentReply> stringSelectHandler = new SetHandler<>();
-    private final SetHandler<ButtonEvent<User>, ComponentReply> buttonHandler = new SetHandler<>();
+    private final MapHandler<StringSelectEvent, ComponentReply> stringSelectHandler = new MapHandler<>();
+    private final MapHandler<ButtonEvent<User>, ComponentReply> buttonHandler = new MapHandler<>();
 
     public Direct() {
-        stringSelectHandler.addListener((event, reply) -> {
-            if ("component".equals(event.getMenuId())) {
-                String[] split = event.getOption().split("-");
-                String serverId = split[0];
-                String component = split[1];
+        stringSelectHandler.addListener("component", (event, reply) -> {
+            String[] split = event.getOption().split("-");
+            String serverId = split[0];
+            String component = split[1];
 
-                Message userMessage = cache.remove(event.getUser().getId());
+            Message userMessage = cache.remove(event.getUser().getId());
 
-                Server server = Bot.getInstance().getServer(serverId);
-                if (server == null) {
-                    throw new BotErrorException("Something went wrong");
-                }
-
-                MapHandler<Message, Reply> handler = server.getDirectHandler();
-
-                if (!handler.getKeys().contains(component)) {
-                    throw new BotErrorException("Could not send to the given service, try again");
-                }
-
-                handler.handleOne(component, userMessage, reply.getEditor());
-
-            } else if ("server".equals(event.getMenuId())) {
-                MessageCreateData data = getComponentMenu(event.getUser().getId(), event.getOption());
-                reply.getEditor().accept(data);
+            Server server = Bot.getInstance().getServer(serverId);
+            if (server == null) {
+                throw new BotErrorException("Something went wrong");
             }
+
+            MapHandler<Message, Reply> handler = server.getDirectHandler();
+
+            if (!handler.getKeys().contains(component)) {
+                throw new BotErrorException("Could not send to the given service, try again");
+            }
+
+            handler.handle(component, userMessage, reply.getEditor());
         });
+        stringSelectHandler.addListener("server", (event, reply) ->
+            reply.getEditor().accept(getComponentMenu(event.getUser().getId(), event.getOption()))
+        );
 
-        buttonHandler.addListener((event, reply) -> {
-            if ("x".equals(event.getButtonId())) {
-                cache.remove(event.getUser().getId());
-                reply.getEditor().accept(Icon.STOP, "Successfully cancelled");
-            }
+        buttonHandler.addListener("x", (event, reply) -> {
+            cache.remove(event.getUser().getId());
+            reply.getEditor().accept(Icon.STOP, "Successfully cancelled");
         });
     }
 
-    public Handler<StringSelectEvent, ComponentReply> getStringSelectHandler() {
+    public MapHandler<StringSelectEvent, ComponentReply> getStringSelectHandler() {
         return stringSelectHandler;
     }
 
-    public Handler<ButtonEvent<User>, ComponentReply> getButtonHandler() {
+    public MapHandler<ButtonEvent<User>, ComponentReply> getButtonHandler() {
         return buttonHandler;
     }
 
     public void receiveMessage(Message message, Reply reply) {
         String userId = message.getAuthor().getId();
+        message.getChannel().sendTyping().queue();
         List<Guild> mutualGuilds = Bot.getInstance().retrieveMutualGuilds(message.getAuthor()).complete();
 
         if (mutualGuilds.isEmpty() || cache.containsKey(userId)) {
