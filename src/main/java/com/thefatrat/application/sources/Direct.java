@@ -1,7 +1,6 @@
 package com.thefatrat.application.sources;
 
 import com.thefatrat.application.Bot;
-import com.thefatrat.application.entities.Reply;
 import com.thefatrat.application.events.ButtonEvent;
 import com.thefatrat.application.events.StringSelectEvent;
 import com.thefatrat.application.exceptions.BotErrorException;
@@ -9,6 +8,8 @@ import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.handlers.Handler;
 import com.thefatrat.application.handlers.MapHandler;
 import com.thefatrat.application.handlers.SetHandler;
+import com.thefatrat.application.reply.ComponentReply;
+import com.thefatrat.application.reply.Reply;
 import com.thefatrat.application.util.Colors;
 import com.thefatrat.application.util.Icon;
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -31,13 +32,12 @@ import java.util.Set;
 public class Direct {
 
     private final Map<String, Message> cache = new HashMap<>();
-    private final SetHandler<StringSelectEvent> stringSelectHandler = new SetHandler<>();
-    private final SetHandler<ButtonEvent<User>> buttonHandler = new SetHandler<>();
+    private final SetHandler<StringSelectEvent, ComponentReply> stringSelectHandler = new SetHandler<>();
+    private final SetHandler<ButtonEvent<User>, ComponentReply> buttonHandler = new SetHandler<>();
 
     public Direct() {
         stringSelectHandler.addListener((event, reply) -> {
             if ("component".equals(event.getMenuId())) {
-                event.getMessage().delete().queue();
                 String[] split = event.getOption().split("-");
                 String serverId = split[0];
                 String component = split[1];
@@ -49,35 +49,33 @@ public class Direct {
                     throw new BotErrorException("Something went wrong");
                 }
 
-                MapHandler<Message> handler = server.getDirectHandler();
+                MapHandler<Message, Reply> handler = server.getDirectHandler();
 
                 if (!handler.getKeys().contains(component)) {
                     throw new BotErrorException("Could not send to the given service, try again");
                 }
 
-                handler.handleOne(component, userMessage, reply);
+                handler.handleOne(component, userMessage, reply.getEditor());
 
             } else if ("server".equals(event.getMenuId())) {
-                event.getMessage().delete().queue();
                 MessageCreateData data = getComponentMenu(event.getUser().getId(), event.getOption());
-                reply.send(data);
+                reply.getEditor().send(data);
             }
         });
 
         buttonHandler.addListener((event, reply) -> {
             if ("x".equals(event.getButtonId())) {
-                event.getMessage().delete().queue();
                 cache.remove(event.getUser().getId());
-                reply.send(Icon.STOP, "Successfully cancelled");
+                reply.getEditor().send(Icon.STOP, "Successfully cancelled");
             }
         });
     }
 
-    public Handler<StringSelectEvent> getStringSelectHandler() {
+    public Handler<StringSelectEvent, ComponentReply> getStringSelectHandler() {
         return stringSelectHandler;
     }
 
-    public Handler<ButtonEvent<User>> getButtonHandler() {
+    public Handler<ButtonEvent<User>, ComponentReply> getButtonHandler() {
         return buttonHandler;
     }
 

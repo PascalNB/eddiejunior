@@ -1,6 +1,7 @@
 package com.thefatrat.application.entities;
 
 import com.thefatrat.application.events.MessageInteractionEvent;
+import com.thefatrat.application.reply.Reply;
 
 import java.util.function.BiConsumer;
 

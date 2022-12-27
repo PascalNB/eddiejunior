@@ -59,11 +59,11 @@ public class Roles extends Component {
 
             if ("1".equals(split[1])) {
                 getServer().getGuild().addRoleToMember(member, role).queue(success ->
-                    reply.ok("You received role " + role.getAsMention())
+                    reply.getSender().hide().ok("You received role " + role.getAsMention())
                 );
             } else {
                 getServer().getGuild().removeRoleFromMember(member, role).queue(success ->
-                    reply.ok("Role " + role.getAsMention() + " has been removed")
+                    reply.getSender().hide().ok("Role " + role.getAsMention() + " has been removed")
                 );
             }
         });

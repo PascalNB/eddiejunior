@@ -2,10 +2,12 @@ package com.thefatrat.application;
 
 import com.thefatrat.application.components.Component;
 import com.thefatrat.application.entities.Command;
-import com.thefatrat.application.entities.Reply;
 import com.thefatrat.application.events.*;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotException;
+import com.thefatrat.application.reply.ComponentReply;
+import com.thefatrat.application.reply.InteractionReply;
+import com.thefatrat.application.reply.Reply;
 import com.thefatrat.application.sources.Direct;
 import com.thefatrat.application.sources.Server;
 import net.dv8tion.jda.api.JDA;
@@ -25,7 +27,6 @@ import net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionE
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.session.ReadyEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
@@ -168,21 +169,18 @@ public class Bot extends ListenerAdapter {
             return;
         }
         if (!event.isFromGuild()) {
-            InteractionHook hook = event.deferReply().complete();
 
-            Reply reply = Reply.defaultInteractionReply(hook);
+            ComponentReply reply = new ComponentReply(event);
 
             try {
                 ButtonEvent<User> bE = new ButtonEvent<>(event.getUser(), event.getComponentId(), event.getMessage());
                 direct.getButtonHandler().handle(bE, reply);
 
             } catch (BotException e) {
-                reply.except(e);
+                reply.getEditor().except(e);
             }
         } else {
-            InteractionHook hook = event.deferReply(true).complete();
-
-            Reply reply = Reply.defaultInteractionReply(hook);
+            ComponentReply reply = new ComponentReply(event);
 
             try {
                 Server server = getServer(Objects.requireNonNull(event.getGuild()).getId());
@@ -193,7 +191,7 @@ public class Bot extends ListenerAdapter {
 
                 server.getButtonHandler().handle(new ButtonEvent<>(member, buttonId, message), reply);
             } catch (BotException e) {
-                reply.except(e);
+                reply.getSender().except(e);
             }
         }
     }
@@ -204,8 +202,7 @@ public class Bot extends ListenerAdapter {
             return;
         }
         if (!event.isFromGuild()) {
-            InteractionHook hook = event.deferReply().complete();
-            Reply reply = Reply.defaultInteractionReply(hook);
+            ComponentReply reply = new ComponentReply(event);
 
             try {
                 StringSelectEvent selectEvent = new StringSelectEvent(event.getUser(), event.getMessage(),
@@ -213,7 +210,7 @@ public class Bot extends ListenerAdapter {
                 direct.getStringSelectHandler().handle(selectEvent, reply);
 
             } catch (BotException e) {
-                reply.except(e);
+                reply.getEditor().except(e);
             }
         }
     }
@@ -226,15 +223,13 @@ public class Bot extends ListenerAdapter {
         }
 
         Message message = event.getInteraction().getTarget();
-
         Guild guild = Objects.requireNonNull(event.getGuild());
-        InteractionHook hook = event.deferReply(true).complete();
-
-        Reply reply = Reply.defaultInteractionReply(hook);
+        Reply reply = new InteractionReply(event);
 
         try {
-            servers.get(guild.getId())
-                .receiveInteraction(new MessageInteractionEvent(message, event.getInteraction().getName()), reply);
+            String interaction = event.getName();
+            servers.get(guild.getId()).getInteractionHandler().handleOne(interaction,
+                new MessageInteractionEvent(message, interaction), reply);
         } catch (BotException e) {
             reply.except(e);
         }
@@ -254,13 +249,13 @@ public class Bot extends ListenerAdapter {
             options.put(option.getName(), option);
         }
 
-        Reply reply = Reply.immediateMultiInteractionReply(event);
+        Reply reply = new InteractionReply(event);
 
         CommandEvent commandEvent = new CommandEvent(event.getName(), event.getSubcommandName(),
             options, guild, event.getGuildChannel(), Objects.requireNonNull(event.getMember()));
 
         try {
-            servers.get(guild.getId()).receiveCommand(commandEvent, reply);
+            servers.get(guild.getId()).getCommandHandler().handleOne(event.getName(), commandEvent, reply);
         } catch (BotException e) {
             reply.except(e);
         }
@@ -277,10 +272,9 @@ public class Bot extends ListenerAdapter {
             return;
         }
         Guild guild = Objects.requireNonNull(event.getGuild());
-
         ArchiveEvent archiveEvent = new ArchiveEvent(event.getChannel().asThreadChannel());
 
-        servers.get(guild.getId()).getArchiveHandler().handle(archiveEvent, Reply.empty());
+        servers.get(guild.getId()).getArchiveHandler().handle(archiveEvent, null);
     }
 
     @Override

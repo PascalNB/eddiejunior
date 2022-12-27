@@ -1,6 +1,7 @@
 package com.thefatrat.application.entities;
 
 import com.thefatrat.application.events.CommandEvent;
+import com.thefatrat.application.reply.Reply;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
 

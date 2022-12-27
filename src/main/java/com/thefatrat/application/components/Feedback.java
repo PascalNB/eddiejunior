@@ -3,9 +3,9 @@ package com.thefatrat.application.components;
 import com.thefatrat.application.Bot;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.entities.Interaction;
-import com.thefatrat.application.entities.Reply;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
+import com.thefatrat.application.reply.Reply;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
 import com.thefatrat.application.util.Icon;
@@ -289,13 +289,14 @@ public class Feedback extends DirectComponent {
             new Interaction("mark read")
                 .setAction((event, reply) -> {
                     interactionCheck(event.getMessage());
+
                     MessageEditBuilder builder = MessageEditBuilder.fromMessage(event.getMessage());
                     EmbedBuilder embed = new EmbedBuilder(builder.getEmbeds().get(0));
                     embed.setColor(Colors.TRANSPARENT);
                     builder.setEmbeds(embed.build());
                     builder.setComponents();
                     event.getMessage().editMessage(builder.build()).queue();
-                    reply.ok("Submission marked as read");
+                    reply.hide().ok("Submission marked as read");
                 }),
 
             new Interaction("mark unread")
@@ -310,7 +311,7 @@ public class Feedback extends DirectComponent {
                         Button.secondary("feedback-mark_read", "Mark as read").withEmoji(Emoji.fromUnicode("✅"))
                     ));
                     event.getMessage().editMessage(builder.build()).queue();
-                    reply.ok("Submission marked as unread");
+                    reply.hide().ok("Submission marked as unread");
                 })
         );
 
@@ -333,8 +334,7 @@ public class Feedback extends DirectComponent {
                 embed.setColor(Colors.TRANSPARENT);
                 builder.setEmbeds(embed.build());
                 builder.setComponents();
-                event.getMessage().editMessage(builder.build()).queue();
-                reply.ok("Submission marked as read");
+                reply.getEditor().send(MessageCreateData.fromEditData(builder.build()));
             }
         });
     }

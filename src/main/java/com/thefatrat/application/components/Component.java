@@ -9,6 +9,7 @@ import com.thefatrat.application.events.MessageInteractionEvent;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotException;
 import com.thefatrat.application.handlers.MapHandler;
+import com.thefatrat.application.reply.Reply;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
 import net.dv8tion.jda.api.entities.MessageEmbed;
@@ -26,7 +27,7 @@ public abstract class Component {
     private final DatabaseManager databaseManager;
     private final List<Command> commands = new ArrayList<>();
     private final List<Interaction> interactions = new ArrayList<>();
-    private final MapHandler<CommandEvent> subHandler = new MapHandler<>();
+    private final MapHandler<CommandEvent, Reply> subHandler = new MapHandler<>();
     private MessageEmbed help = null;
 
     /**
@@ -111,7 +112,7 @@ public abstract class Component {
      * Will register all the commands and interactions to the server.
      */
     public final void register() {
-        MapHandler<CommandEvent> handler = getServer().getCommandHandler();
+        MapHandler<CommandEvent, Reply> handler = getServer().getCommandHandler();
 
         for (Command command : commands) {
             handler.addListener(command.getName(), command.getAction());
@@ -121,7 +122,7 @@ public abstract class Component {
             }
         }
 
-        MapHandler<MessageInteractionEvent> messageInteractionHandler = getServer().getInteractionHandler();
+        MapHandler<MessageInteractionEvent, Reply> messageInteractionHandler = getServer().getInteractionHandler();
 
         for (Interaction interaction : interactions) {
             messageInteractionHandler.addListener(interaction.getName(), interaction.getAction());
@@ -130,7 +131,7 @@ public abstract class Component {
         help = new HelpBuilder(getTitle(), getCommands()).build(Colors.TRANSPARENT);
     }
 
-    public final void setComponentCommand() {
+    protected final void setComponentCommand() {
         commands.add(new Command(getName(), "component command")
             .setAction((command, reply) -> {
                 CommandEvent event = command.toSub();
@@ -151,7 +152,7 @@ public abstract class Component {
     /**
      * @return the component's subcommand handler
      */
-    protected MapHandler<CommandEvent> getSubCommandHandler() {
+    protected MapHandler<CommandEvent, Reply> getSubCommandHandler() {
         return subHandler;
     }
 

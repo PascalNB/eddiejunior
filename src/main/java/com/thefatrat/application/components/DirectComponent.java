@@ -2,9 +2,9 @@ package com.thefatrat.application.components;
 
 import com.thefatrat.application.Bot;
 import com.thefatrat.application.entities.Command;
-import com.thefatrat.application.entities.Reply;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
+import com.thefatrat.application.reply.Reply;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
 import com.thefatrat.application.util.Icon;

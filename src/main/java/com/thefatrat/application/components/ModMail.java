@@ -2,9 +2,9 @@ package com.thefatrat.application.components;
 
 import com.thefatrat.application.Bot;
 import com.thefatrat.application.entities.Command;
-import com.thefatrat.application.entities.Reply;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
+import com.thefatrat.application.reply.Reply;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
 import com.thefatrat.application.util.Icon;
@@ -185,7 +185,7 @@ public class ModMail extends DirectComponent {
 
                 Bot.getInstance().requirePermission(thread.getParentChannel(), Permission.MANAGE_THREADS);
 
-                reply.ok(callback ->
+                reply.getSender().ok(callback ->
                         thread.getManager().setLocked(true).queue(success ->
                             thread.getManager().setArchived(true).queue()
                         ),
@@ -223,7 +223,7 @@ public class ModMail extends DirectComponent {
         if (content.length() > 4090) {
             throw new BotWarningException("Message cannot be longer than 4090 characters");
         }
-        if (!content.matches(" +")) {
+        if (!content.contains(" ")) {
             throw new BotWarningException("Spam is not allowed");
         }
 

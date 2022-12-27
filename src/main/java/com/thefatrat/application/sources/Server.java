@@ -5,13 +5,14 @@ import com.thefatrat.application.CommandRegister;
 import com.thefatrat.application.components.Component;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.entities.Interaction;
-import com.thefatrat.application.entities.Reply;
 import com.thefatrat.application.events.ArchiveEvent;
 import com.thefatrat.application.events.ButtonEvent;
 import com.thefatrat.application.events.CommandEvent;
 import com.thefatrat.application.events.MessageInteractionEvent;
 import com.thefatrat.application.handlers.MapHandler;
 import com.thefatrat.application.handlers.SetHandler;
+import com.thefatrat.application.reply.ComponentReply;
+import com.thefatrat.application.reply.Reply;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -34,11 +35,11 @@ public class Server {
     );
 
     private final String id;
-    private final MapHandler<CommandEvent> commandHandler = new MapHandler<>();
-    private final MapHandler<MessageInteractionEvent> messageInteractionHandler = new MapHandler<>();
-    private final MapHandler<Message> directHandler = new MapHandler<>();
-    private final SetHandler<ArchiveEvent> archiveHandler = new SetHandler<>();
-    private final SetHandler<ButtonEvent<Member>> buttonHandler = new SetHandler<>();
+    private final MapHandler<CommandEvent, Reply> commandHandler = new MapHandler<>();
+    private final MapHandler<MessageInteractionEvent, Reply> messageInteractionHandler = new MapHandler<>();
+    private final MapHandler<Message, Reply> directHandler = new MapHandler<>();
+    private final SetHandler<ArchiveEvent, Void> archiveHandler = new SetHandler<>();
+    private final SetHandler<ButtonEvent<Member>, ComponentReply> buttonHandler = new SetHandler<>();
     private final Map<String, Component> components = new HashMap<>();
 
     public static Server dummy() {
@@ -62,7 +63,7 @@ public class Server {
         return id;
     }
 
-    public MapHandler<Message> getDirectHandler() {
+    public MapHandler<Message, Reply> getDirectHandler() {
         return directHandler;
     }
 
@@ -137,28 +138,20 @@ public class Server {
         }
     }
 
-    public MapHandler<CommandEvent> getCommandHandler() {
+    public MapHandler<CommandEvent, Reply> getCommandHandler() {
         return commandHandler;
     }
 
-    public MapHandler<MessageInteractionEvent> getInteractionHandler() {
+    public MapHandler<MessageInteractionEvent, Reply> getInteractionHandler() {
         return messageInteractionHandler;
     }
 
-    public SetHandler<ArchiveEvent> getArchiveHandler() {
+    public SetHandler<ArchiveEvent, Void> getArchiveHandler() {
         return archiveHandler;
     }
 
-    public SetHandler<ButtonEvent<Member>> getButtonHandler() {
+    public SetHandler<ButtonEvent<Member>, ComponentReply> getButtonHandler() {
         return buttonHandler;
-    }
-
-    public void receiveInteraction(MessageInteractionEvent message, Reply reply) {
-        messageInteractionHandler.handle(message, reply);
-    }
-
-    public void receiveCommand(CommandEvent event, Reply reply) {
-        commandHandler.handleOne(event.getCommand(), event, reply);
     }
 
 }
