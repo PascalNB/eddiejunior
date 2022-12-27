@@ -351,11 +351,4 @@ public class Grab extends Component {
         return builder.toString();
     }
 
-    @Override
-    public String getStatus() {
-        return String.format("""
-            Enabled: %b
-            """, isEnabled());
-    }
-
 }

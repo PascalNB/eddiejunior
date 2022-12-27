@@ -77,12 +77,4 @@ public class Edit extends Component {
         );
     }
 
-    @Override
-    public String getStatus() {
-        return String.format("""
-                Enabled: %b
-                """,
-            isEnabled());
-    }
-
 }

@@ -204,12 +204,4 @@ public class Roles extends Component {
         );
     }
 
-    @Override
-    public String getStatus() {
-        return String.format("""
-                Enabled: %b
-                """,
-            isEnabled());
-    }
-
 }

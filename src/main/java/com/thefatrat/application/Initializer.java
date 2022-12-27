@@ -56,12 +56,16 @@ public class Initializer {
 
         Bot.getInstance().setComponents(
             Manager.class,
+
             ModMail.class,
             Feedback.class,
+
             Grab.class,
             Session.class,
             Roles.class,
-            Edit.class
+
+            Edit.class,
+            Remove.class
         );
 
         jda = JDABuilder.createLight(token,

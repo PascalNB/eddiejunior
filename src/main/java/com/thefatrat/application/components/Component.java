@@ -219,7 +219,12 @@ public abstract class Component {
     /**
      * @return the current status of the component
      */
-    public abstract String getStatus();
+    public String getStatus() {
+        return String.format("""
+                Enabled: %b
+                """,
+            isEnabled());
+    }
 
     public static <T, V> List<T> fillAbsent(Collection<T> expected, Collection<V> actual,
         Function<V, T> keygen, Function<V, T> valgen) {
