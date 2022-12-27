@@ -16,7 +16,7 @@ public class EditReply implements Reply {
     }
 
     @Override
-    public void send(MessageCreateData data, Consumer<Message> callback) {
+    public void accept(MessageCreateData data, Consumer<Message> callback) {
         event.editMessage(MessageEditData.fromCreateData(data))
             .queue(hook -> hook.retrieveOriginal().queue(callback));
     }

@@ -21,7 +21,7 @@ public class InteractionReply implements Reply {
     private InteractionHook hook = null;
 
     @Override
-    public void send(MessageCreateData data, Consumer<Message> callback) {
+    public void accept(MessageCreateData data, Consumer<Message> callback) {
         if (!replied) {
             replied = true;
             if (hook != null) {

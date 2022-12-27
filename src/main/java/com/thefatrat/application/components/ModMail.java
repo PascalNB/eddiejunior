@@ -1,6 +1,5 @@
 package com.thefatrat.application.components;
 
-import com.thefatrat.application.Bot;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
@@ -8,6 +7,7 @@ import com.thefatrat.application.reply.Reply;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
 import com.thefatrat.application.util.Icon;
+import com.thefatrat.application.util.PermissionChecker;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Message;
@@ -183,7 +183,7 @@ public class ModMail extends DirectComponent {
                     throw new BotErrorException("Thread not found");
                 }
 
-                Bot.getInstance().requirePermission(thread.getParentChannel(), Permission.MANAGE_THREADS);
+                PermissionChecker.requirePermission(thread.getParentChannel(), Permission.MANAGE_THREADS);
 
                 reply.getSender().ok(callback ->
                         thread.getManager().setLocked(true).queue(success ->
@@ -293,7 +293,7 @@ public class ModMail extends DirectComponent {
                 thread.sendMessage(builder.build()).queue()
             );
 
-            reply.send(new MessageCreateBuilder()
+            reply.accept(new MessageCreateBuilder()
                 .addEmbeds(new EmbedBuilder()
                     .setColor(Colors.GREEN)
                     .setDescription(Icon.OK + " Message successfully submitted")
@@ -309,7 +309,7 @@ public class ModMail extends DirectComponent {
 
     protected void stop(Reply reply) {
         super.stop(reply);
-        reply.send(Icon.STOP, "Mod mail service stopped");
+        reply.accept(Icon.STOP, "Mod mail service stopped");
     }
 
     protected void start(Reply reply) {

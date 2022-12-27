@@ -1,11 +1,11 @@
 package com.thefatrat.application.components;
 
-import com.thefatrat.application.Bot;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
 import com.thefatrat.application.util.EmojiChecker;
+import com.thefatrat.application.util.PermissionChecker;
 import com.thefatrat.application.util.URLUtil;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
@@ -190,13 +190,13 @@ public class Roles extends Component {
                     OptionMapping channelObject = command.getArgs().get("channel");
 
                     if (channelObject == null) {
-                        reply.send(builder.build());
+                        reply.accept(builder.build());
                         return;
                     }
 
                     TextChannel channel = channelObject.getAsChannel().asTextChannel();
 
-                    Bot.getInstance().requirePermission(channel, Permission.MESSAGE_EMBED_LINKS);
+                    PermissionChecker.requireSend(channel);
 
                     channel.sendMessage(builder.build()).queue();
                     reply.ok("Message sent in %s", channel.getAsMention());

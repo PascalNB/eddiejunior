@@ -1,6 +1,5 @@
 package com.thefatrat.application.components;
 
-import com.thefatrat.application.Bot;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
@@ -8,8 +7,8 @@ import com.thefatrat.application.reply.Reply;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
 import com.thefatrat.application.util.Icon;
+import com.thefatrat.application.util.PermissionChecker;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
@@ -75,11 +74,11 @@ public abstract class DirectComponent extends Component {
 
                     if (currentDestination == null || !newDestination.getId().equals(currentDestination.getId())) {
 
-                        Bot.getInstance().requirePermission(newDestination, Permission.MESSAGE_EMBED_LINKS);
+                        PermissionChecker.requireSend(newDestination);
 
                         setDestination(newDestination.getId());
 
-                        reply.send(Icon.SETTING, "Destination set to %s `(%s)`%n",
+                        reply.accept(Icon.SETTING, "Destination set to %s `(%s)`%n",
                             newDestination.getAsMention(), newDestination.getId()
                         );
                     }
@@ -104,11 +103,11 @@ public abstract class DirectComponent extends Component {
                         }
                     }
 
-                    Bot.getInstance().requirePermission(newDestination, Permission.MESSAGE_EMBED_LINKS);
+                    PermissionChecker.requirePermission(newDestination);
 
                     setDestination(newDestination.getId());
 
-                    reply.send(Icon.SETTING, "Destination set to %s `(%s)`%n",
+                    reply.accept(Icon.SETTING, "Destination set to %s `(%s)`%n",
                         newDestination.getAsMention(), newDestination.getId());
                 }),
             new Command("blacklist", "manages the blacklist")
@@ -142,7 +141,7 @@ public abstract class DirectComponent extends Component {
                             .onSuccess(list -> {
                                 String[] strings = fillAbsent(blacklist, list, ISnowflake::getId,
                                     IMentionable::getAsMention).toArray(String[]::new);
-                                reply.send(new EmbedBuilder()
+                                reply.accept(new EmbedBuilder()
                                     .setColor(Colors.TRANSPARENT)
                                     .setTitle(getTitle() + " blacklist")
                                     .setDescription(String.join("\n", strings))

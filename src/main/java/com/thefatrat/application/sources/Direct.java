@@ -59,14 +59,14 @@ public class Direct {
 
             } else if ("server".equals(event.getMenuId())) {
                 MessageCreateData data = getComponentMenu(event.getUser().getId(), event.getOption());
-                reply.getEditor().send(data);
+                reply.getEditor().accept(data);
             }
         });
 
         buttonHandler.addListener((event, reply) -> {
             if ("x".equals(event.getButtonId())) {
                 cache.remove(event.getUser().getId());
-                reply.getEditor().send(Icon.STOP, "Successfully cancelled");
+                reply.getEditor().accept(Icon.STOP, "Successfully cancelled");
             }
         });
     }
@@ -97,7 +97,7 @@ public class Direct {
             data = getServerMenu(mutualGuilds);
         }
 
-        reply.send(data);
+        reply.accept(data);
     }
 
     @CheckReturnValue

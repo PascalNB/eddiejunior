@@ -9,9 +9,9 @@ import com.thefatrat.application.reply.Reply;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
 import com.thefatrat.application.util.Icon;
+import com.thefatrat.application.util.PermissionChecker;
 import com.thefatrat.application.util.URLUtil;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
@@ -68,7 +68,7 @@ public class Feedback extends DirectComponent {
                         throw new BotErrorException("Destination not set yet");
                     }
 
-                    Bot.getInstance().requirePermission(getDestination(), Permission.MESSAGE_EMBED_LINKS);
+                    PermissionChecker.requireSend(getDestination());
 
                     Collections.shuffle(submissions);
 
@@ -76,7 +76,7 @@ public class Feedback extends DirectComponent {
                     submissions.remove(0);
 
                     destination.sendMessage(submission.submission()).queue(m ->
-                        reply.send(Icon.WIN, "%s has won!", submission.user().getAsMention()));
+                        reply.accept(Icon.WIN, "%s has won!", submission.user().getAsMention()));
                 }),
 
             new Command("reset", "allow submissions for users again")
@@ -84,7 +84,7 @@ public class Feedback extends DirectComponent {
                 .setAction((command, reply) -> {
                     if (!command.getArgs().containsKey("user")) {
                         users.clear();
-                        reply.send(Icon.RESET, "Feedback session reset, users can submit again");
+                        reply.accept(Icon.RESET, "Feedback session reset, users can submit again");
                         return;
                     }
 
@@ -96,7 +96,7 @@ public class Feedback extends DirectComponent {
 
                     users.remove(member.getId());
 
-                    reply.send(Icon.RESET, "Feedback session reset for %s, they can submit again",
+                    reply.accept(Icon.RESET, "Feedback session reset for %s, they can submit again",
                         member.getAsMention());
                 }),
 
@@ -129,7 +129,7 @@ public class Feedback extends DirectComponent {
                         }
                         Arrays.sort(sorted);
 
-                        reply.send(new EmbedBuilder()
+                        reply.accept(new EmbedBuilder()
                             .setColor(Colors.TRANSPARENT)
                             .setTitle(getTitle() + " whitelist")
                             .setDescription(String.join("\n", sorted))
@@ -220,7 +220,7 @@ public class Feedback extends DirectComponent {
                         }
                         builder.deleteCharAt(builder.length() - 1);
 
-                        reply.send(new EmbedBuilder()
+                        reply.accept(new EmbedBuilder()
                             .setColor(Colors.TRANSPARENT)
                             .setTitle(getTitle() + " filetypes")
                             .setDescription(builder.toString())
@@ -325,16 +325,15 @@ public class Feedback extends DirectComponent {
             String action = split[1];
 
             if ("mark_read".equals(action)) {
-                Bot.getInstance().requirePermission(
-                    event.getMessage().getChannel().asGuildMessageChannel().getPermissionContainer(),
-                    Permission.MESSAGE_EMBED_LINKS);
+                PermissionChecker.requireSend(
+                    event.getMessage().getChannel().asGuildMessageChannel().getPermissionContainer());
 
                 MessageEditBuilder builder = MessageEditBuilder.fromMessage(event.getMessage());
                 EmbedBuilder embed = new EmbedBuilder(builder.getEmbeds().get(0));
                 embed.setColor(Colors.TRANSPARENT);
                 builder.setEmbeds(embed.build());
                 builder.setComponents();
-                reply.getEditor().send(MessageCreateData.fromEditData(builder.build()));
+                reply.getEditor().accept(MessageCreateData.fromEditData(builder.build()));
             }
         });
     }
@@ -353,8 +352,7 @@ public class Feedback extends DirectComponent {
             throw new BotErrorException("Could not perform action");
         }
 
-        Bot.getInstance().requirePermission(message.getChannel().asGuildMessageChannel().getPermissionContainer(),
-            Permission.MESSAGE_EMBED_LINKS);
+        PermissionChecker.requireSend(message.getChannel().asGuildMessageChannel().getPermissionContainer());
     }
 
     @Override
@@ -461,7 +459,7 @@ public class Feedback extends DirectComponent {
         super.stop(reply);
         submissions.clear();
         submissionCount = 0;
-        reply.send(Icon.STOP, "Feedback session stopped");
+        reply.accept(Icon.STOP, "Feedback session stopped");
     }
 
     private record Submission(User user, MessageCreateData submission) {

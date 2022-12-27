@@ -3,7 +3,6 @@ package com.thefatrat.application;
 import com.thefatrat.application.components.Component;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.events.*;
-import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotException;
 import com.thefatrat.application.reply.ComponentReply;
 import com.thefatrat.application.reply.InteractionReply;
@@ -15,7 +14,6 @@ import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
-import net.dv8tion.jda.api.entities.channel.attribute.IPermissionContainer;
 import net.dv8tion.jda.api.events.channel.update.ChannelUpdateArchivedEvent;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.events.guild.GuildLeaveEvent;
@@ -33,7 +31,6 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 import net.dv8tion.jda.api.requests.RestAction;
 import net.dv8tion.jda.api.utils.Result;
-import net.dv8tion.jda.internal.utils.PermissionUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -177,7 +174,7 @@ public class Bot extends ListenerAdapter {
                 direct.getButtonHandler().handle(bE, reply);
 
             } catch (BotException e) {
-                reply.getEditor().except(e);
+                reply.getEditor().hide().except(e);
             }
         } else {
             ComponentReply reply = new ComponentReply(event);
@@ -191,7 +188,7 @@ public class Bot extends ListenerAdapter {
 
                 server.getButtonHandler().handle(new ButtonEvent<>(member, buttonId, message), reply);
             } catch (BotException e) {
-                reply.getSender().except(e);
+                reply.getSender().hide().except(e);
             }
         }
     }
@@ -210,7 +207,7 @@ public class Bot extends ListenerAdapter {
                 direct.getStringSelectHandler().handle(selectEvent, reply);
 
             } catch (BotException e) {
-                reply.getEditor().except(e);
+                reply.getEditor().hide().except(e);
             }
         }
     }
@@ -231,7 +228,7 @@ public class Bot extends ListenerAdapter {
             servers.get(guild.getId()).getInteractionHandler().handleOne(interaction,
                 new MessageInteractionEvent(message, interaction), reply);
         } catch (BotException e) {
-            reply.except(e);
+            reply.hide().except(e);
         }
     }
 
@@ -257,7 +254,7 @@ public class Bot extends ListenerAdapter {
         try {
             servers.get(guild.getId()).getCommandHandler().handleOne(event.getName(), commandEvent, reply);
         } catch (BotException e) {
-            reply.except(e);
+            reply.hide().except(e);
         }
     }
 
@@ -289,16 +286,7 @@ public class Bot extends ListenerAdapter {
         try {
             direct.receiveMessage(message, reply);
         } catch (BotException e) {
-            reply.except(e);
-        }
-    }
-
-    public void requirePermission(IPermissionContainer container, Permission... permissions) throws BotErrorException {
-        Member member = container.getGuild().getSelfMember();
-        for (Permission permission : permissions) {
-            if (!PermissionUtil.checkPermission(container, member, permission)) {
-                throw new BotErrorException("Requires permission `%s`", permission.getName());
-            }
+            reply.hide().except(e);
         }
     }
 

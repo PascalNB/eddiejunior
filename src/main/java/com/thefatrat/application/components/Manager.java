@@ -6,10 +6,10 @@ import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
 import com.thefatrat.application.util.Icon;
+import com.thefatrat.application.util.PermissionChecker;
 import com.thefatrat.database.Database;
 import com.thefatrat.database.DatabaseException;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
@@ -34,18 +34,17 @@ public class Manager extends Component {
                             return;
                         }
 
-                        reply.send(component.getHelp());
+                        reply.accept(component.getHelp());
                     } else {
-                        reply.send(getHelp());
+                        reply.accept(getHelp());
                     }
                 }),
 
             new Command("ping", "check the RTT of the connection in milliseconds")
                 .setAction((command, reply) -> {
-                    Bot.getInstance().requirePermission(command.getChannel().getPermissionContainer(),
-                        Permission.MESSAGE_EMBED_LINKS);
+                    PermissionChecker.requireSend(command.getChannel().getPermissionContainer());
 
-                    reply.send(new EmbedBuilder()
+                    reply.accept(new EmbedBuilder()
                             .setColor(Colors.TRANSPARENT)
                             .addField("WebSocket", Bot.getInstance().getJDA().getGatewayPing() + " ms", true)
                             .build(),
@@ -85,7 +84,7 @@ public class Manager extends Component {
                     component.getDatabaseManager().toggleComponent(true)
                         .thenRun(() -> {
                             getServer().toggleComponent(component, true);
-                            reply.send(Icon.ENABLE, "Component `%s` enabled", componentString);
+                            reply.accept(Icon.ENABLE, "Component `%s` enabled", componentString);
                         });
                 }),
 
@@ -112,7 +111,7 @@ public class Manager extends Component {
 
                     component.getDatabaseManager().toggleComponent(false);
                     getServer().toggleComponent(component, false);
-                    reply.send(Icon.DISABLE, "Component `%s` disabled", componentString);
+                    reply.accept(Icon.DISABLE, "Component `%s` disabled", componentString);
                 }),
 
             new Command("components", "shows a list of all the components")
@@ -134,7 +133,7 @@ public class Manager extends Component {
                         builder.append("\n");
                     }
                     builder.deleteCharAt(builder.length() - 1);
-                    reply.send(new EmbedBuilder()
+                    reply.accept(new EmbedBuilder()
                         .setColor(Colors.TRANSPARENT)
                         .setTitle("Components")
                         .setDescription(builder.toString())
@@ -166,7 +165,7 @@ public class Manager extends Component {
                         .setDescription(component.getStatus())
                         .build();
 
-                    reply.send(embed);
+                    reply.accept(embed);
                 })
         );
     }

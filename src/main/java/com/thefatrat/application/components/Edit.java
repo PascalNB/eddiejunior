@@ -1,11 +1,10 @@
 package com.thefatrat.application.components;
 
-import com.thefatrat.application.Bot;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.sources.Server;
+import com.thefatrat.application.util.PermissionChecker;
 import com.thefatrat.application.util.URLUtil;
-import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
@@ -43,9 +42,7 @@ public class Edit extends Component {
                     throw new BotErrorException("Message was not sent by me");
                 }
 
-                Bot.getInstance().requirePermission(
-                    message.getChannel().asGuildMessageChannel().getPermissionContainer(),
-                    Permission.MESSAGE_EMBED_LINKS);
+                PermissionChecker.requireSend(message.getChannel().asGuildMessageChannel().getPermissionContainer());
 
                 MessageEditBuilder builder = new MessageEditBuilder();
 
@@ -69,9 +66,9 @@ public class Edit extends Component {
 
                 message.editMessage(builder.build())
                     .onErrorMap(e -> null)
-                    .queue(message1 -> {
-                        if (message1 == null) {
-                            reply.except(new BotErrorException("Couldn't edit message"));
+                    .queue(m -> {
+                        if (m == null) {
+                            reply.hide().except(new BotErrorException("Couldn't edit message"));
                         } else {
                             reply.ok("Message was edited");
                         }
