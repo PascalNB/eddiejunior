@@ -7,19 +7,24 @@ import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
+import com.thefatrat.application.util.Icon;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.entities.channel.unions.GuildChannelUnion;
 import net.dv8tion.jda.api.entities.emoji.CustomEmoji;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.entities.sticker.StickerItem;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import net.dv8tion.jda.api.requests.RestAction;
 import net.dv8tion.jda.api.utils.ImageProxy;
+import net.dv8tion.jda.api.utils.Result;
 import net.dv8tion.jda.api.utils.TimeFormat;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.Iterator;
 import java.util.List;
 
 public class Grab extends Component {
@@ -231,6 +236,58 @@ public class Grab extends Component {
                 .setAction((command, reply) -> {
                     IMentionable mention = command.getArgs().get("mention").getAsMentionable();
                     reply.send(mention.getId());
+                }),
+
+            new Command("channel", "Get a channel's info")
+                .addOption(new OptionData(OptionType.CHANNEL, "channel", "channel", true))
+                .setAction((command, reply) -> {
+                    GuildChannelUnion channel = command.getArgs().get("channel").getAsChannel();
+
+                    List<PermissionOverride> rolePermissionOverrides = channel.getPermissionContainer()
+                        .getRolePermissionOverrides();
+                    List<PermissionOverride> memberPermissionOverrides = channel.getPermissionContainer()
+                        .getMemberPermissionOverrides();
+                    List<String> roleOverrides = new ArrayList<>();
+                    List<String> memberOverrides = new ArrayList<>();
+
+                    for (PermissionOverride override : rolePermissionOverrides) {
+                        Role role = override.getRole();
+                        if (role != null && (override.getAllowedRaw() != 0L || override.getDeniedRaw() != 0L)) {
+                            roleOverrides.add(formatOverrides(role, override));
+                        }
+                    }
+                    if (!memberPermissionOverrides.isEmpty()) {
+                        List<RestAction<Result<Member>>> actions = new ArrayList<>();
+                        for (PermissionOverride override : memberPermissionOverrides) {
+                            String id = override.getId();
+                            actions.add(getServer().getGuild().retrieveMemberById(id).mapToResult());
+                        }
+                        List<Result<Member>> results = RestAction.allOf(actions).complete();
+                        for (int i = 0; i < results.size(); ++i) {
+                            Result<Member> result = results.get(i);
+                            Member member;
+                            PermissionOverride override = memberPermissionOverrides.get(i);
+                            if (result.isSuccess() && (member = result.get()) != null &&
+                                (override.getAllowedRaw() != 0L || override.getDeniedRaw() != 0L)) {
+                                memberOverrides.add(formatOverrides(member, override));
+                            }
+                        }
+                    }
+
+                    EmbedBuilder embed = new EmbedBuilder()
+                        .setColor(Colors.TRANSPARENT)
+                        .setTitle(channel.getName())
+                        .setDescription(channel.getAsMention())
+                        .addField("Channel type", '`' + channel.getType().toString() + '`', true)
+                        .addField("Creation date", TimeFormat.DATE_TIME_LONG.format(channel.getTimeCreated()), true);
+                    if (!roleOverrides.isEmpty()) {
+                        embed.addField("Role overrides", String.join("\n\n", roleOverrides), false);
+                    }
+                    if (!memberOverrides.isEmpty()) {
+                        embed.addField("Member overrides", String.join("\n\n", memberOverrides), false);
+                    }
+                    embed.setFooter(channel.getId());
+                    reply.send(embed.build());
                 })
         );
 
@@ -263,6 +320,35 @@ public class Grab extends Component {
             user = event.getMember().getUser();
         }
         return user;
+    }
+
+    private String formatPermissions(Iterable<Permission> permissions) {
+        StringBuilder builder = new StringBuilder();
+        for (Iterator<Permission> iterator = permissions.iterator(); iterator.hasNext(); ) {
+            Permission permission = iterator.next();
+            builder.append('`').append(permission.getName()).append('`');
+            if (iterator.hasNext()) {
+                builder.append(", ");
+            }
+        }
+        return builder.toString();
+    }
+
+    private String formatOverrides(IMentionable permissionHolder, PermissionOverride override) {
+        StringBuilder builder = new StringBuilder()
+            .append(permissionHolder.getAsMention()).append("\n");
+        EnumSet<Permission> allowed = override.getAllowed();
+        if (!allowed.isEmpty()) {
+            builder.append(Icon.OK).append(" ").append(formatPermissions(allowed));
+        }
+        EnumSet<Permission> denied = override.getDenied();
+        if (!allowed.isEmpty() && !denied.isEmpty()) {
+            builder.append("\n");
+        }
+        if (!denied.isEmpty()) {
+            builder.append(Icon.ERROR).append(" ").append(formatPermissions(denied));
+        }
+        return builder.toString();
     }
 
     @Override
