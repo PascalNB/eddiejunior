@@ -8,17 +8,16 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class URLUtil {
 
-    private static final String URL_REGEX =
-        "^https?://[a-z.\\d\\-A-Z]+\\.[a-z]+(/[\\w&=\\-.~:/?#\\[\\]@!$'()*+,;%]*)?$";
+    public static final Pattern URL_REGEX = Pattern.compile(
+        "^https?://(?<sub>[a-z\\dA-Z\\-.]+\\.)?(?<domain>[a-z\\d\\-A-Z]+)\\.(?<tld>[a-z]+)/?(?:[\\w&=\\-.~:/?#\\[\\]@!$'()*+,;%]*)?$"
+    );
 
     private static final String DOMAIN_REGEX = "^[a-z\\-\\d]+\\.[a-z]+$";
 
@@ -28,21 +27,17 @@ public final class URLUtil {
         return domain.matches(DOMAIN_REGEX);
     }
 
-    public static boolean isUrl(String url) {
-        return url.matches(URL_REGEX);
-    }
-
     public static boolean isSafe(String url) {
         return url.matches(IS_HTTPS);
     }
 
-    public static String isFromDomains(String url, Collection<String> domains) throws URISyntaxException {
-        URI uri = new URI(url);
-        String host = uri.getHost();
-        String[] split = host.split("\\.");
-        String domain = String.join(".",
-            Arrays.copyOfRange(split, split.length - 2, split.length));
-        return domains.contains(domain) ? domain : null;
+    @Nullable
+    public static Matcher matchUrl(String url) {
+        Matcher matcher = URL_REGEX.matcher(url);
+        if (matcher.find()) {
+            return matcher;
+        }
+        return null;
     }
 
     public static Message messageFromURL(@NotNull String url, @NotNull Guild guild) throws BotException {

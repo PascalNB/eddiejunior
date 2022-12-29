@@ -27,11 +27,11 @@ import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import net.dv8tion.jda.api.utils.messages.MessageEditBuilder;
 
-import java.net.URISyntaxException;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.regex.Matcher;
 
 public class Feedback extends DirectComponent {
 
@@ -374,6 +374,7 @@ public class Feedback extends DirectComponent {
         List<Message.Attachment> attachments = message.getAttachments();
 
         String url = null;
+        Matcher matcher = null;
         if (!attachments.isEmpty()) {
             url = attachments.get(0).getUrl();
 
@@ -381,13 +382,14 @@ public class Feedback extends DirectComponent {
             String[] content = message.getContentRaw().split("\\s+");
 
             for (String part : content) {
-                if (URLUtil.isUrl(part)) {
+                matcher = URLUtil.matchUrl(part);
+                if (matcher != null) {
                     url = part;
                     break;
                 }
             }
         }
-        if (url == null) {
+        if (url == null || matcher == null) {
             throw new BotWarningException("Please send a valid file or link");
         }
 
@@ -398,25 +400,21 @@ public class Feedback extends DirectComponent {
         }
 
         if (!domains.isEmpty()) {
-            try {
-                String domain = URLUtil.isFromDomains(url, domains);
-                if (domain == null) {
-                    throw new BotWarningException("The server does not accept links from the given source");
-                }
-                if ("discordapp.com".equals(domain) && !filetypes.isEmpty()) {
-                    boolean allowed = false;
-                    for (String filetype : filetypes) {
-                        if (url.endsWith("." + filetype)) {
-                            allowed = true;
-                            break;
-                        }
-                    }
-                    if (!allowed) {
-                        throw new BotWarningException("The server does not accept the given file type");
+            String domain = matcher.group("domain") + "." + matcher.group("tld");
+            if (!domains.contains(domain)) {
+                throw new BotWarningException("The server does not accept links from the given source");
+            }
+            if ("discordapp.com".equals(domain) && !filetypes.isEmpty()) {
+                boolean allowed = false;
+                for (String filetype : filetypes) {
+                    if (url.endsWith("." + filetype)) {
+                        allowed = true;
+                        break;
                     }
                 }
-            } catch (URISyntaxException e) {
-                throw new BotWarningException("Please send a valid file or link");
+                if (!allowed) {
+                    throw new BotWarningException("The server does not accept the given file type");
+                }
             }
         }
 

@@ -15,6 +15,7 @@ import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.BiConsumer;
@@ -246,6 +247,7 @@ public abstract class DirectComponent extends Component {
         getDatabaseManager().setSetting("destination", destination);
     }
 
+    @Nullable
     public final TextChannel getDestination() {
         if (destination == null) {
             return null;
