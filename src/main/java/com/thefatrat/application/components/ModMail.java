@@ -200,21 +200,25 @@ public class ModMail extends DirectComponent {
 
             --tickets;
 
-            event.getThread().retrieveThreadMembers().queue(members -> {
-                for (ThreadMember member : members) {
-                    String id = member.getId();
-                    if (!userCount.containsKey(id)) {
-                        continue;
-                    }
-                    int count = userCount.get(id) - 1;
-                    if (count <= 0) {
-                        userCount.remove(id);
-                        timeouts.remove(id);
-                    } else {
-                        userCount.put(id, count);
-                    }
+            synchronized (userCount) {
+                synchronized (timeouts) {
+                    event.getThread().retrieveThreadMembers().queue(members -> {
+                        for (ThreadMember member : members) {
+                            String id = member.getId();
+                            if (!userCount.containsKey(id)) {
+                                continue;
+                            }
+                            int count = userCount.get(id) - 1;
+                            if (count <= 0) {
+                                userCount.remove(id);
+                                timeouts.remove(id);
+                            } else {
+                                userCount.put(id, count);
+                            }
+                        }
+                    });
                 }
-            });
+            }
         });
 
         getServer().getButtonHandler().addListener((event, reply) -> {
@@ -282,7 +286,11 @@ public class ModMail extends DirectComponent {
             String subject = event.getValues().get("subject").getAsString();
             String message = event.getValues().get("message").getAsString();
             reply.hide();
-            createTicket(event.getMember().getUser(), subject, message, List.of(), reply);
+            synchronized (userCount) {
+                synchronized (timeouts) {
+                    createTicket(event.getMember().getUser(), subject, message, List.of(), reply);
+                }
+            }
         });
     }
 
@@ -404,7 +412,12 @@ public class ModMail extends DirectComponent {
     @Override
     protected synchronized void handleDirect(Message message, Reply reply) {
         String content = message.getContentRaw();
-        createTicket(message.getAuthor(), message.getAuthor().getAsTag(), content, message.getAttachments(), reply);
+        synchronized (userCount) {
+            synchronized (timeouts) {
+                createTicket(message.getAuthor(), message.getAuthor().getAsTag(), content, message.getAttachments(),
+                    reply);
+            }
+        }
     }
 
     protected void stop(Reply reply) {
