@@ -357,9 +357,8 @@ public class ModMail extends DirectComponent {
 
             EmbedBuilder userEmbed = new EmbedBuilder()
                 .setColor(Colors.TRANSPARENT)
-                .setAuthor(author.getAsTag(), null, author.getEffectiveAvatarUrl())
                 .setDescription(String.format("%s `%s`", author.getAsMention(), author.getId()))
-                .setFooter(getName())
+                .setFooter(getName(), author.getEffectiveAvatarUrl())
                 .setTimestamp(Instant.now());
 
             EmbedBuilder messageEmbed = new EmbedBuilder()
