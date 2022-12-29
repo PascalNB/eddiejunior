@@ -219,11 +219,6 @@ public abstract class DirectComponent extends Component {
         return result;
     }
 
-    @Override
-    public void disable() {
-        super.disable();
-    }
-
     public Set<String> getBlacklist() {
         return blacklist;
     }
