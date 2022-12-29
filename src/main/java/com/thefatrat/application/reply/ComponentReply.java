@@ -1,14 +1,16 @@
 package com.thefatrat.application.reply;
 
-import net.dv8tion.jda.api.interactions.components.ComponentInteraction;
+import net.dv8tion.jda.api.interactions.callbacks.IMessageEditCallback;
+import net.dv8tion.jda.api.interactions.callbacks.IModalCallback;
+import net.dv8tion.jda.api.interactions.callbacks.IReplyCallback;
 
 public class ComponentReply {
 
     private final Reply sender;
     private final Reply editor;
 
-    public ComponentReply(ComponentInteraction event) {
-        sender = new InteractionReply(event);
+    public <T extends IModalCallback & IReplyCallback & IMessageEditCallback> ComponentReply(T event) {
+        sender = new InteractionReply<>(event);
         editor = new EditReply(event);
     }
 

@@ -5,6 +5,7 @@ import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.events.*;
 import com.thefatrat.application.exceptions.BotException;
 import com.thefatrat.application.reply.ComponentReply;
+import com.thefatrat.application.reply.GenericReply;
 import com.thefatrat.application.reply.InteractionReply;
 import com.thefatrat.application.reply.Reply;
 import com.thefatrat.application.sources.Direct;
@@ -18,6 +19,7 @@ import net.dv8tion.jda.api.events.channel.update.ChannelUpdateArchivedEvent;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.events.guild.GuildLeaveEvent;
 import net.dv8tion.jda.api.events.guild.GuildReadyEvent;
+import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
@@ -29,6 +31,7 @@ import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
+import net.dv8tion.jda.api.interactions.modals.ModalMapping;
 import net.dv8tion.jda.api.requests.RestAction;
 import net.dv8tion.jda.api.utils.Result;
 import org.jetbrains.annotations.NotNull;
@@ -220,7 +223,7 @@ public class Bot extends ListenerAdapter {
 
         Message message = event.getInteraction().getTarget();
         Guild guild = Objects.requireNonNull(event.getGuild());
-        Reply reply = new InteractionReply(event);
+        Reply reply = new InteractionReply<>(event);
 
         try {
             String interaction = event.getName();
@@ -245,7 +248,7 @@ public class Bot extends ListenerAdapter {
             options.put(option.getName(), option);
         }
 
-        Reply reply = new InteractionReply(event);
+        Reply reply = new InteractionReply<>(event);
 
         CommandEvent commandEvent = new CommandEvent(event.getName(), event.getSubcommandName(),
             options, guild, event.getGuildChannel(), Objects.requireNonNull(event.getMember()));
@@ -258,9 +261,32 @@ public class Bot extends ListenerAdapter {
     }
 
     @Override
+    public void onModalInteraction(@NotNull ModalInteractionEvent event) {
+        if (!event.isFromGuild()) {
+            return;
+        }
+
+        Guild guild = Objects.requireNonNull(event.getGuild());
+        Map<String, ModalMapping> map = new HashMap<>();
+
+        for (ModalMapping value : event.getValues()) {
+            map.put(value.getId(), value);
+        }
+
+        ModalEvent modalEvent = new ModalEvent(event.getMember(), event.getModalId(), map);
+        Reply reply = new GenericReply(event);
+
+        try {
+            servers.get(guild.getId()).getModalHandler().handle(event.getModalId(), modalEvent, reply);
+        } catch (BotException e) {
+            reply.hide().except(e);
+        }
+    }
+
+    @Override
     public void onChannelUpdateArchived(@NotNull ChannelUpdateArchivedEvent event) {
-        if (!event.isFromGuild() && !event.isFromType(ChannelType.GUILD_PRIVATE_THREAD)
-            && !event.isFromType(ChannelType.GUILD_PUBLIC_THREAD)) {
+        if (!event.isFromGuild() || (!event.isFromType(ChannelType.GUILD_PRIVATE_THREAD)
+            && !event.isFromType(ChannelType.GUILD_PUBLIC_THREAD))) {
             return;
         }
         boolean archived = Boolean.TRUE.equals(event.getNewValue()) && !Boolean.TRUE.equals(event.getOldValue());

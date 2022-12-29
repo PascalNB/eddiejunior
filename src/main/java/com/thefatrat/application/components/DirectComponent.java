@@ -16,9 +16,9 @@ import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 public abstract class DirectComponent extends Component {
 
@@ -204,6 +204,19 @@ public abstract class DirectComponent extends Component {
         }
 
         reply.ok("%s %s the blacklist", user.getAsMention(), msg);
+    }
+
+    private <T, V> List<T> fillAbsent(Collection<T> expected, Collection<V> actual,
+        Function<V, T> keygen, Function<V, T> valgen) {
+        Map<T, T> found = new HashMap<>();
+        for (V v : actual) {
+            found.put(keygen.apply(v), valgen.apply(v));
+        }
+        List<T> result = new ArrayList<>();
+        for (T t : expected) {
+            result.add(found.getOrDefault(t, t));
+        }
+        return result;
     }
 
     @Override

@@ -14,8 +14,10 @@ import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 
-import java.util.*;
-import java.util.function.Function;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
 
 public abstract class Component {
 
@@ -224,19 +226,6 @@ public abstract class Component {
                 Enabled: %b
                 """,
             isEnabled());
-    }
-
-    public static <T, V> List<T> fillAbsent(Collection<T> expected, Collection<V> actual,
-        Function<V, T> keygen, Function<V, T> valgen) {
-        Map<T, T> found = new HashMap<>();
-        for (V v : actual) {
-            found.put(keygen.apply(v), valgen.apply(v));
-        }
-        List<T> result = new ArrayList<>();
-        for (T t : expected) {
-            result.add(found.getOrDefault(t, t));
-        }
-        return result;
     }
 
 }

@@ -5,10 +5,7 @@ import com.thefatrat.application.CommandRegister;
 import com.thefatrat.application.components.Component;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.entities.Interaction;
-import com.thefatrat.application.events.ArchiveEvent;
-import com.thefatrat.application.events.ButtonEvent;
-import com.thefatrat.application.events.CommandEvent;
-import com.thefatrat.application.events.MessageInteractionEvent;
+import com.thefatrat.application.events.*;
 import com.thefatrat.application.handlers.MapHandler;
 import com.thefatrat.application.handlers.SetHandler;
 import com.thefatrat.application.reply.ComponentReply;
@@ -40,6 +37,7 @@ public class Server {
     private final MapHandler<Message, Reply> directHandler = new MapHandler<>();
     private final SetHandler<ArchiveEvent, Void> archiveHandler = new SetHandler<>();
     private final SetHandler<ButtonEvent<Member>, ComponentReply> buttonHandler = new SetHandler<>();
+    private final MapHandler<ModalEvent, Reply> modalHandler = new MapHandler<>();
     private final Map<String, Component> components = new HashMap<>();
 
     public static Server dummy() {
@@ -152,6 +150,10 @@ public class Server {
 
     public SetHandler<ButtonEvent<Member>, ComponentReply> getButtonHandler() {
         return buttonHandler;
+    }
+
+    public MapHandler<ModalEvent, Reply> getModalHandler() {
+        return modalHandler;
     }
 
 }

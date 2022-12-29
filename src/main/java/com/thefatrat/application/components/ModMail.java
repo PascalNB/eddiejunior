@@ -8,6 +8,7 @@ import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
 import com.thefatrat.application.util.Icon;
 import com.thefatrat.application.util.PermissionChecker;
+import com.thefatrat.application.util.URLUtil;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Message;
@@ -18,10 +19,16 @@ import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
+import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import net.dv8tion.jda.api.interactions.components.ActionRow;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import net.dv8tion.jda.api.interactions.components.text.TextInput;
+import net.dv8tion.jda.api.interactions.components.text.TextInputStyle;
+import net.dv8tion.jda.api.interactions.modals.Modal;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
+import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import net.dv8tion.jda.internal.utils.PermissionUtil;
 
 import java.time.Instant;
@@ -71,6 +78,50 @@ public class ModMail extends DirectComponent {
         }
 
         addSubcommands(
+            new Command("message", "creates a new message with modmail button")
+                .addOptions(
+                    new OptionData(OptionType.STRING, "message", "jump url of a message to use as content, " +
+                        "overwrites the 'content' and 'title' options", true),
+                    new OptionData(OptionType.CHANNEL, "channel", "channel to send the message in", false)
+                        .setChannelTypes(ChannelType.TEXT)
+                )
+                .setAction((command, reply) -> {
+                    String url = command.getArgs().get("message").getAsString();
+                    Message message = URLUtil.messageFromURL(url, getServer().getGuild());
+
+                    MessageCreateBuilder builder = new MessageCreateBuilder();
+
+                    try (MessageCreateData data = MessageCreateData.fromMessage(message)) {
+                        builder.applyData(data);
+                        builder.setComponents();
+                    } catch (IllegalArgumentException e) {
+                        throw new BotErrorException("Couldn't use referenced message");
+                    } catch (IllegalStateException e) {
+                        throw new BotErrorException("Cannot reference an empty message");
+                    }
+
+                    Button button = Button.success("modmail-modal", "New ticket").withEmoji(Emoji.fromUnicode("➕"));
+                    builder.setComponents(ActionRow.of(button));
+
+                    if (builder.isEmpty()) {
+                        throw new BotErrorException("Cannot reference a message without content");
+                    }
+
+                    OptionMapping channelObject = command.getArgs().get("channel");
+
+                    if (channelObject == null) {
+                        reply.accept(builder.build());
+                        return;
+                    }
+
+                    TextChannel channel = channelObject.getAsChannel().asTextChannel();
+
+                    PermissionChecker.requireSend(channel);
+
+                    channel.sendMessage(builder.build()).queue();
+                    reply.ok("Message sent in %s", channel.getAsMention());
+                }),
+
             new Command("timeout", "sets the timeout")
                 .addOption(new OptionData(OptionType.INTEGER, "timeout", "timeout in seconds", true)
                     .setRequiredRange(0, Integer.MAX_VALUE)
@@ -191,7 +242,43 @@ public class ModMail extends DirectComponent {
                         ),
                     "Current thread archived");
             }
+        });
+        getServer().getButtonHandler().addListener((event, reply) -> {
+            String buttonId = event.getButtonId();
+            if (!buttonId.startsWith("modmail-")) {
+                return;
+            }
 
+            String[] split = buttonId.split("-");
+            String action = split[1];
+
+            if ("modal".equals(action)) {
+                TextInput subject = TextInput.create("subject", "Subject", TextInputStyle.SHORT)
+                    .setRequired(true)
+                    .setPlaceholder("Subject of this ticket")
+                    .setRequiredRange(6, 90)
+                    .setValue(event.getUser().getUser().getAsTag())
+                    .build();
+
+                TextInput message = TextInput.create("message", "Message", TextInputStyle.PARAGRAPH)
+                    .setRequired(true)
+                    .setPlaceholder("Type your message here")
+                    .setRequiredRange(20, 4000)
+                    .build();
+
+                Modal modal = Modal.create("modmail", "Modmail")
+                    .addActionRow(subject)
+                    .addActionRow(message)
+                    .build();
+
+                reply.getSender().accept(modal);
+            }
+        });
+        getServer().getModalHandler().addListener("modmail", (event, reply) -> {
+            String subject = event.getValues().get("subject").getAsString();
+            String message = event.getValues().get("message").getAsString();
+            reply.hide();
+            createTicket(event.getMember().getUser(), subject, message, List.of(), reply);
         });
     }
 
@@ -214,16 +301,15 @@ public class ModMail extends DirectComponent {
             privateThreads);
     }
 
-    @Override
-    protected synchronized void handleDirect(Message message, Reply reply) {
-        String content = message.getContentRaw();
-        if (content.length() < 20) {
+    private synchronized void createTicket(User author, String subject, String message,
+        List<Message.Attachment> attachments, Reply reply) {
+        if (message.length() < 20) {
             throw new BotWarningException("Messages have to be between at least 20 characters");
         }
-        if (content.length() > 4090) {
+        if (message.length() > 4090) {
             throw new BotWarningException("Message cannot be longer than 4090 characters");
         }
-        if (!content.contains(" ")) {
+        if (!message.contains(" ")) {
             throw new BotWarningException("Spam is not allowed");
         }
 
@@ -231,7 +317,6 @@ public class ModMail extends DirectComponent {
             throw new BotWarningException("The server does not accept tickets at this moment");
         }
 
-        User author = message.getAuthor();
         if (maxTicketsPerUser != 0 && userCount.containsKey(author.getId())
             && userCount.get(author.getId()) >= maxTicketsPerUser) {
             throw new BotWarningException("You can only have %d open tickets at the same time", maxTicketsPerUser);
@@ -253,17 +338,20 @@ public class ModMail extends DirectComponent {
         userCount.put(author.getId(), userCount.getOrDefault(author.getId(), 0) + 1);
         ++threadId;
         getDatabaseManager().setSetting("threadid", String.valueOf(threadId));
-        String topic = String.format("t%d-%s", threadId, author.getAsTag());
+        String topic = String.format("t%d-%s", threadId, subject);
         topic = topic.substring(0, Math.min(topic.length(), 25));
 
         destination.createThreadChannel(topic, privateThreads).queue(thread -> {
-            List<String> list = new ArrayList<>();
+            String urls = "";
+            if (!attachments.isEmpty()) {
+                List<String> list = new ArrayList<>();
 
-            for (Message.Attachment attachment : message.getAttachments()) {
-                list.add(attachment.getUrl());
+                for (Message.Attachment attachment : attachments) {
+                    list.add(attachment.getUrl());
+                }
+
+                urls = String.join("\n", list.toArray(new String[0]));
             }
-
-            String urls = String.join("\n", list.toArray(new String[0]));
 
             MessageCreateBuilder builder = new MessageCreateBuilder();
 
@@ -276,8 +364,8 @@ public class ModMail extends DirectComponent {
 
             EmbedBuilder messageEmbed = new EmbedBuilder()
                 .setColor(Colors.TRANSPARENT)
-                .setTitle("Message")
-                .setDescription(String.format("```%s```", content));
+                .setTitle(subject)
+                .setDescription(String.format("```%s```", message));
 
             if (urls.length() > 1) {
                 messageEmbed.addField("Attachments", String.format("```%s```", urls), false);
@@ -305,6 +393,12 @@ public class ModMail extends DirectComponent {
         });
 
         ++tickets;
+    }
+
+    @Override
+    protected synchronized void handleDirect(Message message, Reply reply) {
+        String content = message.getContentRaw();
+        createTicket(message.getAuthor(), message.getAuthor().getAsTag(), content, message.getAttachments(), reply);
     }
 
     protected void stop(Reply reply) {

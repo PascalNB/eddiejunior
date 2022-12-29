@@ -6,6 +6,7 @@ import com.thefatrat.application.util.Icon;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.interactions.modals.Modal;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 
 import java.util.function.Consumer;
@@ -13,6 +14,8 @@ import java.util.function.Consumer;
 public interface Reply {
 
     void accept(MessageCreateData data, Consumer<Message> callback);
+
+    void accept(Modal modal);
 
     Reply defer(boolean ephemeral);
 
@@ -77,6 +80,11 @@ public interface Reply {
             }
 
             @Override
+            public void accept(Modal modal) {
+                throw new UnsupportedOperationException("Cannot reply to a message with a modal");
+            }
+
+            @Override
             public Reply defer(boolean ephemeral) {
                 return this;
             }
@@ -93,6 +101,10 @@ public interface Reply {
         return new Reply() {
             @Override
             public void accept(MessageCreateData data, Consumer<Message> callback) {
+            }
+
+            @Override
+            public void accept(Modal modal) {
             }
 
             @Override

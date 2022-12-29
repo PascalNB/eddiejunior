@@ -2,6 +2,7 @@ package com.thefatrat.application.reply;
 
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.interactions.callbacks.IMessageEditCallback;
+import net.dv8tion.jda.api.interactions.modals.Modal;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import net.dv8tion.jda.api.utils.messages.MessageEditData;
 
@@ -19,6 +20,11 @@ public class EditReply implements Reply {
     public void accept(MessageCreateData data, Consumer<Message> callback) {
         event.editMessage(MessageEditData.fromCreateData(data))
             .queue(hook -> hook.retrieveOriginal().queue(callback));
+    }
+
+    @Override
+    public void accept(Modal modal) {
+        throw new UnsupportedOperationException("Cannot edit a message with a modal");
     }
 
     @Override
