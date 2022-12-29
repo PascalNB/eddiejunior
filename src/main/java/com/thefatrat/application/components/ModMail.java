@@ -253,6 +253,10 @@ public class ModMail extends DirectComponent {
             String action = split[1];
 
             if ("modal".equals(action)) {
+                if (!isRunning()) {
+                    throw new BotWarningException("The server does not accept tickets at the moment");
+                }
+
                 TextInput subject = TextInput.create("subject", "Subject", TextInputStyle.SHORT)
                     .setRequired(true)
                     .setPlaceholder("Subject of this ticket")
@@ -303,6 +307,9 @@ public class ModMail extends DirectComponent {
 
     private synchronized void createTicket(User author, String subject, String message,
         List<Message.Attachment> attachments, Reply reply) {
+        if (!isRunning()) {
+            throw new BotWarningException("The server does not accept tickets at the moment");
+        }
         if (message.length() < 20) {
             throw new BotWarningException("Messages have to be between at least 20 characters");
         }

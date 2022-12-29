@@ -103,10 +103,8 @@ public class Manager extends Component {
                         throw new BotWarningException("This component is always enabled");
                     }
 
-                    if (component instanceof DirectComponent direct) {
-                        if (direct.isRunning()) {
-                            direct.stop(reply);
-                        }
+                    if (component instanceof DirectComponent direct && direct.isRunning()) {
+                        direct.stop(reply);
                     }
 
                     component.getDatabaseManager().toggleComponent(false);
