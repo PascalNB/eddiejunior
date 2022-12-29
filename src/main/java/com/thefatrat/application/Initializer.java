@@ -8,8 +8,6 @@ import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.requests.GatewayIntent;
-import net.dv8tion.jda.api.utils.ChunkingFilter;
-import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 
 import java.io.*;
@@ -73,8 +71,6 @@ public class Initializer {
                 GatewayIntent.GUILD_MEMBERS,
                 GatewayIntent.MESSAGE_CONTENT
             )
-            .setMemberCachePolicy(MemberCachePolicy.NONE)
-            .setChunkingFilter(ChunkingFilter.NONE)
             .enableCache(CacheFlag.MEMBER_OVERRIDES)
             .setRawEventsEnabled(false)
             .addEventListeners(Bot.getInstance())
