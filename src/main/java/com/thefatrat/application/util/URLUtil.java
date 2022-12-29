@@ -16,7 +16,11 @@ import java.util.regex.Pattern;
 public final class URLUtil {
 
     public static final Pattern URL_REGEX = Pattern.compile(
-        "^https?://(?<sub>[a-z\\dA-Z\\-.]+\\.)?(?<domain>[a-z\\d\\-A-Z]+)\\.(?<tld>[a-z]+)/?(?:[\\w&=\\-.~:/?#\\[\\]@!$'()*+,;%]*)?$"
+        "^https?://" +
+            "(?:(?<sub>[a-z\\d\\-A-Z]+(?:\\.[a-z\\d\\-A-Z]+)*)\\.)?" +
+            "(?<domain>[a-z\\d\\-A-Z]+)" +
+            "\\.(?<tld>[a-z]{2,})" +
+            "/?(?:[\\w&=\\-.~:/?#\\[\\]@!$'()*+,;%]*)?$"
     );
 
     private static final String DOMAIN_REGEX = "^[a-z\\-\\d]+\\.[a-z]+$";
