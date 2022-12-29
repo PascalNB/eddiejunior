@@ -80,8 +80,7 @@ public class ModMail extends DirectComponent {
         addSubcommands(
             new Command("message", "creates a new message with modmail button")
                 .addOptions(
-                    new OptionData(OptionType.STRING, "message", "jump url of a message to use as content, " +
-                        "overwrites the 'content' and 'title' options", true),
+                    new OptionData(OptionType.STRING, "message", "jump url of a message to use as content", true),
                     new OptionData(OptionType.CHANNEL, "channel", "channel to send the message in", false)
                         .setChannelTypes(ChannelType.TEXT)
                 )
