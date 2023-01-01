@@ -108,7 +108,7 @@ public class Event extends Component {
                         throw new BotErrorException("Please provide a session or runnable component");
                     }
 
-                    String keyword = command.getArgs().get("keyword").getAsString();
+                    String keyword = command.getArgs().get("keyword").getAsString().toLowerCase(Locale.ROOT);
                     if (links.containsKey(keyword)) {
                         throw new BotWarningException("`%s` is already linked, unlink it first", keyword);
                     }
@@ -147,7 +147,7 @@ public class Event extends Component {
             new Command("unlink", "unlink a keyword")
                 .addOption(new OptionData(OptionType.STRING, "keyword", "event description keyword", true))
                 .setAction((command, reply) -> {
-                    String keyword = command.getArgs().get("keyword").getAsString();
+                    String keyword = command.getArgs().get("keyword").getAsString().toLowerCase(Locale.ROOT);
 
                     if (!links.containsKey(keyword)) {
                         throw new BotErrorException("`%s` is not a linked keyword", keyword);
