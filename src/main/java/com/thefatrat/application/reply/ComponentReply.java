@@ -15,8 +15,8 @@ public class ComponentReply {
     }
 
     private ComponentReply() {
-        sender = Reply.empty();
-        editor = Reply.empty();
+        sender = Reply.EMPTY;
+        editor = Reply.EMPTY;
     }
 
     public Reply getSender() {

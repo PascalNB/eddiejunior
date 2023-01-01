@@ -97,26 +97,24 @@ public interface Reply {
         };
     }
 
-    static Reply empty() {
-        return new Reply() {
-            @Override
-            public void accept(MessageCreateData data, Consumer<Message> callback) {
-            }
+    Reply EMPTY = new Reply() {
+        @Override
+        public void accept(MessageCreateData data, Consumer<Message> callback) {
+        }
 
-            @Override
-            public void accept(Modal modal) {
-            }
+        @Override
+        public void accept(Modal modal) {
+        }
 
-            @Override
-            public Reply defer(boolean ephemeral) {
-                return this;
-            }
+        @Override
+        public Reply defer(boolean ephemeral) {
+            return this;
+        }
 
-            @Override
-            public Reply hide() {
-                return this;
-            }
-        };
-    }
+        @Override
+        public Reply hide() {
+            return this;
+        }
+    };
 
 }

@@ -19,6 +19,7 @@ import net.dv8tion.jda.api.events.channel.update.ChannelUpdateArchivedEvent;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.events.guild.GuildLeaveEvent;
 import net.dv8tion.jda.api.events.guild.GuildReadyEvent;
+import net.dv8tion.jda.api.events.guild.scheduledevent.update.ScheduledEventUpdateStatusEvent;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
@@ -313,6 +314,17 @@ public class Bot extends ListenerAdapter {
         } catch (BotException e) {
             reply.hide().except(e);
         }
+    }
+
+    @Override
+    public void onScheduledEventUpdateStatus(@NotNull ScheduledEventUpdateStatusEvent event) {
+        if (event.getNewStatus().equals(event.getOldStatus())) {
+            return;
+        }
+
+        EventEvent eventEvent = new EventEvent(event.getEntity().getName(), event.getEntity().getDescription(),
+            event.getNewStatus());
+        getServer(event.getGuild().getId()).getEventHandler().handle(eventEvent, null);
     }
 
 }

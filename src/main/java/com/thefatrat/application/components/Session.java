@@ -3,6 +3,7 @@ package com.thefatrat.application.components;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
+import com.thefatrat.application.reply.Reply;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
 import com.thefatrat.application.util.Icon;
@@ -24,7 +25,7 @@ public class Session extends Component {
 
     public static final String NAME = "Session";
 
-    private static final String ERROR_SESSION_NONEXISTENT = String.format("The given session does not exist, " +
+    public static final String ERROR_SESSION_NONEXISTENT = String.format("The given session does not exist, " +
         "use `/%s list` for the list of available sessions", NAME.toLowerCase());
     private static final Permission[] PERMISSIONS = new Permission[]{
         Permission.VIEW_CHANNEL,
@@ -94,7 +95,7 @@ public class Session extends Component {
                 .addOption(new OptionData(OptionType.CHANNEL, "channel", "channel", true))
                 .setAction((command, reply) -> {
                     String string = command.getArgs().get("session").getAsString();
-                    if (!sessions.containsKey(string)) {
+                    if (!isSession(string)) {
                         throw new BotErrorException(ERROR_SESSION_NONEXISTENT);
                     }
                     IMentionable channel = command.getArgs().get("channel").getAsChannel();
@@ -117,7 +118,7 @@ public class Session extends Component {
                 )
                 .setAction((command, reply) -> {
                     String string = command.getArgs().get("session").getAsString();
-                    if (!sessions.containsKey(string)) {
+                    if (!isSession(string)) {
                         throw new BotErrorException(ERROR_SESSION_NONEXISTENT);
                     }
 
@@ -155,93 +156,93 @@ public class Session extends Component {
                     .setRequiredLength(3, 20)
                 )
                 .setAction((command, reply) -> {
-                    String string = command.getArgs().get("session").getAsString();
-                    if (!sessions.containsKey(string)) {
+                    String session = command.getArgs().get("session").getAsString();
+                    if (!isSession(session)) {
                         throw new BotErrorException(ERROR_SESSION_NONEXISTENT);
                     }
-
-                    Set<String> session = sessions.get(string);
-                    Guild guild = getServer().getGuild();
-                    List<RestAction<PermissionOverride>> actions = new ArrayList<>();
-                    for (String id : session) {
-                        GuildChannel channel = guild.getGuildChannelById(id);
-                        if (channel == null) {
-                            sessions.get(string).remove(id);
-                        } else {
-                            checkPermissions(channel);
-                            actions.add(channel.getPermissionContainer()
-                                .upsertPermissionOverride(getServer().getGuild().getPublicRole())
-                                .grant(Permission.VIEW_CHANNEL));
-                        }
-                    }
-
-                    if (actions.isEmpty()) {
-                        sessions.remove(string);
-                        removeSessionFromDatabase(string);
-                        throw new BotWarningException(
-                            "The given session did not have existing channels and has been removed");
-                    }
-
-                    List<PermissionOverride> overrides = RestAction.allOf(actions).complete();
-
-                    List<String> channels = new ArrayList<>();
-                    for (PermissionOverride override : overrides) {
-                        channels.add(override.getChannel().getAsMention());
-                    }
-
-                    String[] array = channels.toArray(String[]::new);
-                    String joined = String.join(", ", array);
-
-                    reply.ok("Session `%s` started.%n" +
-                        "The following channels have been made public:%n%s", string, joined);
+                    openSession(session, reply);
                 }),
             new Command("close", "closes channels of a session")
                 .addOption(new OptionData(OptionType.STRING, "session", "session name", true)
                     .setRequiredLength(3, 20)
                 )
                 .setAction((command, reply) -> {
-                    String string = command.getArgs().get("session").getAsString();
-                    if (!sessions.containsKey(string)) {
+                    String session = command.getArgs().get("session").getAsString();
+                    if (!isSession(session)) {
                         throw new BotErrorException("The given session does not exist");
                     }
-
-                    Set<String> session = sessions.get(string);
-                    Guild guild = getServer().getGuild();
-                    List<RestAction<PermissionOverride>> actions = new ArrayList<>();
-                    for (String id : session) {
-                        GuildChannel channel = guild.getGuildChannelById(id);
-                        if (channel == null) {
-                            sessions.get(string).remove(id);
-                        } else {
-                            checkPermissions(channel);
-                            actions.add(channel.getPermissionContainer()
-                                .upsertPermissionOverride(getServer().getGuild().getPublicRole())
-                                .deny(Permission.VIEW_CHANNEL));
-                        }
-                    }
-
-                    if (actions.isEmpty()) {
-                        sessions.remove(string);
-                        removeSessionFromDatabase(string);
-                        throw new BotWarningException(
-                            "The given session did not have existing channels and has been removed");
-                    }
-
-                    List<PermissionOverride> overrides = RestAction.allOf(actions).complete();
-
-                    List<String> channels = new ArrayList<>();
-                    for (PermissionOverride override : overrides) {
-                        channels.add(override.getChannel().getAsMention());
-                    }
-
-                    String[] array = channels.toArray(String[]::new);
-                    String joined = String.join(", ", array);
-
-                    reply.accept(Icon.STOP, "Session `%s` stopped.%n" +
-                        "The following channels have been made private:%n%s", string, joined);
+                    closeSession(session, reply);
                 })
         );
 
+    }
+
+    public void openSession(String session, Reply reply) {
+        Set<String> sessionChannels = sessions.get(session);
+        Guild guild = getServer().getGuild();
+        List<RestAction<PermissionOverride>> actions = new ArrayList<>();
+        for (String id : sessionChannels) {
+            GuildChannel channel = guild.getGuildChannelById(id);
+            if (channel == null) {
+                sessions.get(session).remove(id);
+            } else {
+                checkPermissions(channel);
+                actions.add(channel.getPermissionContainer()
+                    .upsertPermissionOverride(getServer().getGuild().getPublicRole())
+                    .grant(Permission.VIEW_CHANNEL));
+            }
+        }
+
+        String[] array = executeOnChannels(session, actions);
+        String joined = String.join(", ", array);
+
+        reply.ok("Session `%s` started.%n" +
+            "The following channels have been made public:%n%s", session, joined);
+    }
+
+    public void closeSession(String session, Reply reply) {
+        Set<String> sessionChannels = sessions.get(session);
+        Guild guild = getServer().getGuild();
+        List<RestAction<PermissionOverride>> actions = new ArrayList<>();
+        for (String id : sessionChannels) {
+            GuildChannel channel = guild.getGuildChannelById(id);
+            if (channel == null) {
+                sessions.get(session).remove(id);
+            } else {
+                checkPermissions(channel);
+                actions.add(channel.getPermissionContainer()
+                    .upsertPermissionOverride(getServer().getGuild().getPublicRole())
+                    .deny(Permission.VIEW_CHANNEL));
+            }
+        }
+
+        String[] array = executeOnChannels(session, actions);
+        String joined = String.join(", ", array);
+
+        reply.accept(Icon.STOP, "Session `%s` stopped.%n" +
+            "The following channels have been made private:%n%s", session, joined);
+    }
+
+    public boolean isSession(String session) {
+        return sessions.containsKey(session);
+    }
+
+    private String[] executeOnChannels(String session, List<RestAction<PermissionOverride>> actions) {
+        if (actions.isEmpty()) {
+            sessions.remove(session);
+            removeSessionFromDatabase(session);
+            throw new BotWarningException(
+                "The given session did not have existing channels and has been removed");
+        }
+
+        List<PermissionOverride> overrides = RestAction.allOf(actions).complete();
+
+        List<String> channels = new ArrayList<>();
+        for (PermissionOverride override : overrides) {
+            channels.add(override.getChannel().getAsMention());
+        }
+
+        return channels.toArray(String[]::new);
     }
 
     private void checkPermissions(GuildChannel channel) {

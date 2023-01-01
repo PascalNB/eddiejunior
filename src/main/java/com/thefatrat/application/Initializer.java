@@ -58,8 +58,10 @@ public class Initializer {
             ModMail.class,
             Feedback.class,
 
-            Grab.class,
             Session.class,
+            Event.class,
+
+            Grab.class,
             Roles.class,
 
             Edit.class,
@@ -69,9 +71,10 @@ public class Initializer {
         jda = JDABuilder.createLight(token,
                 GatewayIntent.DIRECT_MESSAGES,
                 GatewayIntent.GUILD_MEMBERS,
-                GatewayIntent.MESSAGE_CONTENT
+                GatewayIntent.MESSAGE_CONTENT,
+                GatewayIntent.SCHEDULED_EVENTS
             )
-            .enableCache(CacheFlag.MEMBER_OVERRIDES)
+            .enableCache(CacheFlag.MEMBER_OVERRIDES, CacheFlag.SCHEDULED_EVENTS)
             .setRawEventsEnabled(false)
             .addEventListeners(Bot.getInstance())
             .build();

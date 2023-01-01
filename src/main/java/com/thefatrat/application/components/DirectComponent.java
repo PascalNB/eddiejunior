@@ -43,7 +43,7 @@ public abstract class DirectComponent extends Component {
         this.autoRun = autoRun;
         destination = getDatabaseManager().getSetting("destination");
         if (autoRun && Boolean.parseBoolean(getDatabaseManager().getSettingOr("running", false))) {
-            start(Reply.empty());
+            start(Reply.EMPTY);
         }
         blacklist.addAll(getDatabaseManager().getSettings("blacklist"));
 
@@ -257,6 +257,10 @@ public abstract class DirectComponent extends Component {
 
     public boolean isRunning() {
         return running && isEnabled();
+    }
+
+    public boolean isAutoRunnable() {
+        return autoRun;
     }
 
 }

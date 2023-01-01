@@ -38,6 +38,7 @@ public class Server {
     private final SetHandler<ArchiveEvent, Void> archiveHandler = new SetHandler<>();
     private final SetHandler<ButtonEvent<Member>, ComponentReply> buttonHandler = new SetHandler<>();
     private final MapHandler<ModalEvent, Reply> modalHandler = new MapHandler<>();
+    private final SetHandler<EventEvent, Void> eventHandler = new SetHandler<>();
     private final Map<String, Component> components = new HashMap<>();
 
     public static Server dummy() {
@@ -111,6 +112,10 @@ public class Server {
         return components.get(componentName.toLowerCase());
     }
 
+    public <T extends Component> T getComponent(String componentName, Class<T> clazz) {
+        return clazz.cast(getComponent(componentName));
+    }
+
     @SafeVarargs
     public final void registerComponents(Class<? extends Component>... components) {
         try {
@@ -154,6 +159,10 @@ public class Server {
 
     public MapHandler<ModalEvent, Reply> getModalHandler() {
         return modalHandler;
+    }
+
+    public SetHandler<EventEvent, Void> getEventHandler() {
+        return eventHandler;
     }
 
 }
