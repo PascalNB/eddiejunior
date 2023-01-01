@@ -143,7 +143,7 @@ public class Bot extends ListenerAdapter {
         }
         CommandRegister.getInstance().registerDefaultCommands(slashCommands).complete();
 
-        jda.getPresence().setPresence(OnlineStatus.ONLINE, Activity.playing("DM me to contact mods"));
+        jda.getPresence().setPresence(OnlineStatus.ONLINE, Activity.listening("DMs"));
         time = System.currentTimeMillis();
     }
 
