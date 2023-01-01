@@ -10,7 +10,6 @@ import com.thefatrat.application.handlers.MapHandler;
 import com.thefatrat.application.handlers.SetHandler;
 import com.thefatrat.application.reply.ComponentReply;
 import com.thefatrat.application.reply.Reply;
-import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -26,10 +25,6 @@ import java.util.List;
 import java.util.Map;
 
 public class Server {
-
-    private static final DefaultMemberPermissions PERMISSIONS = DefaultMemberPermissions.enabledFor(
-        Permission.USE_APPLICATION_COMMANDS
-    );
 
     private final String id;
     private final MapHandler<CommandEvent, Reply> commandHandler = new MapHandler<>();
@@ -79,7 +74,7 @@ public class Server {
 
             for (Command command : component.getCommands()) {
                 commandData.add(Commands.slash(command.getName(), command.getDescription())
-                    .setDefaultPermissions(PERMISSIONS)
+                    .setDefaultPermissions(DefaultMemberPermissions.enabledFor(command.getPermissions()))
                     .addOptions(command.getOptions())
                     .addSubcommands(command.getSubcommandsData()));
             }

@@ -32,7 +32,7 @@ public class Roles extends Component {
     public Roles(Server server) {
         super(server, NAME, false);
 
-        setComponentCommand();
+        setComponentCommand(Permission.MANAGE_ROLES);
 
         getServer().getButtonHandler().addListener((event, reply) -> {
             String buttonId = event.getButtonId();

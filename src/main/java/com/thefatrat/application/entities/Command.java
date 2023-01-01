@@ -2,6 +2,7 @@ package com.thefatrat.application.entities;
 
 import com.thefatrat.application.events.CommandEvent;
 import com.thefatrat.application.reply.Reply;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
 
@@ -17,10 +18,12 @@ public class Command {
     private BiConsumer<CommandEvent, Reply> action = (__, ___) -> {};
     private final List<OptionData> options = new ArrayList<>();
     private final List<Command> subcommands = new ArrayList<>();
+    private final List<Permission> permissions = new ArrayList<>();
 
     public Command(String name, String description) {
         this.name = name;
         this.description = description;
+        permissions.add(Permission.USE_APPLICATION_COMMANDS);
     }
 
     public Command addSubcommand(Command command) {
@@ -51,6 +54,11 @@ public class Command {
         return this;
     }
 
+    public Command addPermissions(Permission... permissions) {
+        Collections.addAll(this.permissions, permissions);
+        return this;
+    }
+
     public List<OptionData> getOptions() {
         return options;
     }
@@ -73,6 +81,10 @@ public class Command {
 
     public BiConsumer<CommandEvent, Reply> getAction() {
         return action;
+    }
+
+    public List<Permission> getPermissions() {
+        return permissions;
     }
 
 }

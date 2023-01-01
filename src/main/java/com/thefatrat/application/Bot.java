@@ -12,7 +12,6 @@ import com.thefatrat.application.sources.Direct;
 import com.thefatrat.application.sources.Server;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.OnlineStatus;
-import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.events.channel.update.ChannelUpdateArchivedEvent;
@@ -136,7 +135,7 @@ public class Bot extends ListenerAdapter {
         List<SlashCommandData> slashCommands = new ArrayList<>();
         for (Command command : commands) {
             SlashCommandData slashCommandData = Commands.slash(command.getName(), command.getDescription())
-                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.USE_APPLICATION_COMMANDS))
+                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(command.getPermissions()))
                 .addOptions(command.getOptions())
                 .addSubcommands(command.getSubcommandsData());
             slashCommands.add(slashCommandData);

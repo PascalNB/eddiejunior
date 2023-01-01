@@ -12,6 +12,7 @@ import com.thefatrat.application.handlers.MapHandler;
 import com.thefatrat.application.reply.Reply;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 
 import java.util.ArrayList;
@@ -133,8 +134,9 @@ public abstract class Component {
         help = new HelpBuilder(getTitle(), getCommands()).build(Colors.TRANSPARENT);
     }
 
-    protected final void setComponentCommand() {
+    protected final void setComponentCommand(Permission... permissions) {
         commands.add(new Command(getName(), "component command")
+            .addPermissions(permissions)
             .setAction((command, reply) -> {
                 CommandEvent event = command.toSub();
                 getSubCommandHandler().handle(event.getCommand(), event, reply);
