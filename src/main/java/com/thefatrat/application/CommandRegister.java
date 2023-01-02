@@ -22,7 +22,6 @@ public class CommandRegister {
 
     @CheckReturnValue
     public RestAction<Void> filterDefaultCommands(Collection<String> commands) {
-//        System.out.println("Filter default commands: " + commands);
         List<RestAction<Void>> list = new ArrayList<>();
         for (Map.Entry<String, Command> command : retrievedDefaultCommands.entrySet()) {
             if (commands.contains(command.getKey())) {
@@ -40,7 +39,6 @@ public class CommandRegister {
 
     @CheckReturnValue
     public RestAction<Void> filterServerCommands(String id, Collection<String> commands) {
-//        System.out.printf("Filter server (%s) commands: %s%n", id, commands);
         List<RestAction<Void>> list = new ArrayList<>();
         Map<String, Command> map = retrievedServerCommands.get(id);
         Guild guild = jda.getGuildById(id);
@@ -68,7 +66,6 @@ public class CommandRegister {
     }
 
     private void addRetrievedDefaultCommands(Collection<Command> commands) {
-//        System.out.println("Retrieved default commands: " + commands.stream().map(Command::getName).toList());
         for (Command command : commands) {
             addRetrievedDefaultCommand(command);
         }
@@ -80,7 +77,6 @@ public class CommandRegister {
 
     @CheckReturnValue
     public RestAction<List<Command>> registerDefaultCommands(List<? extends CommandData> commandData) {
-//        System.out.println("Register default commands: " + commandData.stream().map(CommandData::getName).toList());
         List<RestAction<Command>> actions = new ArrayList<>();
         for (CommandData command : commandData) {
             if (retrievedDefaultCommands.containsKey(command.getName())) {
@@ -99,7 +95,6 @@ public class CommandRegister {
     }
 
     private void addRetrievedServerCommands(String id, Collection<Command> commands) {
-//        System.out.printf("Retrieved server (%s) commands: %s%n", id, commands.stream().map(Command::getName).toList());
         for (Command command : commands) {
             addRetrievedServerCommand(id, command);
         }
@@ -111,8 +106,6 @@ public class CommandRegister {
 
     @CheckReturnValue
     public RestAction<List<Command>> registerServerCommands(String id, List<? extends CommandData> commandData) {
-//        System.out.printf("Register server (%s) commands: %s%n", id,
-//            commandData.stream().map(CommandData::getName).toList());
         Map<String, Command> map = retrievedServerCommands.computeIfAbsent(id, k -> new HashMap<>());
         Guild guild = Objects.requireNonNull(jda.getGuildById(id));
         List<RestAction<Command>> actions = new ArrayList<>();
