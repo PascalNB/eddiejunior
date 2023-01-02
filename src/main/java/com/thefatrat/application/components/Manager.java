@@ -15,6 +15,7 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import org.jetbrains.annotations.NotNull;
 
 public class Manager extends Component {
 
@@ -29,12 +30,7 @@ public class Manager extends Component {
                 .setAction((command, reply) -> {
                     if (command.getArgs().containsKey("component")) {
                         String componentString = command.getArgs().get("component").getAsString();
-                        Component component = getServer().getComponent(componentString);
-
-                        if (component == null) {
-                            componentNotFound(componentString);
-                            return;
-                        }
+                        Component component = getComponentSafe(componentString);
 
                         reply.accept(component.getHelp());
                     } else {
@@ -74,15 +70,12 @@ public class Manager extends Component {
                 .addOption(new OptionData(OptionType.STRING, "component", "component name", true))
                 .setAction((command, reply) -> {
                     String componentString = command.getArgs().get("component").getAsString();
-                    Component component = getServer().getComponent(componentString);
+                    Component component = getComponentSafe(componentString);
 
-                    if (component == null) {
-                        componentNotFound(componentString);
-                        return;
-                    }
                     if (component.isGlobalComponent()) {
                         throw new BotWarningException("This component is always enabled");
                     }
+
                     component.getDatabaseManager().toggleComponent(true)
                         .thenRun(() -> {
                             getServer().toggleComponent(component, true).queue();
@@ -95,11 +88,7 @@ public class Manager extends Component {
                 .setAction((command, reply) -> {
                     String componentString = command.getArgs().get("component").getAsString();
 
-                    Component component = getServer().getComponent(componentString);
-                    if (component == null) {
-                        componentNotFound(componentString);
-                        return;
-                    }
+                    Component component = getComponentSafe(componentString);
 
                     if (component.isGlobalComponent()) {
                         throw new BotWarningException("This component is always enabled");
@@ -152,12 +141,7 @@ public class Manager extends Component {
 
                     if (command.getArgs().containsKey("component")) {
                         String componentString = command.getArgs().get("component").getAsString();
-                        component = getServer().getComponent(componentString);
-
-                        if (component == null) {
-                            componentNotFound(componentString);
-                            return;
-                        }
+                        component = getComponentSafe(componentString);
 
                     } else {
                         component = this;
@@ -180,7 +164,12 @@ public class Manager extends Component {
      * @param component the component name
      * @throws BotException always
      */
-    private void componentNotFound(String component) throws BotException {
+    @NotNull
+    private Component getComponentSafe(String component) throws BotException {
+        Component c = getServer().getComponent(component);
+        if (c != null) {
+            return c;
+        }
         throw new BotErrorException(String.format("Component `%s` does not exist", component));
     }
 

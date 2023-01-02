@@ -18,6 +18,7 @@ import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.requests.RestAction;
 import net.dv8tion.jda.internal.requests.CompletedRestAction;
+import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.CheckReturnValue;
 import java.lang.reflect.InvocationTargetException;
@@ -107,16 +108,18 @@ public class Server {
         }
     }
 
+    @Nullable
     public Component getComponent(String componentName) {
         return components.get(componentName.toLowerCase());
     }
 
+    @Nullable
     public <T extends Component> T getComponent(String componentName, Class<T> clazz) {
         return clazz.cast(getComponent(componentName));
     }
 
     @SafeVarargs
-    public final void registerComponents(Class<? extends Component>... components) {
+    public final Collection<Component> registerComponents(Class<? extends Component>... components) {
         try {
             for (Class<? extends Component> component : components) {
                 Component instance = component.getDeclaredConstructor(Server.class).newInstance(this);
@@ -134,13 +137,14 @@ public class Server {
 
             }
 
+            return this.components.values();
         } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
                  IllegalAccessException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public Set<String> getApplicationCommands() {
+    public Set<String> getRegisteredCommands() {
         Set<String> set = new HashSet<>();
         set.addAll(commandHandler.getKeys());
         set.addAll(messageInteractionHandler.getKeys());

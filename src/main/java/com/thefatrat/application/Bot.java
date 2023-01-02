@@ -87,7 +87,7 @@ public class Bot extends ListenerAdapter {
         servers.put(server.getId(), server);
         commandRegister.retrieveServerCommands(id).complete();
         server.registerComponents(components);
-        commandRegister.filterServerCommands(id, server.getApplicationCommands()).queue();
+        commandRegister.filterServerCommands(id, server.getRegisteredCommands()).queue();
     }
 
     public String getUptime() {
@@ -130,8 +130,7 @@ public class Bot extends ListenerAdapter {
         commandRegister.retrieveDefaultCommands().complete();
 
         Server server = Server.dummy();
-        server.registerComponents(components);
-        List<Component> list = server.getComponents();
+        Collection<Component> list = server.registerComponents(components);
         List<Command> commands = new ArrayList<>();
         for (Component component : list) {
             if (component.isGlobalComponent()) {

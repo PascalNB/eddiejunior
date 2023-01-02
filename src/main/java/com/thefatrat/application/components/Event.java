@@ -59,13 +59,13 @@ public class Event extends Component {
             RunnableComponent component = null;
             if (link.component() != null) {
                 Component c = getServer().getComponent(link.component());
-                if (c.isEnabled() && c instanceof RunnableComponent dc && !dc.isAutoRunnable()) {
+                if (c != null && c.isEnabled() && c instanceof RunnableComponent dc && !dc.isAutoRunnable()) {
                     component = dc;
                 }
             }
 
             if (event.getStatus().equals(ScheduledEvent.Status.ACTIVE)) {
-                if (link.session() != null && sessionComponent.isEnabled()
+                if (link.session() != null && sessionComponent != null && sessionComponent.isEnabled()
                     && sessionComponent.isSession(link.session())) {
                     try {
                         sessionComponent.openSession(link.session(), Reply.EMPTY);
@@ -78,7 +78,7 @@ public class Event extends Component {
                 }
 
             } else if (event.getStatus().equals(ScheduledEvent.Status.COMPLETED)) {
-                if (link.session() != null && sessionComponent.isEnabled()
+                if (link.session() != null && sessionComponent != null && sessionComponent.isEnabled()
                     && sessionComponent.isSession(link.session())) {
                     try {
                         sessionComponent.closeSession(link.session(), Reply.EMPTY);
@@ -117,7 +117,7 @@ public class Event extends Component {
                     if (sessionObject != null) {
                         session = sessionObject.getAsString();
                         Session sessionComponent = getServer().getComponent(Session.NAME, Session.class);
-                        if (!sessionComponent.isSession(session)) {
+                        if (sessionComponent != null && !sessionComponent.isSession(session)) {
                             throw new BotErrorException(Session.ERROR_SESSION_NONEXISTENT);
                         }
                     }
