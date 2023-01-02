@@ -54,21 +54,11 @@ public class ModMail extends DirectComponent {
     public ModMail(Server server) {
         super(server, NAME, true);
 
-        timeout = Long.parseLong(
-            getDatabaseManager().getSettingOr("timeout", 0)
-        );
-        threadId = Long.parseLong(
-            getDatabaseManager().getSettingOr("threadid", 0)
-        );
-        maxTickets = Integer.parseInt(
-            getDatabaseManager().getSettingOr("maxtickets", 0)
-        );
-        maxTicketsPerUser = Integer.parseInt(
-            getDatabaseManager().getSettingOr("maxticketsperuser", 0)
-        );
-        privateThreads = Boolean.parseBoolean(
-            getDatabaseManager().getSettingOr("privatethreads", false)
-        );
+        timeout = getDatabaseManager().getSettingOrDefault("timeout", 0);
+        threadId = getDatabaseManager().getSettingOrDefault("threadid", 0);
+        maxTickets = getDatabaseManager().getSettingOrDefault("maxtickets", 0);
+        maxTicketsPerUser = getDatabaseManager().getSettingOrDefault("maxticketsperuser", 0);
+        privateThreads = getDatabaseManager().getSettingOrDefault("privatethreads", false);
         if (getDestination() != null) {
             getDestination().getThreadChannels().forEach(threadChannel -> {
                 if (!threadChannel.isArchived() && threadChannel.getName().matches("^t\\d+-.+$")) {

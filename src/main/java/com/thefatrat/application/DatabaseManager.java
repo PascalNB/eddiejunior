@@ -2,6 +2,7 @@ package com.thefatrat.application;
 
 import com.thefatrat.database.DatabaseAction;
 import com.thefatrat.database.Tuple;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,11 +41,11 @@ public class DatabaseManager {
         return new DatabaseAction<>(REMOVE_SETTING, server, component, setting).execute();
     }
 
-    public CompletableFuture<Void> removeSetting(String setting, String value) {
+    public CompletableFuture<Void> removeSetting(String setting, @NotNull String value) {
         return new DatabaseAction<>(REMOVE_SETTING_VALUE, server, component, setting, value).execute();
     }
 
-    public CompletableFuture<Void> setSetting(String setting, String value) {
+    public CompletableFuture<Void> setSetting(String setting, @NotNull Object value) {
         return DatabaseAction.allOf(
             new DatabaseAction<>(REMOVE_SETTING, server, component, setting),
             new DatabaseAction<>(ADD_SETTING, server, component, setting, value)
@@ -56,19 +57,51 @@ public class DatabaseManager {
     }
 
     public String getSetting(String setting) {
-        return getSettingOr(setting, null);
+        return getSettingOrDefault(setting, null);
     }
 
-    public String getSettingOr(String setting, Object defaultValue) {
-        String defaultString = defaultValue == null ? null : defaultValue.toString();
-        return new DatabaseAction<String>(GET_SETTINGS, server, component, setting)
+    @SuppressWarnings("unchecked")
+    public <T> T getSettingOrDefault(String setting, T defaultValue) {
+        return new DatabaseAction<T>(GET_SETTINGS, server, component, setting)
             .queue(table -> {
                 if (table.isEmpty()) {
-                    return defaultString;
+                    return defaultValue;
                 }
-                return table.getRow(0).get(0);
+                String string = table.getRow(0).get(0);
+                if (defaultValue == null) {
+                    return (T) string;
+                }
+                return (T) toPrimitive(string, defaultValue.getClass());
             })
             .join();
+    }
+
+    private static Object toPrimitive(String string, Class<?> clazz) {
+        if (clazz == String.class) {
+            return string;
+        }
+        if (clazz == Integer.TYPE || clazz == Integer.class) {
+            return Integer.parseInt(string);
+        }
+        if (clazz == Boolean.TYPE || clazz == Boolean.class) {
+            return Boolean.parseBoolean(string);
+        }
+        if (clazz == Double.TYPE || clazz == Double.class) {
+            return Double.parseDouble(string);
+        }
+        if (clazz == Long.TYPE || clazz == Long.class) {
+            return Long.parseLong(string);
+        }
+        if (clazz == Float.TYPE || clazz == Float.class) {
+            return Float.parseFloat(string);
+        }
+        if (clazz == Character.TYPE || clazz == Character.class) {
+            return string.charAt(0);
+        }
+        if (clazz == Short.TYPE || clazz == Short.class) {
+            return Short.parseShort(string);
+        }
+        return null;
     }
 
     public List<String> getSettings(String setting) {

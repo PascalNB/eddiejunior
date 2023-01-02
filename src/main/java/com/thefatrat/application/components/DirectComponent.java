@@ -42,7 +42,7 @@ public abstract class DirectComponent extends Component implements RunnableCompo
         super(server, name, false);
         this.autoRun = autoRun;
         destination = getDatabaseManager().getSetting("destination");
-        if (autoRun && Boolean.parseBoolean(getDatabaseManager().getSettingOr("running", false))) {
+        if (autoRun && getDatabaseManager().getSettingOrDefault("running", false)) {
             start(Reply.EMPTY);
         }
         blacklist.addAll(getDatabaseManager().getSettings("blacklist"));

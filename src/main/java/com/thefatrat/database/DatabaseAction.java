@@ -4,7 +4,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class DatabaseAction<T> {
@@ -20,28 +19,25 @@ public class DatabaseAction<T> {
         this(Query.of(query, args));
     }
 
-    public CompletableFuture<T> queue(Function<Table, T> callback) {
+    private static <T> CompletableFuture<T> queue(DatabaseAction<?> action, Function<Table, T> mapper) {
         return CompletableFuture.supplyAsync(() -> {
             AtomicReference<T> reference = new AtomicReference<>();
             Database database = Database.getInstance().connect();
             try {
-                database.queryStatement(table -> reference.set(callback.apply(table)), query);
+                database.queryStatement(table -> reference.set(mapper.apply(table)), action.query);
+                return reference.get();
             } finally {
                 database.close();
             }
-            return reference.get();
         }, EXECUTOR);
     }
 
-    public CompletableFuture<Void> queue(Consumer<Table> callback) {
-        return CompletableFuture.runAsync(() -> {
-            Database database = Database.getInstance().connect();
-            try {
-                database.queryStatement(callback, query);
-            } finally {
-                database.close();
-            }
-        }, EXECUTOR);
+    public CompletableFuture<T> queue(Function<Table, T> mapper) {
+        return queue(this, mapper);
+    }
+
+    public CompletableFuture<Table> queue() {
+        return queue(this, Function.identity());
     }
 
     public CompletableFuture<Void> execute() {
