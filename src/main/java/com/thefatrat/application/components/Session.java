@@ -89,28 +89,35 @@ public class Session extends Component {
                 }),
             new Command("remove",
                 "removes a channel from a session, removes the session if no channels are left")
-                .addOption(new OptionData(OptionType.STRING, "session", "session name", true)
-                    .setRequiredLength(3, 20)
+                .addOptions(
+                    new OptionData(OptionType.STRING, "session", "session name", true)
+                        .setRequiredLength(3, 20),
+                    new OptionData(OptionType.CHANNEL, "channel", "channel", false)
                 )
-                .addOption(new OptionData(OptionType.CHANNEL, "channel", "channel", true))
                 .setAction((command, reply) -> {
                     String string = command.getArgs().get("session").getAsString();
                     if (!isSession(string)) {
                         throw new BotErrorException(ERROR_SESSION_NONEXISTENT);
                     }
-                    IMentionable channel = command.getArgs().get("channel").getAsChannel();
-                    Set<String> session = sessions.get(string);
-                    if (!session.contains(channel.getId())) {
-                        throw new BotErrorException("The given channel is a not part of the session");
-                    }
+                    if (command.getArgs().containsKey("channel")) {
+                        IMentionable channel = command.getArgs().get("channel").getAsChannel();
+                        Set<String> session = sessions.get(string);
+                        if (!session.contains(channel.getId())) {
+                            throw new BotErrorException("The given channel is a not part of the session");
+                        }
 
-                    session.remove(channel.getId());
-                    getDatabaseManager().removeSetting("session_" + string, channel.getId());
-                    if (session.isEmpty()) {
-                        sessions.remove(string);
+                        session.remove(channel.getId());
+                        getDatabaseManager().removeSetting("session_" + string, channel.getId());
+                        if (session.isEmpty()) {
+                            sessions.remove(string);
+                            removeSessionFromDatabase(string);
+                        }
+                        reply.ok("%s removed from session `%s`", channel.getAsMention(), string);
+                    } else {
                         removeSessionFromDatabase(string);
+                        sessions.remove(string);
+                        reply.ok("Session `%s` has been removed", string);
                     }
-                    reply.ok("%s removed from session `%s`", channel.getAsMention(), string);
                 }),
             new Command("show", "shows the channels of the given session")
                 .addOption(new OptionData(OptionType.STRING, "session", "session name", true)
