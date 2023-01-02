@@ -1,9 +1,6 @@
 package com.thefatrat.database;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 
 /**
@@ -167,6 +164,11 @@ public class Table {
         @Override
         public String get(int i) {
             return cells[i];
+        }
+
+        @Override
+        public String toString() {
+            return Arrays.toString(cells);
         }
 
     }

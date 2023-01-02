@@ -46,7 +46,7 @@ public class DatabaseManager {
     }
 
     public CompletableFuture<Void> setSetting(String setting, @NotNull Object value) {
-        return DatabaseAction.allOf(
+        return DatabaseAction.executeAll(
             new DatabaseAction<>(REMOVE_SETTING, server, component, setting),
             new DatabaseAction<>(ADD_SETTING, server, component, setting, value)
         );
