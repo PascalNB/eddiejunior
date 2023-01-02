@@ -56,10 +56,10 @@ public class Event extends Component {
             if (link.session() != null) {
                 sessionComponent = getServer().getComponent(Session.NAME, Session.class);
             }
-            DirectComponent component = null;
+            RunnableComponent component = null;
             if (link.component() != null) {
                 Component c = getServer().getComponent(link.component());
-                if (c.isEnabled() && c instanceof DirectComponent dc && !dc.isAutoRunnable()) {
+                if (c.isEnabled() && c instanceof RunnableComponent dc && !dc.isAutoRunnable()) {
                     component = dc;
                 }
             }
@@ -129,7 +129,7 @@ public class Event extends Component {
                         if (componentInstance == null) {
                             throw new BotErrorException("Component `%s` does not exist", component);
                         }
-                        if (componentInstance instanceof DirectComponent directComponent) {
+                        if (componentInstance instanceof RunnableComponent directComponent) {
                             if (directComponent.isAutoRunnable()) {
                                 throw new BotErrorException("Component `%s` is not runnable", component);
                             }

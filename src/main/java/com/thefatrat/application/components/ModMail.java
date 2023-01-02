@@ -419,12 +419,12 @@ public class ModMail extends DirectComponent {
         }
     }
 
-    protected void stop(Reply reply) {
+    public void stop(Reply reply) {
         super.stop(reply);
         reply.accept(Icon.STOP, "Mod mail service stopped");
     }
 
-    protected void start(Reply reply) {
+    public void start(Reply reply) {
         super.start(reply);
         reply.ok("Mod mail service started");
     }

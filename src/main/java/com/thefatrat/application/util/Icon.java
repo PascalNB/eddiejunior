@@ -8,8 +8,9 @@ public enum Icon {
     STOP(":stop_sign:", Colors.WHITE),
     ENABLE(":ballot_box_with_check:", Colors.BLUE),
     DISABLE(":no_entry:", Colors.WHITE),
-    RESET(":arrows_counterclockwise:", Colors.GRAY),
-    WIN(":trophy:", Colors.GOLD);
+    RESET(":arrows_counterclockwise:", Colors.WHITE),
+    WIN(":trophy:", Colors.GOLD),
+    PAUSE(":pause_button:", Colors.WHITE);
 
     private final String icon;
     private final int color;

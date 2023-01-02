@@ -2,6 +2,8 @@ package com.thefatrat.application.components;
 
 import com.thefatrat.application.Bot;
 import com.thefatrat.application.entities.Command;
+import com.thefatrat.application.exceptions.BotErrorException;
+import com.thefatrat.application.exceptions.BotException;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
@@ -114,29 +116,33 @@ public class Manager extends Component {
 
             new Command("components", "shows a list of all the components")
                 .setAction((command, reply) -> {
-                    StringBuilder builder = new StringBuilder();
+                    EmbedBuilder embed = new EmbedBuilder()
+                        .setColor(Colors.TRANSPARENT)
+                        .setTitle("Components");
+
                     for (Component component : getServer().getComponents()) {
                         if (component.isGlobalComponent()) {
                             continue;
                         }
-                        builder.append(component.getTitle());
+                        StringBuilder builder = new StringBuilder();
+                        builder.append("Enabled: ").append(component.isEnabled() ? Icon.ENABLE : Icon.DISABLE)
+                            .append("\n");
 
                         if (component.isEnabled()) {
-                            builder.append(" ").append(Icon.ENABLE);
-
+                            if (component instanceof RunnableComponent runComp) {
+                                builder.append("Running: ").append(runComp.isRunning() ? Icon.OK : Icon.ERROR)
+                                    .append("\n");
+                                builder.append("Runs auto: ").append(runComp.isAutoRunnable() ? Icon.OK : Icon.ERROR)
+                                    .append("\n");
+                            }
                             if (component instanceof DirectComponent direct && direct.isRunning()) {
-                                builder.append(" ").append(Icon.OK);
+                                builder.append("Listens to DMs\n");
                             }
                         }
-                        builder.append("\n");
+
+                        embed.addField(component.getTitle(), builder.toString(), true);
                     }
-                    builder.deleteCharAt(builder.length() - 1);
-                    reply.accept(new EmbedBuilder()
-                        .setColor(Colors.TRANSPARENT)
-                        .setTitle("Components")
-                        .setDescription(builder.toString())
-                        .build()
-                    );
+                    reply.accept(embed.build());
                 }),
 
             new Command("status", "shows the current status of the bot")
@@ -166,6 +172,16 @@ public class Manager extends Component {
                     reply.accept(embed);
                 })
         );
+    }
+
+    /**
+     * Throws specific {@link BotErrorException} with the given component name.
+     *
+     * @param component the component name
+     * @throws BotException always
+     */
+    private void componentNotFound(String component) throws BotException {
+        throw new BotErrorException(String.format("Component `%s` does not exist", component));
     }
 
     @Override

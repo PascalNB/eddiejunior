@@ -6,8 +6,6 @@ import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.entities.Interaction;
 import com.thefatrat.application.events.CommandEvent;
 import com.thefatrat.application.events.MessageInteractionEvent;
-import com.thefatrat.application.exceptions.BotErrorException;
-import com.thefatrat.application.exceptions.BotException;
 import com.thefatrat.application.handlers.MapHandler;
 import com.thefatrat.application.reply.Reply;
 import com.thefatrat.application.sources.Server;
@@ -32,6 +30,7 @@ public abstract class Component {
     private final List<Interaction> interactions = new ArrayList<>();
     private final MapHandler<CommandEvent, Reply> subHandler = new MapHandler<>();
     private MessageEmbed help = null;
+    private boolean isComponentCommand = false;
 
     /**
      * Constructs a new component for the given server and with the given title.
@@ -47,16 +46,6 @@ public abstract class Component {
         this.globalComponent = globalComponent;
         enabled = globalComponent;
         databaseManager = new DatabaseManager(server.getId(), getName());
-    }
-
-    /**
-     * Throws specific {@link BotErrorException} with the given component name.
-     *
-     * @param component the component name
-     * @throws BotException always
-     */
-    protected final void componentNotFound(String component) throws BotException {
-        throw new BotErrorException(String.format("Component `%s` does not exist", component));
     }
 
     /**
@@ -135,13 +124,16 @@ public abstract class Component {
     }
 
     protected final void setComponentCommand(Permission... permissions) {
-        commands.add(new Command(getName(), "component command")
-            .addPermissions(permissions)
-            .setAction((command, reply) -> {
-                CommandEvent event = command.toSub();
-                getSubCommandHandler().handle(event.getCommand(), event, reply);
-            })
-        );
+        if (!isComponentCommand) {
+            commands.add(new Command(getName(), "component command")
+                .addPermissions(permissions)
+                .setAction((command, reply) -> {
+                    CommandEvent event = command.toSub();
+                    getSubCommandHandler().handle(event.getCommand(), event, reply);
+                })
+            );
+            isComponentCommand = true;
+        }
     }
 
     /**
@@ -190,6 +182,9 @@ public abstract class Component {
      * @param subcommands the subcommands
      */
     protected void addSubcommands(Command... subcommands) {
+        if (!isComponentCommand) {
+            return;
+        }
         for (Command c : commands) {
             if (Objects.equals(c.getName(), getName())) {
                 for (Command s : subcommands) {

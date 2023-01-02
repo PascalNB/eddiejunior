@@ -445,7 +445,7 @@ public class Feedback extends DirectComponent {
         reply.ok("Successfully submitted");
     }
 
-    protected void start(Reply reply) {
+    public void start(Reply reply) {
         super.start(reply);
         users.clear();
         submissions.clear();
@@ -453,7 +453,7 @@ public class Feedback extends DirectComponent {
         reply.ok("Feedback session started");
     }
 
-    protected void stop(Reply reply) {
+    public void stop(Reply reply) {
         super.stop(reply);
         submissions.clear();
         submissionCount = 0;

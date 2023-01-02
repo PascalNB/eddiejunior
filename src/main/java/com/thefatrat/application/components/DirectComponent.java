@@ -21,7 +21,7 @@ import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-public abstract class DirectComponent extends Component {
+public abstract class DirectComponent extends Component implements RunnableComponent {
 
     private final boolean autoRun;
     private final Set<String> blacklist = new HashSet<>();
@@ -226,7 +226,7 @@ public abstract class DirectComponent extends Component {
 
     protected abstract void handleDirect(Message message, Reply reply);
 
-    protected void stop(Reply reply) {
+    public void stop(Reply reply) {
         getServer().getDirectHandler().removeListener(getName());
         this.running = false;
         if (autoRun) {
@@ -234,7 +234,7 @@ public abstract class DirectComponent extends Component {
         }
     }
 
-    protected void start(Reply reply) {
+    public void start(Reply reply) {
         this.running = true;
         getServer().getDirectHandler().addListener(getName(), receiver);
         if (autoRun) {
@@ -255,10 +255,12 @@ public abstract class DirectComponent extends Component {
         return getServer().getGuild().getTextChannelById(destination);
     }
 
+    @Override
     public boolean isRunning() {
         return running && isEnabled();
     }
 
+    @Override
     public boolean isAutoRunnable() {
         return autoRun;
     }
