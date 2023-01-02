@@ -64,8 +64,7 @@ public class Initializer {
             Grab.class,
             Roles.class,
 
-            Edit.class,
-            Remove.class
+            MessageComponent.class
         );
 
         jda = JDABuilder.createLight(token,
