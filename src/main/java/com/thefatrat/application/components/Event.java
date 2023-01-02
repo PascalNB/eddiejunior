@@ -40,10 +40,10 @@ public class Event extends Component {
                 return;
             }
 
-            String description = event.getDescription();
+            String name = event.getName();
             Link link = null;
             for (Link l : links.values()) {
-                if (description.toLowerCase(Locale.ROOT).contains(l.keyword())) {
+                if (name.toLowerCase(Locale.ROOT).contains(l.keyword())) {
                     link = l;
                     break;
                 }
@@ -95,9 +95,9 @@ public class Event extends Component {
         setComponentCommand();
 
         addSubcommands(
-            new Command("link", "link a session to a keyword in an event description")
+            new Command("link", "link a session to a keyword in an event name")
                 .addOptions(
-                    new OptionData(OptionType.STRING, "keyword", "event description keyword", true),
+                    new OptionData(OptionType.STRING, "keyword", "event name keyword", true),
                     new OptionData(OptionType.STRING, "session", "session", false),
                     new OptionData(OptionType.STRING, "component", "runnable component", false)
                 )
@@ -145,7 +145,7 @@ public class Event extends Component {
                 }),
 
             new Command("unlink", "unlink a keyword")
-                .addOption(new OptionData(OptionType.STRING, "keyword", "event description keyword", true))
+                .addOption(new OptionData(OptionType.STRING, "keyword", "event name keyword", true))
                 .setAction((command, reply) -> {
                     String keyword = command.getArgs().get("keyword").getAsString().toLowerCase(Locale.ROOT);
 
