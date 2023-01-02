@@ -40,6 +40,10 @@ public class Roles extends Component {
                 return;
             }
 
+            if (!isEnabled()) {
+                throw new BotErrorException("Could not assign/remove at the moment");
+            }
+
             String[] split = buttonId.split("-");
             String roleId = split[2];
             Role role = getServer().getGuild().getRoleById(roleId);

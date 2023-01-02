@@ -35,7 +35,7 @@ public class Event extends Component {
         }
 
         getServer().getEventHandler().addListener((event, __) -> {
-            if (!event.getStatus().equals(ScheduledEvent.Status.ACTIVE)
+            if (!isEnabled() || !event.getStatus().equals(ScheduledEvent.Status.ACTIVE)
                 && !event.getStatus().equals(ScheduledEvent.Status.COMPLETED)) {
                 return;
             }
