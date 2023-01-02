@@ -1,8 +1,6 @@
 package com.thefatrat.application;
 
-import com.thefatrat.database.Database;
 import com.thefatrat.database.DatabaseAction;
-import com.thefatrat.database.Query;
 import com.thefatrat.database.Tuple;
 
 import java.util.ArrayList;
@@ -39,23 +37,22 @@ public class DatabaseManager {
     }
 
     public CompletableFuture<Void> removeSetting(String setting) {
-        return new DatabaseAction<Void>(REMOVE_SETTING, server, component, setting).execute();
+        return new DatabaseAction<>(REMOVE_SETTING, server, component, setting).execute();
     }
 
     public CompletableFuture<Void> removeSetting(String setting, String value) {
-        return new DatabaseAction<Void>(REMOVE_SETTING_VALUE, server, component, setting, value).execute();
+        return new DatabaseAction<>(REMOVE_SETTING_VALUE, server, component, setting, value).execute();
     }
 
     public CompletableFuture<Void> setSetting(String setting, String value) {
-        return new DatabaseAction<Void>(REMOVE_SETTING, server, component, setting).execute()
-            .thenRun(() -> Database.getInstance().connect()
-                .executeStatement(Query.of(ADD_SETTING, server, component, setting, value))
-                .close()
-            );
+        return DatabaseAction.allOf(
+            new DatabaseAction<>(REMOVE_SETTING, server, component, setting),
+            new DatabaseAction<>(ADD_SETTING, server, component, setting, value)
+        );
     }
 
     public CompletableFuture<Void> addSetting(String setting, String value) {
-        return new DatabaseAction<Void>(ADD_SETTING, server, component, setting, value).execute();
+        return new DatabaseAction<>(ADD_SETTING, server, component, setting, value).execute();
     }
 
     public String getSetting(String setting) {
@@ -94,7 +91,7 @@ public class DatabaseManager {
     }
 
     public CompletableFuture<Void> toggleComponent(boolean enable) {
-        return new DatabaseAction<Void>(TOGGLE_COMPONENT, server, component, enable, enable).execute();
+        return new DatabaseAction<>(TOGGLE_COMPONENT, server, component, enable, enable).execute();
     }
 
 }

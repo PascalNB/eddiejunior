@@ -2,6 +2,7 @@ package com.thefatrat.database;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -44,6 +45,10 @@ public class DatabaseAction<T> {
     }
 
     public CompletableFuture<Void> execute() {
+        return execute(EXECUTOR);
+    }
+
+    public CompletableFuture<Void> execute(Executor executor) {
         return CompletableFuture.runAsync(() -> {
             Database database = Database.getInstance().connect();
             try {
@@ -51,8 +56,16 @@ public class DatabaseAction<T> {
             } finally {
                 database.close();
             }
-        }, EXECUTOR);
+        }, executor);
+    }
 
+    public static CompletableFuture<Void> allOf(DatabaseAction<?>... actions) {
+        return CompletableFuture.runAsync(() -> {
+            Executor executor = Executors.newSingleThreadExecutor();
+            for (DatabaseAction<?> action : actions) {
+                action.execute(executor);
+            }
+        });
     }
 
 }
