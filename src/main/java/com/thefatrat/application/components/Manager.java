@@ -78,7 +78,7 @@ public class Manager extends Component {
                         componentNotFound(componentString);
                         return;
                     }
-                    if (component.isAlwaysEnabled()) {
+                    if (component.isGlobalComponent()) {
                         throw new BotWarningException("This component is always enabled");
                     }
                     component.getDatabaseManager().toggleComponent(true)
@@ -99,7 +99,7 @@ public class Manager extends Component {
                         return;
                     }
 
-                    if (component.isAlwaysEnabled()) {
+                    if (component.isGlobalComponent()) {
                         throw new BotWarningException("This component is always enabled");
                     }
 
@@ -116,7 +116,7 @@ public class Manager extends Component {
                 .setAction((command, reply) -> {
                     StringBuilder builder = new StringBuilder();
                     for (Component component : getServer().getComponents()) {
-                        if (component.isAlwaysEnabled()) {
+                        if (component.isGlobalComponent()) {
                             continue;
                         }
                         builder.append(component.getTitle());
@@ -172,7 +172,7 @@ public class Manager extends Component {
     public String getStatus() {
         int count = 0;
         for (Component component : getServer().getComponents()) {
-            if (component.isEnabled() && !component.isAlwaysEnabled()) {
+            if (component.isEnabled() && !component.isGlobalComponent()) {
                 ++count;
             }
         }

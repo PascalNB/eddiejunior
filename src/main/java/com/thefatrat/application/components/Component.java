@@ -25,7 +25,7 @@ public abstract class Component {
     private final Server source;
     private final String title;
     private final String name;
-    private final boolean alwaysEnabled;
+    private final boolean globalComponent;
     private boolean enabled;
     private final DatabaseManager databaseManager;
     private final List<Command> commands = new ArrayList<>();
@@ -36,16 +36,16 @@ public abstract class Component {
     /**
      * Constructs a new component for the given server and with the given title.
      *
-     * @param server        the server
-     * @param title         the component title
-     * @param alwaysEnabled whether the component should always be enabled
+     * @param server          the server
+     * @param title           the component title
+     * @param globalComponent whether the component should always be enabled
      */
-    public Component(Server server, String title, boolean alwaysEnabled) {
+    public Component(Server server, String title, boolean globalComponent) {
         this.source = server;
         this.title = title;
         this.name = title.toLowerCase(Locale.ROOT);
-        this.alwaysEnabled = alwaysEnabled;
-        enabled = alwaysEnabled;
+        this.globalComponent = globalComponent;
+        enabled = globalComponent;
         databaseManager = new DatabaseManager(server.getId(), getName());
     }
 
@@ -62,8 +62,8 @@ public abstract class Component {
     /**
      * @return whether the component is always enabled and cannot be disabled
      */
-    public boolean isAlwaysEnabled() {
-        return alwaysEnabled;
+    public boolean isGlobalComponent() {
+        return globalComponent;
     }
 
     /**
@@ -77,7 +77,7 @@ public abstract class Component {
      * Disables the component
      */
     public void disable() {
-        enabled = alwaysEnabled;
+        enabled = globalComponent;
     }
 
     /**

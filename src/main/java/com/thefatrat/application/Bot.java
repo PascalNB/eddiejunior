@@ -48,6 +48,7 @@ public class Bot extends ListenerAdapter {
     private Class<? extends Component>[] components;
     private long time = 0;
     private JDA jda = null;
+    private CommandRegister commandRegister = null;
 
     private Bot() {
     }
@@ -61,11 +62,15 @@ public class Bot extends ListenerAdapter {
 
     public void setJDA(JDA jda) {
         this.jda = jda;
-        CommandRegister.getInstance().setJDA(jda);
+        this.commandRegister = new CommandRegister(jda);
     }
 
     public JDA getJDA() {
         return jda;
+    }
+
+    public CommandRegister getCommandRegister() {
+        return commandRegister;
     }
 
     public Server getServer(String id) {
@@ -80,7 +85,9 @@ public class Bot extends ListenerAdapter {
     private void loadServer(String id) {
         Server server = new Server(id);
         servers.put(server.getId(), server);
+        commandRegister.retrieveServerCommands(id).complete();
         server.registerComponents(components);
+        commandRegister.filterServerCommands(id, server.getApplicationCommands()).queue();
     }
 
     public String getUptime() {
@@ -120,18 +127,19 @@ public class Bot extends ListenerAdapter {
 
     @Override
     public void onReady(@NotNull ReadyEvent event) {
-        CommandRegister.getInstance().retrieveDefaultCommands();
+        commandRegister.retrieveDefaultCommands().complete();
 
         Server server = Server.dummy();
         server.registerComponents(components);
         List<Component> list = server.getComponents();
         List<Command> commands = new ArrayList<>();
         for (Component component : list) {
-            if (component.isAlwaysEnabled()) {
+            if (component.isGlobalComponent()) {
                 commands.addAll(component.getCommands());
             }
         }
 
+        Set<String> commandNames = new HashSet<>();
         List<SlashCommandData> slashCommands = new ArrayList<>();
         for (Command command : commands) {
             SlashCommandData slashCommandData = Commands.slash(command.getName(), command.getDescription())
@@ -139,8 +147,10 @@ public class Bot extends ListenerAdapter {
                 .addOptions(command.getOptions())
                 .addSubcommands(command.getSubcommandsData());
             slashCommands.add(slashCommandData);
+            commandNames.add(command.getName());
         }
-        CommandRegister.getInstance().registerDefaultCommands(slashCommands).complete();
+        commandRegister.registerDefaultCommands(slashCommands).complete();
+        commandRegister.filterDefaultCommands(commandNames).queue();
 
         jda.getPresence().setPresence(OnlineStatus.ONLINE, Activity.listening("DMs"));
         time = System.currentTimeMillis();

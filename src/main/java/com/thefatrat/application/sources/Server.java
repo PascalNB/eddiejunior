@@ -19,10 +19,7 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.requests.RestAction;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class Server {
 
@@ -46,7 +43,6 @@ public class Server {
 
     public Server(String id) {
         this.id = id;
-        CommandRegister.getInstance().retrieveServerCommands(id);
     }
 
     public Guild getGuild() {
@@ -68,6 +64,7 @@ public class Server {
     }
 
     public void toggleComponent(Component component, boolean enable) {
+        CommandRegister register = Bot.getInstance().getCommandRegister();
         if (enable) {
 
             List<CommandData> commandData = new ArrayList<>();
@@ -82,7 +79,7 @@ public class Server {
                 commandData.add(Commands.message(interaction.getName()).setGuildOnly(true));
             }
 
-            CommandRegister.getInstance().registerServerCommands(id, commandData).queue();
+            register.registerServerCommands(id, commandData).queue();
 
             component.enable();
         } else {
@@ -92,11 +89,11 @@ public class Server {
             List<RestAction<Void>> actions = new ArrayList<>();
 
             for (Command command : component.getCommands()) {
-                actions.add(CommandRegister.getInstance().removeServerCommand(id, command.getName()));
+                actions.add(register.removeServerCommand(id, command.getName()));
             }
 
             for (Interaction interaction : component.getInteractions()) {
-                actions.add(CommandRegister.getInstance().removeServerCommand(id, interaction.getName()));
+                actions.add(register.removeServerCommand(id, interaction.getName()));
             }
 
             RestAction.allOf(actions).queue();
@@ -120,7 +117,7 @@ public class Server {
 
                 this.components.put(instance.getName(), instance);
 
-                if (instance.isAlwaysEnabled()) {
+                if (instance.isGlobalComponent()) {
                     continue;
                 }
 
@@ -134,6 +131,13 @@ public class Server {
                  IllegalAccessException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public Set<String> getApplicationCommands() {
+        Set<String> set = new HashSet<>();
+        set.addAll(commandHandler.getKeys());
+        set.addAll(messageInteractionHandler.getKeys());
+        return set;
     }
 
     public MapHandler<CommandEvent, Reply> getCommandHandler() {
