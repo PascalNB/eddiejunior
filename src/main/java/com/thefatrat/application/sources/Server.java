@@ -17,7 +17,9 @@ import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.requests.RestAction;
+import net.dv8tion.jda.internal.requests.CompletedRestAction;
 
+import javax.annotation.CheckReturnValue;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
@@ -63,7 +65,8 @@ public class Server {
         return list;
     }
 
-    public void toggleComponent(Component component, boolean enable) {
+    @CheckReturnValue
+    public RestAction<?> toggleComponent(Component component, boolean enable) {
         CommandRegister register = Bot.getInstance().getCommandRegister();
         if (enable) {
 
@@ -79,9 +82,9 @@ public class Server {
                 commandData.add(Commands.message(interaction.getName()).setGuildOnly(true));
             }
 
-            register.registerServerCommands(id, commandData).queue();
-
             component.enable();
+
+            return register.registerServerCommands(id, commandData);
         } else {
 
             component.disable();
@@ -96,7 +99,11 @@ public class Server {
                 actions.add(register.removeServerCommand(id, interaction.getName()));
             }
 
-            RestAction.allOf(actions).queue();
+            if (actions.isEmpty()) {
+                return new CompletedRestAction<>(getGuild().getJDA(), (Object) null);
+            }
+
+            return RestAction.allOf(actions);
         }
     }
 
@@ -122,7 +129,7 @@ public class Server {
                 }
 
                 if (instance.getDatabaseManager().isComponentEnabled()) {
-                    toggleComponent(instance, true);
+                    toggleComponent(instance, true).queue();
                 }
 
             }

@@ -85,7 +85,7 @@ public class Manager extends Component {
                     }
                     component.getDatabaseManager().toggleComponent(true)
                         .thenRun(() -> {
-                            getServer().toggleComponent(component, true);
+                            getServer().toggleComponent(component, true).queue();
                             reply.accept(Icon.ENABLE, "Component `%s` enabled", componentString);
                         });
                 }),
@@ -110,7 +110,7 @@ public class Manager extends Component {
                     }
 
                     component.getDatabaseManager().toggleComponent(false);
-                    getServer().toggleComponent(component, false);
+                    getServer().toggleComponent(component, false).queue();
                     reply.accept(Icon.DISABLE, "Component `%s` disabled", componentString);
                 }),
 
