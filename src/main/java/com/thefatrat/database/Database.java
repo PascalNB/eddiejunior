@@ -1,14 +1,16 @@
 package com.thefatrat.database;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * Abstract class that specifies all the methods needed for a database connection.
  */
+@SuppressWarnings({"unused", "UnusedReturnValue"})
 public abstract class Database {
 
-    private static final Class<? extends Database> implementation = JDBC.class;
+    @SuppressWarnings("StaticInitializerReferencesSubClass")
+    private static final Supplier<Database> implementation = JDBC::new;
 
     protected static String url = null;
     protected static String username = null;
@@ -46,12 +48,7 @@ public abstract class Database {
      * @return an instance of database.Database based on the implementation
      */
     public static Database getInstance() {
-        try {
-            return implementation.getDeclaredConstructor().newInstance();
-        } catch (NoSuchMethodException | InstantiationException | IllegalAccessException |
-                 InvocationTargetException e) {
-            throw new DatabaseException(e);
-        }
+        return implementation.get();
     }
 
     /**
