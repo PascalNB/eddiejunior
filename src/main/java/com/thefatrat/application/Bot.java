@@ -219,8 +219,7 @@ public class Bot extends ListenerAdapter {
                 direct.getStringSelectHandler().handle(event.getComponentId(), selectEvent, reply);
 
             } catch (BotException e) {
-                reply.hide();
-                reply.send(e);
+                reply.edit(e);
             }
         }
     }

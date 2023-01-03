@@ -5,6 +5,7 @@ import com.thefatrat.application.util.Icon;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import net.dv8tion.jda.api.utils.messages.MessageEditData;
 
 import java.util.function.Consumer;
@@ -13,12 +14,20 @@ public interface EditReply {
 
     void edit(MessageEditData data, Consumer<Message> callback);
 
+    default void edit(MessageCreateData data) {
+        edit(data, m -> {});
+    }
+
+    default void edit(MessageCreateData data, Consumer<Message> callback) {
+        edit(MessageEditData.fromCreateData(data), callback);
+    }
+
     default void edit(MessageEditData data) {
         edit(data, m -> {});
     }
 
     default void edit(MessageEmbed embed) {
-        edit(MessageEditData.fromEmbeds(embed));
+        edit(MessageCreateData.fromEmbeds(embed));
     }
 
     default void edit(Icon icon, String content, Object... variables) {
