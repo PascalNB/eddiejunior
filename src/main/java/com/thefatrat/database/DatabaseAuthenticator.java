@@ -20,7 +20,7 @@ public abstract class DatabaseAuthenticator {
      *
      * @throws DatabaseException when a database error occurs
      */
-    public void authenticate() throws DatabaseException {
+    public final void authenticate() throws DatabaseException {
         String[] credentials = getCredentials();
 
         Database.setUsername(credentials[0]);

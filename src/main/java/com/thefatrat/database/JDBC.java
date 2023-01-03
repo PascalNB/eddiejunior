@@ -20,6 +20,7 @@ public class JDBC extends Database {
     private Statement statement = null;
 
     @Override
+    @Contract("-> this")
     public Database connect() {
         if (url == null) {
             throw new DatabaseException("URL for database connection not set.");
@@ -46,6 +47,7 @@ public class JDBC extends Database {
     }
 
     @Override
+    @Contract("_ -> this")
     public Database execute(@NotNull Query query) {
         checkConnection();
 
@@ -59,6 +61,7 @@ public class JDBC extends Database {
     }
 
     @Override
+    @Contract("_, _ -> this")
     public Database query(@NotNull Consumer<Table> callback, @NotNull Query query) {
         checkConnection();
 
@@ -99,6 +102,7 @@ public class JDBC extends Database {
     }
 
     @Override
+    @Contract("_, _ -> this")
     public Database queryStatement(@NotNull Consumer<Table> callback, @NotNull Query statement) {
         checkConnection();
 
@@ -116,6 +120,7 @@ public class JDBC extends Database {
     }
 
     @Override
+    @Contract("_ -> this")
     public Database executeStatement(@NotNull Query statement) {
         checkConnection();
 
@@ -128,6 +133,7 @@ public class JDBC extends Database {
         return this;
     }
 
+    @Contract("_, _ -> this")
     public Database executeBatch(String preparedStatement, @NotNull Object[]... variablesArray) {
         checkConnection();
 
@@ -164,6 +170,7 @@ public class JDBC extends Database {
     }
 
     // specific implementation to parse a ResultSet to a Table
+    @Contract(value = "_ -> new")
     private static Table parseResult(@NotNull ResultSet resultSet) {
         String[] attributes;
         List<Tuple> tuples = new ArrayList<>();

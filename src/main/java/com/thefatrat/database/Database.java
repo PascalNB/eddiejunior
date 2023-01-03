@@ -1,5 +1,6 @@
 package com.thefatrat.database;
 
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Consumer;
@@ -104,6 +105,7 @@ public abstract class Database {
      * @param query the query to be executed
      * @return the same {@link Database}
      */
+    @Contract("_ -> this")
     public abstract Database execute(Query query);
 
     /**
@@ -113,6 +115,7 @@ public abstract class Database {
      * @param query    the query
      * @return the same {@link Database}
      */
+    @Contract("_, _ -> this")
     public abstract Database query(Consumer<Table> callback, Query query);
 
     /**
@@ -122,6 +125,7 @@ public abstract class Database {
      * @param preparedStatement the prepared query
      * @return the same {@link Database}
      */
+    @Contract("_, _ -> this")
     public abstract Database queryStatement(Consumer<Table> callback, Query preparedStatement);
 
     /**
@@ -130,6 +134,7 @@ public abstract class Database {
      * @param preparedStatement the prepared statement
      * @return the same {@link Database}
      */
+    @Contract("_ -> this")
     public abstract Database executeStatement(Query preparedStatement);
 
     /**

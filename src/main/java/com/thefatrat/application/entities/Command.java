@@ -7,6 +7,7 @@ import com.thefatrat.application.reply.Reply;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
+import org.jetbrains.annotations.Contract;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,11 +29,13 @@ public class Command {
         permissions.add(Permission.USE_APPLICATION_COMMANDS);
     }
 
+    @Contract("_ -> this")
     public Command addSubcommand(Command command) {
         subcommands.add(command);
         return this;
     }
 
+    @Contract("_ -> this")
     public <T extends Reply & EphemeralReply & ModalReply> Command setAction(BiConsumer<CommandEvent, T> action) {
         this.action = action;
         return this;
@@ -46,16 +49,19 @@ public class Command {
         return description;
     }
 
+    @Contract("_ -> this")
     public Command addOptions(OptionData... options) {
         Collections.addAll(this.options, options);
         return this;
     }
 
+    @Contract("_ -> this")
     public Command addOption(OptionData option) {
         options.add(option);
         return this;
     }
 
+    @Contract("_ -> this")
     public Command addPermissions(Permission... permissions) {
         Collections.addAll(this.permissions, permissions);
         return this;

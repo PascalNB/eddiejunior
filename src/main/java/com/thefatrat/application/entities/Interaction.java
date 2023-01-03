@@ -4,6 +4,7 @@ import com.thefatrat.application.events.MessageInteractionEvent;
 import com.thefatrat.application.reply.EphemeralReply;
 import com.thefatrat.application.reply.ModalReply;
 import com.thefatrat.application.reply.Reply;
+import org.jetbrains.annotations.Contract;
 
 import java.util.function.BiConsumer;
 
@@ -27,6 +28,7 @@ public class Interaction {
         return (BiConsumer<MessageInteractionEvent, T>) action;
     }
 
+    @Contract("_ -> this")
     public <T extends Reply & EphemeralReply & ModalReply> Interaction setAction(
         BiConsumer<MessageInteractionEvent, T> action) {
         this.action = action;
