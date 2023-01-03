@@ -1,5 +1,8 @@
 package com.thefatrat.database;
 
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +46,7 @@ public class JDBC extends Database {
     }
 
     @Override
-    public Database execute(Query query) {
+    public Database execute(@NotNull Query query) {
         checkConnection();
 
         try {
@@ -56,7 +59,7 @@ public class JDBC extends Database {
     }
 
     @Override
-    public Database query(Consumer<Table> callback, Query query) {
+    public Database query(@NotNull Consumer<Table> callback, @NotNull Query query) {
         checkConnection();
 
         try {
@@ -70,7 +73,8 @@ public class JDBC extends Database {
         return this;
     }
 
-    private PreparedStatement setVariables(PreparedStatement statement, Object... variables) {
+    @Contract("_, _ -> param1")
+    private PreparedStatement setVariables(@NotNull PreparedStatement statement, @NotNull Object... variables) {
         try {
             statement.setFetchSize(FETCH_SIZE);
 
@@ -95,7 +99,7 @@ public class JDBC extends Database {
     }
 
     @Override
-    public Database queryStatement(Consumer<Table> callback, Query statement) {
+    public Database queryStatement(@NotNull Consumer<Table> callback, @NotNull Query statement) {
         checkConnection();
 
         try {
@@ -112,7 +116,7 @@ public class JDBC extends Database {
     }
 
     @Override
-    public Database executeStatement(Query statement) {
+    public Database executeStatement(@NotNull Query statement) {
         checkConnection();
 
         try {
@@ -124,7 +128,7 @@ public class JDBC extends Database {
         return this;
     }
 
-    public Database executeBatch(String preparedStatement, Object[]... variablesArray) {
+    public Database executeBatch(String preparedStatement, @NotNull Object[]... variablesArray) {
         checkConnection();
 
         try {
@@ -160,7 +164,7 @@ public class JDBC extends Database {
     }
 
     // specific implementation to parse a ResultSet to a Table
-    private static Table parseResult(ResultSet resultSet) {
+    private static Table parseResult(@NotNull ResultSet resultSet) {
         String[] attributes;
         List<Tuple> tuples = new ArrayList<>();
         Table table;

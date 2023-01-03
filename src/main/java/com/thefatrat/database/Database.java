@@ -1,5 +1,7 @@
 package com.thefatrat.database;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -56,7 +58,7 @@ public abstract class Database {
      *
      * @param table the query result
      */
-    public static void printQueryResult(Table table) {
+    public static void printQueryResult(@NotNull Table table) {
         StringBuilder result = new StringBuilder();
 
         String[] attributes = table.getAttributes();

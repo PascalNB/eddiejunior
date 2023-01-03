@@ -7,6 +7,7 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Consumer;
 
@@ -45,11 +46,11 @@ public interface Reply {
         send(__ -> {}, color, content, variables);
     }
 
-    default void send(Icon icon, String content, Object... variables) {
+    default void send(@NotNull Icon icon, String content, Object... variables) {
         send(__ -> {}, icon.getColor(), icon + " " + content, variables);
     }
 
-    default void send(Consumer<Message> callback, Icon icon, String content, Object... variables) {
+    default void send(Consumer<Message> callback, @NotNull Icon icon, String content, Object... variables) {
         send(callback, icon.getColor(), icon + " " + content, variables);
     }
 
@@ -61,7 +62,7 @@ public interface Reply {
         ok(__ -> {}, content, variables);
     }
 
-    default void send(BotException exception) {
+    default void send(@NotNull BotException exception) {
         send(exception.getColor(), exception.getMessage());
     }
 

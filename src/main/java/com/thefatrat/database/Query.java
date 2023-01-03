@@ -1,5 +1,8 @@
 package com.thefatrat.database;
 
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+
 import java.util.regex.Matcher;
 
 /**
@@ -20,6 +23,8 @@ public class Query {
         this.args = args;
     }
 
+    @NotNull
+    @Contract(value = "_, _ -> new", pure = true)
     public static Query of(String query, Object... args) {
         return new Query(query, args);
     }
@@ -30,7 +35,7 @@ public class Query {
      * @param variables the variables
      * @return the query with the variables
      */
-    public Query withVariables(Object... variables) {
+    public Query withVariables(@NotNull Object... variables) {
         String query = this.query;
 
         for (Object variable : variables) {

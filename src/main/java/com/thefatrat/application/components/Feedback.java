@@ -26,6 +26,7 @@ import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import net.dv8tion.jda.api.utils.messages.MessageEditBuilder;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
 import java.util.*;
@@ -340,7 +341,7 @@ public class Feedback extends DirectComponent {
         });
     }
 
-    private void interactionCheck(Message message) {
+    private void interactionCheck(@NotNull Message message) {
         if (!Bot.getInstance().getJDA().getSelfUser().getId()
             .equals(message.getAuthor().getId())) {
             throw new BotWarningException("Message was not send by me");
@@ -372,7 +373,7 @@ public class Feedback extends DirectComponent {
     }
 
     @Override
-    protected synchronized void handleDirect(Message message, Reply reply) {
+    protected synchronized void handleDirect(@NotNull Message message, Reply reply) {
         List<Message.Attachment> attachments = message.getAttachments();
 
         String url = null;

@@ -21,6 +21,7 @@ import net.dv8tion.jda.api.requests.RestAction;
 import net.dv8tion.jda.api.utils.ImageProxy;
 import net.dv8tion.jda.api.utils.Result;
 import net.dv8tion.jda.api.utils.TimeFormat;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -323,7 +324,7 @@ public class Grab extends Component {
 
     }
 
-    private User getEffectiveUser(CommandEvent event) {
+    private User getEffectiveUser(@NotNull CommandEvent event) {
         User user;
         if (event.getArgs().containsKey("user")) {
             user = event.getArgs().get("user").getAsUser();
@@ -333,7 +334,8 @@ public class Grab extends Component {
         return user;
     }
 
-    private String formatPermissions(Iterable<Permission> permissions) {
+    @NotNull
+    private String formatPermissions(@NotNull Iterable<Permission> permissions) {
         StringBuilder builder = new StringBuilder();
         for (Iterator<Permission> iterator = permissions.iterator(); iterator.hasNext(); ) {
             Permission permission = iterator.next();
@@ -345,7 +347,8 @@ public class Grab extends Component {
         return builder.toString();
     }
 
-    private String formatOverrides(IMentionable permissionHolder, PermissionOverride override) {
+    @NotNull
+    private String formatOverrides(@NotNull IMentionable permissionHolder, @NotNull PermissionOverride override) {
         StringBuilder builder = new StringBuilder()
             .append(permissionHolder.getAsMention()).append("\n");
         EnumSet<Permission> allowed = override.getAllowed();

@@ -1,5 +1,8 @@
 package com.thefatrat.application.util;
 
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+
 public final class EmojiChecker {
 
     @SuppressWarnings({"RegExpDuplicateAlternationBranch", "UnnecessaryUnicodeEscape"})
@@ -15,7 +18,8 @@ public final class EmojiChecker {
         "[\u00A9\u00AE]\uFE0F?|[\u2122\u2139]\uFE0F?|\uD83C\uDC04\uFE0F?|\uD83C\uDCCF\uFE0F?|" +
         "[\u231A\u231B\u2328\u23CF\u23E9-\u23F3\u23F8-\u23FA]\uFE0F?)+";
 
-    public static boolean isEmoji(String message) {
+    @Contract(pure = true)
+    public static boolean isEmoji(@NotNull String message) {
         return message.matches(REGEX);
     }
 

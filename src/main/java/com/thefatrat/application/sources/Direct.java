@@ -23,6 +23,7 @@ import net.dv8tion.jda.api.interactions.components.selections.StringSelectMenu;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import net.dv8tion.jda.api.utils.messages.MessageEditData;
+import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.CheckReturnValue;
 import java.util.HashMap;
@@ -75,7 +76,7 @@ public class Direct {
         return (MapHandler<ButtonEvent<User>, T>) handlerCollection.getButtonMapHandler();
     }
 
-    public <T extends Reply> void receiveMessage(Message message, T reply) {
+    public <T extends Reply> void receiveMessage(@NotNull Message message, T reply) {
         String userId = message.getAuthor().getId();
         message.getChannel().sendTyping().queue();
         List<Guild> mutualGuilds = Bot.getInstance().retrieveMutualGuilds(message.getAuthor()).complete();
@@ -97,6 +98,7 @@ public class Direct {
         reply.send(data);
     }
 
+    @NotNull
     @CheckReturnValue
     private MessageCreateData getComponentMenu(String userId, String serverId) {
         Server server = Bot.getInstance().getServer(serverId);
@@ -132,7 +134,7 @@ public class Direct {
     }
 
     @CheckReturnValue
-    public MessageCreateData getServerMenu(List<Guild> guilds) {
+    public MessageCreateData getServerMenu(@NotNull List<Guild> guilds) {
         StringSelectMenu.Builder menu = StringSelectMenu.create("server").setRequiredRange(1, 1);
 
         for (Guild guild : guilds) {

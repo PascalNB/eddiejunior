@@ -4,6 +4,7 @@ import com.thefatrat.application.entities.Command;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,7 +14,7 @@ public class HelpBuilder {
     private final String component;
     private final List<String[]> commands = new ArrayList<>();
 
-    public HelpBuilder(String component, List<Command> commands) {
+    public HelpBuilder(String component, @NotNull List<Command> commands) {
         this.component = component;
         for (Command command : commands) {
             if (command.getSubcommands().isEmpty()) {

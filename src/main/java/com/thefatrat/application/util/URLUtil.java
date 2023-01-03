@@ -7,6 +7,7 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,11 +28,13 @@ public final class URLUtil {
 
     private static final String IS_HTTPS = "^https://.+$";
 
-    public static boolean isDomain(String domain) {
+    @Contract(pure = true)
+    public static boolean isDomain(@NotNull String domain) {
         return domain.matches(DOMAIN_REGEX);
     }
 
-    public static boolean isSafe(String url) {
+    @Contract(pure = true)
+    public static boolean isSafe(@NotNull String url) {
         return url.matches(IS_HTTPS);
     }
 

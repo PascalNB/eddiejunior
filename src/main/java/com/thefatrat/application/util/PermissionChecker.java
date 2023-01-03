@@ -5,6 +5,7 @@ import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.channel.attribute.IPermissionContainer;
 import net.dv8tion.jda.internal.utils.PermissionUtil;
+import org.jetbrains.annotations.NotNull;
 
 public final class PermissionChecker {
 
@@ -13,7 +14,7 @@ public final class PermissionChecker {
             Permission.MESSAGE_SEND);
     }
 
-    public static void requirePermission(IPermissionContainer container, Permission... permissions)
+    public static void requirePermission(@NotNull IPermissionContainer container, @NotNull Permission... permissions)
     throws BotErrorException {
         Member member = container.getGuild().getSelfMember();
         for (Permission permission : permissions) {

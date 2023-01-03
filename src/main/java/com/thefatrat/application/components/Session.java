@@ -18,6 +18,7 @@ import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.requests.RestAction;
 import net.dv8tion.jda.internal.utils.PermissionUtil;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
@@ -234,7 +235,7 @@ public class Session extends Component {
         return sessions.containsKey(session);
     }
 
-    private String[] executeOnChannels(String session, List<RestAction<PermissionOverride>> actions) {
+    private String[] executeOnChannels(String session, @NotNull List<RestAction<PermissionOverride>> actions) {
         if (actions.isEmpty()) {
             sessions.remove(session);
             removeSessionFromDatabase(session);

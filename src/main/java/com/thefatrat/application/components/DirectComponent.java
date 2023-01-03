@@ -15,6 +15,7 @@ import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -184,7 +185,7 @@ public abstract class DirectComponent extends Component implements RunnableCompo
         );
     }
 
-    private void blacklist(Member member, boolean add, String msg, Reply reply) {
+    private void blacklist(@NotNull Member member, boolean add, String msg, Reply reply) {
         User user = member.getUser();
         String userId = member.getId();
 
@@ -207,7 +208,8 @@ public abstract class DirectComponent extends Component implements RunnableCompo
         reply.ok("%s %s the blacklist", user.getAsMention(), msg);
     }
 
-    private <T, V> List<T> fillAbsent(Collection<T> expected, Collection<V> actual,
+    @NotNull
+    private <T, V> List<T> fillAbsent(Collection<T> expected, @NotNull Collection<V> actual,
         Function<V, T> keygen, Function<V, T> valgen) {
         Map<T, T> found = new HashMap<>();
         for (V v : actual) {

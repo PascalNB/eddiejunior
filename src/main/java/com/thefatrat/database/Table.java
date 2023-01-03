@@ -1,5 +1,9 @@
 package com.thefatrat.database;
 
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -23,7 +27,7 @@ public class Table {
      * @param attributes the names of the attributes
      * @param tuples     the tuples with values
      */
-    public Table(String[] attributes, List<String[]> tuples) {
+    public Table(@NotNull String[] attributes, List<String[]> tuples) {
         this.attributes = attributes;
         this.tuples = new ArrayList<>();
         index = new HashMap<>();
@@ -155,6 +159,7 @@ public class Table {
             this.cells = cells;
         }
 
+        @Nullable
         @Override
         public String get(String attribute) {
             int i = indexOf(attribute);
@@ -166,6 +171,8 @@ public class Table {
             return cells[i];
         }
 
+        @NotNull
+        @Contract(pure = true)
         @Override
         public String toString() {
             return Arrays.toString(cells);

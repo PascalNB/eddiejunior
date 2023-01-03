@@ -21,6 +21,8 @@ import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.requests.RestAction;
 import net.dv8tion.jda.internal.requests.CompletedRestAction;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.CheckReturnValue;
@@ -33,6 +35,8 @@ public class Server {
     private final HandlerCollection<Member> handlerCollection = new HandlerCollection<>();
     private final Map<String, Component> components = new HashMap<>();
 
+    @NotNull
+    @Contract(" -> new")
     public static Server dummy() {
         return new Server();
     }
@@ -102,17 +106,18 @@ public class Server {
     }
 
     @Nullable
-    public Component getComponent(String componentName) {
+    public Component getComponent(@NotNull String componentName) {
         return components.get(componentName.toLowerCase());
     }
 
     @Nullable
-    public <T extends Component> T getComponent(String componentName, Class<T> clazz) {
+    public <T extends Component> T getComponent(String componentName, @NotNull Class<T> clazz) {
         return clazz.cast(getComponent(componentName));
     }
 
+    @NotNull
     @SafeVarargs
-    public final Collection<Component> registerComponents(Class<? extends Component>... components) {
+    public final Collection<Component> registerComponents(@NotNull Class<? extends Component>... components) {
         try {
             for (Class<? extends Component> component : components) {
                 Component instance = component.getDeclaredConstructor(Server.class).newInstance(this);
