@@ -1,6 +1,8 @@
 package com.thefatrat.application.entities;
 
 import com.thefatrat.application.events.CommandEvent;
+import com.thefatrat.application.reply.EphemeralReply;
+import com.thefatrat.application.reply.ModalReply;
 import com.thefatrat.application.reply.Reply;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
@@ -15,7 +17,7 @@ public class Command {
 
     private final String name;
     private final String description;
-    private BiConsumer<CommandEvent, Reply> action = (__, ___) -> {};
+    private BiConsumer<CommandEvent, ?> action = (__, ___) -> {};
     private final List<OptionData> options = new ArrayList<>();
     private final List<Command> subcommands = new ArrayList<>();
     private final List<Permission> permissions = new ArrayList<>();
@@ -31,7 +33,7 @@ public class Command {
         return this;
     }
 
-    public Command setAction(BiConsumer<CommandEvent, Reply> action) {
+    public <T extends Reply & EphemeralReply & ModalReply> Command setAction(BiConsumer<CommandEvent, T> action) {
         this.action = action;
         return this;
     }
@@ -79,8 +81,9 @@ public class Command {
         return result;
     }
 
-    public BiConsumer<CommandEvent, Reply> getAction() {
-        return action;
+    @SuppressWarnings("unchecked")
+    public <T extends Reply & EphemeralReply & ModalReply> BiConsumer<CommandEvent, T> getAction() {
+        return (BiConsumer<CommandEvent, T>) action;
     }
 
     public List<Permission> getPermissions() {

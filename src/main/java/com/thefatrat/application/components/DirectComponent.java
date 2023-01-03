@@ -79,7 +79,7 @@ public abstract class DirectComponent extends Component implements RunnableCompo
 
                         setDestination(newDestination.getId());
 
-                        reply.accept(Icon.SETTING, "Destination set to %s `(%s)`%n",
+                        reply.send(Icon.SETTING, "Destination set to %s `(%s)`%n",
                             newDestination.getAsMention(), newDestination.getId()
                         );
                     }
@@ -108,7 +108,7 @@ public abstract class DirectComponent extends Component implements RunnableCompo
 
                     setDestination(newDestination.getId());
 
-                    reply.accept(Icon.SETTING, "Destination set to %s `(%s)`%n",
+                    reply.send(Icon.SETTING, "Destination set to %s `(%s)`%n",
                         newDestination.getAsMention(), newDestination.getId());
                 }),
             new Command("blacklist", "manages the blacklist")
@@ -142,7 +142,7 @@ public abstract class DirectComponent extends Component implements RunnableCompo
                             .onSuccess(list -> {
                                 String[] strings = fillAbsent(blacklist, list, ISnowflake::getId,
                                     IMentionable::getAsMention).toArray(String[]::new);
-                                reply.accept(new EmbedBuilder()
+                                reply.send(new EmbedBuilder()
                                     .setColor(Colors.TRANSPARENT)
                                     .setTitle(getTitle() + " blacklist")
                                     .setDescription(String.join("\n", strings))

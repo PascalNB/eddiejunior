@@ -32,9 +32,9 @@ public class Manager extends Component {
                         String componentString = command.getArgs().get("component").getAsString();
                         Component component = getComponentSafe(componentString);
 
-                        reply.accept(component.getHelp());
+                        reply.send(component.getHelp());
                     } else {
-                        reply.accept(getHelp());
+                        reply.send(getHelp());
                     }
                 }),
 
@@ -42,7 +42,7 @@ public class Manager extends Component {
                 .setAction((command, reply) -> {
                     PermissionChecker.requireSend(command.getChannel().getPermissionContainer());
 
-                    reply.accept(new EmbedBuilder()
+                    reply.send(new EmbedBuilder()
                             .setColor(Colors.TRANSPARENT)
                             .addField("WebSocket", Bot.getInstance().getJDA().getGatewayPing() + " ms", true)
                             .build(),
@@ -78,7 +78,7 @@ public class Manager extends Component {
 
                     component.getDatabaseManager().toggleComponent(true);
                     getServer().toggleComponent(component, true).queue();
-                    reply.accept(Icon.ENABLE, "Component `%s` enabled", componentString);
+                    reply.send(Icon.ENABLE, "Component `%s` enabled", componentString);
                 }),
 
             new Command("disable", "disable a specific component by name")
@@ -98,7 +98,7 @@ public class Manager extends Component {
 
                     component.getDatabaseManager().toggleComponent(false);
                     getServer().toggleComponent(component, false).queue();
-                    reply.accept(Icon.DISABLE, "Component `%s` disabled", componentString);
+                    reply.send(Icon.DISABLE, "Component `%s` disabled", componentString);
                 }),
 
             new Command("components", "shows a list of all the components")
@@ -129,7 +129,7 @@ public class Manager extends Component {
 
                         embed.addField(component.getTitle(), builder.toString(), true);
                     }
-                    reply.accept(embed.build());
+                    reply.send(embed.build());
                 }),
 
             new Command("status", "shows the current status of the bot")
@@ -151,7 +151,7 @@ public class Manager extends Component {
                         .setDescription(component.getStatus())
                         .build();
 
-                    reply.accept(embed);
+                    reply.send(embed);
                 })
         );
     }

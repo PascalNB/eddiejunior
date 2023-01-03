@@ -5,8 +5,9 @@ import com.thefatrat.application.builders.HelpBuilder;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.entities.Interaction;
 import com.thefatrat.application.events.CommandEvent;
-import com.thefatrat.application.events.MessageInteractionEvent;
 import com.thefatrat.application.handlers.MapHandler;
+import com.thefatrat.application.reply.EphemeralReply;
+import com.thefatrat.application.reply.ModalReply;
 import com.thefatrat.application.reply.Reply;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
@@ -28,7 +29,7 @@ public abstract class Component {
     private final DatabaseManager databaseManager;
     private final List<Command> commands = new ArrayList<>();
     private final List<Interaction> interactions = new ArrayList<>();
-    private final MapHandler<CommandEvent, Reply> subHandler = new MapHandler<>();
+    private final MapHandler<CommandEvent, ?> subHandler = new MapHandler<>();
     private MessageEmbed help = null;
     private boolean isComponentCommand = false;
 
@@ -104,20 +105,17 @@ public abstract class Component {
      * Will register all the commands and interactions to the server.
      */
     public final void register() {
-        MapHandler<CommandEvent, Reply> handler = getServer().getCommandHandler();
 
         for (Command command : commands) {
-            handler.addListener(command.getName(), command.getAction());
+            getServer().getCommandHandler().addListener(command.getName(), command.getAction());
 
             for (Command sub : command.getSubcommands()) {
-                subHandler.addListener(sub.getName(), sub.getAction());
+                getSubCommandHandler().addListener(sub.getName(), sub.getAction());
             }
         }
 
-        MapHandler<MessageInteractionEvent, Reply> messageInteractionHandler = getServer().getInteractionHandler();
-
         for (Interaction interaction : interactions) {
-            messageInteractionHandler.addListener(interaction.getName(), interaction.getAction());
+            getServer().getInteractionHandler().addListener(interaction.getName(), interaction.getAction());
         }
 
         help = new HelpBuilder(getTitle(), getCommands()).build(Colors.TRANSPARENT);
@@ -148,8 +146,9 @@ public abstract class Component {
     /**
      * @return the component's subcommand handler
      */
-    protected MapHandler<CommandEvent, Reply> getSubCommandHandler() {
-        return subHandler;
+    @SuppressWarnings("unchecked")
+    protected <T extends Reply & EphemeralReply & ModalReply> MapHandler<CommandEvent, T> getSubCommandHandler() {
+        return (MapHandler<CommandEvent, T>) subHandler;
     }
 
     /**
@@ -188,7 +187,7 @@ public abstract class Component {
         for (Command c : commands) {
             if (Objects.equals(c.getName(), getName())) {
                 for (Command s : subcommands) {
-                    subHandler.addListener(s.getName(), s.getAction());
+                    getSubCommandHandler().addListener(s.getName(), s.getAction());
                     c.addSubcommand(s);
                 }
                 break;

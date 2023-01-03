@@ -8,7 +8,9 @@ import com.thefatrat.application.entities.Interaction;
 import com.thefatrat.application.events.*;
 import com.thefatrat.application.handlers.MapHandler;
 import com.thefatrat.application.handlers.SetHandler;
-import com.thefatrat.application.reply.ComponentReply;
+import com.thefatrat.application.reply.EditReply;
+import com.thefatrat.application.reply.EphemeralReply;
+import com.thefatrat.application.reply.ModalReply;
 import com.thefatrat.application.reply.Reply;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -27,12 +29,12 @@ import java.util.*;
 public class Server {
 
     private final String id;
-    private final MapHandler<CommandEvent, Reply> commandHandler = new MapHandler<>();
-    private final MapHandler<MessageInteractionEvent, Reply> messageInteractionHandler = new MapHandler<>();
-    private final MapHandler<Message, Reply> directHandler = new MapHandler<>();
+    private final MapHandler<CommandEvent, ?> commandHandler = new MapHandler<>();
+    private final MapHandler<MessageInteractionEvent, ?> messageInteractionHandler = new MapHandler<>();
+    private final MapHandler<Message, ?> directHandler = new MapHandler<>();
     private final SetHandler<ArchiveEvent, Void> archiveHandler = new SetHandler<>();
-    private final SetHandler<ButtonEvent<Member>, ComponentReply> buttonHandler = new SetHandler<>();
-    private final MapHandler<ModalEvent, Reply> modalHandler = new MapHandler<>();
+    private final SetHandler<ButtonEvent<Member>, ?> buttonHandler = new SetHandler<>();
+    private final MapHandler<ModalEvent, ?> modalHandler = new MapHandler<>();
     private final SetHandler<EventEvent, Void> eventHandler = new SetHandler<>();
     private final Map<String, Component> components = new HashMap<>();
 
@@ -54,10 +56,6 @@ public class Server {
 
     public String getId() {
         return id;
-    }
-
-    public MapHandler<Message, Reply> getDirectHandler() {
-        return directHandler;
     }
 
     public List<Component> getComponents() {
@@ -151,24 +149,34 @@ public class Server {
         return set;
     }
 
-    public MapHandler<CommandEvent, Reply> getCommandHandler() {
-        return commandHandler;
+    @SuppressWarnings("unchecked")
+    public <T extends Reply> MapHandler<Message, T> getDirectHandler() {
+        return (MapHandler<Message, T>) directHandler;
     }
 
-    public MapHandler<MessageInteractionEvent, Reply> getInteractionHandler() {
-        return messageInteractionHandler;
+    @SuppressWarnings("unchecked")
+    public <T extends Reply & EphemeralReply & ModalReply> MapHandler<CommandEvent, T> getCommandHandler() {
+        return (MapHandler<CommandEvent, T>) commandHandler;
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T extends Reply & EphemeralReply & ModalReply> MapHandler<MessageInteractionEvent, T> getInteractionHandler() {
+        return (MapHandler<MessageInteractionEvent, T>) messageInteractionHandler;
     }
 
     public SetHandler<ArchiveEvent, Void> getArchiveHandler() {
         return archiveHandler;
     }
 
-    public SetHandler<ButtonEvent<Member>, ComponentReply> getButtonHandler() {
-        return buttonHandler;
+    @SuppressWarnings("unchecked")
+    public <T extends Reply & EphemeralReply & EditReply & ModalReply>
+    SetHandler<ButtonEvent<Member>, T> getButtonHandler() {
+        return (SetHandler<ButtonEvent<Member>, T>) buttonHandler;
     }
 
-    public MapHandler<ModalEvent, Reply> getModalHandler() {
-        return modalHandler;
+    @SuppressWarnings("unchecked")
+    public <T extends Reply & EphemeralReply> MapHandler<ModalEvent, T> getModalHandler() {
+        return (MapHandler<ModalEvent, T>) modalHandler;
     }
 
     public SetHandler<EventEvent, Void> getEventHandler() {

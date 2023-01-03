@@ -71,7 +71,8 @@ public class MessageComponent extends Component {
                         .onErrorMap(e -> null)
                         .queue(m -> {
                             if (m == null) {
-                                reply.hide().except(new BotErrorException("Couldn't edit message"));
+                                reply.hide();
+                                reply.send(new BotErrorException("Couldn't edit message"));
                             } else {
                                 reply.ok("Message was edited");
                             }
@@ -87,8 +88,8 @@ public class MessageComponent extends Component {
                     if (!message.getAuthor().getId().equals(getServer().getGuild().getSelfMember().getId())) {
                         throw new BotErrorException("Message was not sent by me");
                     }
-
-                    message.delete().queue(success -> reply.hide().ok("Removed message"));
+                    reply.hide();
+                    message.delete().queue(success -> reply.ok("Removed message"));
                 })
         );
 

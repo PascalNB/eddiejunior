@@ -174,7 +174,7 @@ public class Event extends Component {
                     }
 
                     String joined = String.join("\n\n", array);
-                    reply.accept(new EmbedBuilder()
+                    reply.send(new EmbedBuilder()
                         .setColor(Colors.TRANSPARENT)
                         .setTitle("List of links")
                         .setDescription(joined)

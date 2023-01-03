@@ -178,17 +178,17 @@ public class Bot extends ListenerAdapter {
             return;
         }
         if (!event.isFromGuild()) {
-            ComponentReply reply = new ComponentReply(event);
+            ComponentReply<ButtonInteractionEvent> reply = new ComponentReply<>(event);
 
             try {
                 ButtonEvent<User> bE = new ButtonEvent<>(event.getUser(), event.getComponentId(), event.getMessage());
                 direct.getButtonHandler().handle(event.getComponentId(), bE, reply);
 
             } catch (BotException e) {
-                reply.getEditor().hide().except(e);
+                reply.edit(e);
             }
         } else {
-            ComponentReply reply = new ComponentReply(event);
+            ComponentReply<ButtonInteractionEvent> reply = new ComponentReply<>(event);
 
             try {
                 Server server = getServer(Objects.requireNonNull(event.getGuild()).getId());
@@ -199,7 +199,8 @@ public class Bot extends ListenerAdapter {
 
                 server.getButtonHandler().handle(new ButtonEvent<>(member, buttonId, message), reply);
             } catch (BotException e) {
-                reply.getSender().hide().except(e);
+                reply.hide();
+                reply.send(e);
             }
         }
     }
@@ -210,7 +211,7 @@ public class Bot extends ListenerAdapter {
             return;
         }
         if (!event.isFromGuild()) {
-            ComponentReply reply = new ComponentReply(event);
+            ComponentReply<StringSelectInteractionEvent> reply = new ComponentReply<>(event);
 
             try {
                 StringSelectEvent selectEvent = new StringSelectEvent(event.getUser(), event.getMessage(),
@@ -218,7 +219,8 @@ public class Bot extends ListenerAdapter {
                 direct.getStringSelectHandler().handle(event.getComponentId(), selectEvent, reply);
 
             } catch (BotException e) {
-                reply.getEditor().hide().except(e);
+                reply.hide();
+                reply.send(e);
             }
         }
     }
@@ -232,14 +234,15 @@ public class Bot extends ListenerAdapter {
 
         Message message = event.getInteraction().getTarget();
         Guild guild = Objects.requireNonNull(event.getGuild());
-        Reply reply = new InteractionReply<>(event);
+        InteractionReply<MessageContextInteractionEvent> reply = new InteractionReply<>(event);
 
         try {
             String interaction = event.getName();
             servers.get(guild.getId()).getInteractionHandler().handle(interaction,
                 new MessageInteractionEvent(message, interaction), reply);
         } catch (BotException e) {
-            reply.hide().except(e);
+            reply.hide();
+            reply.send(e);
         }
     }
 
@@ -257,7 +260,7 @@ public class Bot extends ListenerAdapter {
             options.put(option.getName(), option);
         }
 
-        Reply reply = new InteractionReply<>(event);
+        InteractionReply<SlashCommandInteractionEvent> reply = new InteractionReply<>(event);
 
         CommandEvent commandEvent = new CommandEvent(event.getName(), event.getSubcommandName(),
             options, guild, event.getGuildChannel(), Objects.requireNonNull(event.getMember()));
@@ -265,7 +268,8 @@ public class Bot extends ListenerAdapter {
         try {
             servers.get(guild.getId()).getCommandHandler().handle(event.getName(), commandEvent, reply);
         } catch (BotException e) {
-            reply.hide().except(e);
+            reply.hide();
+            reply.send(e);
         }
     }
 
@@ -283,12 +287,13 @@ public class Bot extends ListenerAdapter {
         }
 
         ModalEvent modalEvent = new ModalEvent(event.getMember(), event.getModalId(), map);
-        Reply reply = new GenericReply(event);
+        GenericReply<ModalInteractionEvent> reply = new GenericReply<>(event);
 
         try {
             servers.get(guild.getId()).getModalHandler().handle(event.getModalId(), modalEvent, reply);
         } catch (BotException e) {
-            reply.hide().except(e);
+            reply.hide();
+            reply.send(e);
         }
     }
 
@@ -320,7 +325,7 @@ public class Bot extends ListenerAdapter {
         try {
             direct.receiveMessage(message, reply);
         } catch (BotException e) {
-            reply.hide().except(e);
+            reply.send(e);
         }
     }
 

@@ -6,7 +6,8 @@ import com.thefatrat.application.events.StringSelectEvent;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.handlers.MapHandler;
-import com.thefatrat.application.reply.ComponentReply;
+import com.thefatrat.application.reply.EditReply;
+import com.thefatrat.application.reply.EphemeralReply;
 import com.thefatrat.application.reply.Reply;
 import com.thefatrat.application.util.Colors;
 import com.thefatrat.application.util.Icon;
@@ -20,6 +21,7 @@ import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.interactions.components.selections.StringSelectMenu;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
+import net.dv8tion.jda.api.utils.messages.MessageEditData;
 
 import javax.annotation.CheckReturnValue;
 import java.util.HashMap;
@@ -30,11 +32,11 @@ import java.util.Set;
 public class Direct {
 
     private final Map<String, Message> cache = new HashMap<>();
-    private final MapHandler<StringSelectEvent, ComponentReply> stringSelectHandler = new MapHandler<>();
-    private final MapHandler<ButtonEvent<User>, ComponentReply> buttonHandler = new MapHandler<>();
+    private final MapHandler<StringSelectEvent, ?> stringSelectHandler = new MapHandler<>();
+    private final MapHandler<ButtonEvent<User>, ?> buttonHandler = new MapHandler<>();
 
     public Direct() {
-        stringSelectHandler.addListener("component", (event, reply) -> {
+        getStringSelectHandler().addListener("component", (event, reply) -> {
             String[] split = event.getOption().split("-");
             String serverId = split[0];
             String component = split[1];
@@ -52,27 +54,29 @@ public class Direct {
                 throw new BotErrorException("Could not send to the given service, try again");
             }
 
-            handler.handle(component, userMessage, reply.getEditor());
+            handler.handle(component, userMessage, reply);
         });
-        stringSelectHandler.addListener("server", (event, reply) ->
-            reply.getEditor().accept(getComponentMenu(event.getUser().getId(), event.getOption()))
+        getStringSelectHandler().addListener("server", (event, reply) ->
+            reply.edit(MessageEditData.fromCreateData(getComponentMenu(event.getUser().getId(), event.getOption())))
         );
 
-        buttonHandler.addListener("x", (event, reply) -> {
+        getButtonHandler().addListener("x", (event, reply) -> {
             cache.remove(event.getUser().getId());
-            reply.getEditor().accept(Icon.STOP, "Successfully cancelled");
+            reply.edit(Icon.STOP, "Successfully cancelled");
         });
     }
 
-    public MapHandler<StringSelectEvent, ComponentReply> getStringSelectHandler() {
-        return stringSelectHandler;
+    @SuppressWarnings("unchecked")
+    public <T extends Reply & EphemeralReply & EditReply> MapHandler<StringSelectEvent, T> getStringSelectHandler() {
+        return (MapHandler<StringSelectEvent, T>) stringSelectHandler;
     }
 
-    public MapHandler<ButtonEvent<User>, ComponentReply> getButtonHandler() {
-        return buttonHandler;
+    @SuppressWarnings("unchecked")
+    public <T extends Reply & EphemeralReply & EditReply> MapHandler<ButtonEvent<User>, T> getButtonHandler() {
+        return (MapHandler<ButtonEvent<User>, T>) buttonHandler;
     }
 
-    public void receiveMessage(Message message, Reply reply) {
+    public <T extends Reply> void receiveMessage(Message message, T reply) {
         String userId = message.getAuthor().getId();
         message.getChannel().sendTyping().queue();
         List<Guild> mutualGuilds = Bot.getInstance().retrieveMutualGuilds(message.getAuthor()).complete();
@@ -91,7 +95,7 @@ public class Direct {
             data = getServerMenu(mutualGuilds);
         }
 
-        reply.accept(data);
+        reply.send(data);
     }
 
     @CheckReturnValue

@@ -99,7 +99,7 @@ public class ModMail extends DirectComponent {
                     OptionMapping channelObject = command.getArgs().get("channel");
 
                     if (channelObject == null) {
-                        reply.accept(builder.build());
+                        reply.send(builder.build());
                         return;
                     }
 
@@ -229,7 +229,7 @@ public class ModMail extends DirectComponent {
 
                 PermissionChecker.requirePermission(thread.getParentChannel(), Permission.MANAGE_THREADS);
 
-                reply.getSender().ok(callback ->
+                reply.ok(callback ->
                         thread.getManager().setLocked(true).queue(success ->
                             thread.getManager().setArchived(true).queue()
                         ),
@@ -268,7 +268,7 @@ public class ModMail extends DirectComponent {
                     .addActionRow(message)
                     .build();
 
-                reply.getSender().accept(modal);
+                reply.sendModal(modal);
             }
         });
         getServer().getModalHandler().addListener("modmail", (event, reply) -> {
@@ -384,7 +384,7 @@ public class ModMail extends DirectComponent {
                 thread.sendMessage(builder.build()).queue()
             );
 
-            reply.accept(new MessageCreateBuilder()
+            reply.send(new MessageCreateBuilder()
                 .addEmbeds(new EmbedBuilder()
                     .setColor(Colors.GREEN)
                     .setDescription(Icon.OK + " Message successfully submitted")
@@ -411,7 +411,7 @@ public class ModMail extends DirectComponent {
 
     public void stop(Reply reply) {
         super.stop(reply);
-        reply.accept(Icon.STOP, "Mod mail service stopped");
+        reply.send(Icon.STOP, "Mod mail service stopped");
     }
 
     public void start(Reply reply) {

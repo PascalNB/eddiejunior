@@ -1,34 +1,44 @@
 package com.thefatrat.application.reply;
 
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.interactions.callbacks.IMessageEditCallback;
 import net.dv8tion.jda.api.interactions.callbacks.IModalCallback;
 import net.dv8tion.jda.api.interactions.callbacks.IReplyCallback;
+import net.dv8tion.jda.api.interactions.modals.Modal;
+import net.dv8tion.jda.api.utils.messages.MessageCreateData;
+import net.dv8tion.jda.api.utils.messages.MessageEditData;
 
-public class ComponentReply {
+import java.util.function.Consumer;
 
-    private final Reply sender;
-    private final Reply editor;
+public class ComponentReply<T extends IModalCallback & IReplyCallback & IMessageEditCallback>
+    implements Reply, EditReply, ModalReply, EphemeralReply {
 
-    public <T extends IModalCallback & IReplyCallback & IMessageEditCallback> ComponentReply(T event) {
-        sender = new InteractionReply<>(event);
-        editor = new EditReply(event);
+    private final T event;
+    private final InteractionReply<T> reply;
+
+    public ComponentReply(T event) {
+        this.event = event;
+        this.reply = new InteractionReply<>(event);
     }
 
-    private ComponentReply() {
-        sender = Reply.EMPTY;
-        editor = Reply.EMPTY;
+    @Override
+    public void edit(MessageEditData data, Consumer<Message> callback) {
+        event.editMessage(data).queue(hook -> hook.retrieveOriginal().queue(callback));
     }
 
-    public Reply getSender() {
-        return sender;
+    @Override
+    public void sendModal(Modal modal) {
+        this.reply.sendModal(modal);
     }
 
-    public Reply getEditor() {
-        return editor;
+    @Override
+    public void send(MessageCreateData data, Consumer<Message> callback) {
+        this.reply.send(data, callback);
     }
 
-    public static ComponentReply empty() {
-        return new ComponentReply();
+    @Override
+    public void hide() {
+        this.reply.hide();
     }
 
 }

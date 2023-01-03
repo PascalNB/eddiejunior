@@ -61,13 +61,14 @@ public class Roles extends Component {
 
             Member member = event.getUser();
 
+            reply.hide();
             if ("1".equals(split[1])) {
                 getServer().getGuild().addRoleToMember(member, role).queue(success ->
-                    reply.getSender().hide().ok("You received role " + role.getAsMention())
+                    reply.ok("You received role " + role.getAsMention())
                 );
             } else {
                 getServer().getGuild().removeRoleFromMember(member, role).queue(success ->
-                    reply.getSender().hide().ok("Role " + role.getAsMention() + " has been removed")
+                    reply.ok("Role " + role.getAsMention() + " has been removed")
                 );
             }
         });
@@ -194,7 +195,7 @@ public class Roles extends Component {
                     OptionMapping channelObject = command.getArgs().get("channel");
 
                     if (channelObject == null) {
-                        reply.accept(builder.build());
+                        reply.send(builder.build());
                         return;
                     }
 

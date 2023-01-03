@@ -75,7 +75,7 @@ public class Feedback extends DirectComponent {
                     Submission submission = submissions.get(0);
                     submissions.remove(0);
 
-                    reply.accept(Icon.WIN, "%s has won!", submission.user().getAsMention());
+                    reply.send(Icon.WIN, "%s has won!", submission.user().getAsMention());
                     destination.sendMessage(submission.submission()).queue();
                 }),
 
@@ -84,7 +84,7 @@ public class Feedback extends DirectComponent {
                 .setAction((command, reply) -> {
                     if (!command.getArgs().containsKey("user")) {
                         users.clear();
-                        reply.accept(Icon.RESET, "Feedback session reset, users can submit again");
+                        reply.send(Icon.RESET, "Feedback session reset, users can submit again");
                         return;
                     }
 
@@ -96,7 +96,7 @@ public class Feedback extends DirectComponent {
 
                     users.remove(member.getId());
 
-                    reply.accept(Icon.RESET, "Feedback session reset for %s, they can submit again",
+                    reply.send(Icon.RESET, "Feedback session reset for %s, they can submit again",
                         member.getAsMention());
                 }),
 
@@ -129,7 +129,7 @@ public class Feedback extends DirectComponent {
                         }
                         Arrays.sort(sorted);
 
-                        reply.accept(new EmbedBuilder()
+                        reply.send(new EmbedBuilder()
                             .setColor(Colors.TRANSPARENT)
                             .setTitle(getTitle() + " whitelist")
                             .setDescription(String.join("\n", sorted))
@@ -220,7 +220,7 @@ public class Feedback extends DirectComponent {
                         }
                         builder.deleteCharAt(builder.length() - 1);
 
-                        reply.accept(new EmbedBuilder()
+                        reply.send(new EmbedBuilder()
                             .setColor(Colors.TRANSPARENT)
                             .setTitle(getTitle() + " filetypes")
                             .setDescription(builder.toString())
@@ -296,7 +296,8 @@ public class Feedback extends DirectComponent {
                     builder.setEmbeds(embed.build());
                     builder.setComponents();
                     event.getMessage().editMessage(builder.build()).queue();
-                    reply.hide().ok("Submission marked as read");
+                    reply.hide();
+                    reply.ok("Submission marked as read");
                 }),
 
             new Interaction("mark unread")
@@ -311,7 +312,8 @@ public class Feedback extends DirectComponent {
                         Button.secondary("feedback-mark_read", "Mark as read").withEmoji(Emoji.fromUnicode("✅"))
                     ));
                     event.getMessage().editMessage(builder.build()).queue();
-                    reply.hide().ok("Submission marked as unread");
+                    reply.hide();
+                    reply.ok("Submission marked as unread");
                 })
         );
 
@@ -333,7 +335,7 @@ public class Feedback extends DirectComponent {
                 embed.setColor(Colors.TRANSPARENT);
                 builder.setEmbeds(embed.build());
                 builder.setComponents();
-                reply.getEditor().accept(MessageCreateData.fromEditData(builder.build()));
+                reply.edit(builder.build());
             }
         });
     }
@@ -457,7 +459,7 @@ public class Feedback extends DirectComponent {
         super.stop(reply);
         submissions.clear();
         submissionCount = 0;
-        reply.accept(Icon.STOP, "Feedback session stopped");
+        reply.send(Icon.STOP, "Feedback session stopped");
     }
 
     private record Submission(User user, MessageCreateData submission) {

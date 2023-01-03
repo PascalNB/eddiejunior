@@ -1,40 +1,40 @@
 package com.thefatrat.application.reply;
 
+import com.thefatrat.application.exceptions.BotException;
+import com.thefatrat.application.util.Icon;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.interactions.callbacks.IMessageEditCallback;
-import net.dv8tion.jda.api.interactions.modals.Modal;
-import net.dv8tion.jda.api.utils.messages.MessageCreateData;
+import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.utils.messages.MessageEditData;
 
 import java.util.function.Consumer;
 
-public class EditReply implements Reply {
+public interface EditReply {
 
-    private final IMessageEditCallback event;
+    void edit(MessageEditData data, Consumer<Message> callback);
 
-    public EditReply(IMessageEditCallback event) {
-        this.event = event;
+    default void edit(MessageEditData data) {
+        edit(data, m -> {});
     }
 
-    @Override
-    public void accept(MessageCreateData data, Consumer<Message> callback) {
-        event.editMessage(MessageEditData.fromCreateData(data))
-            .queue(hook -> hook.retrieveOriginal().queue(callback));
+    default void edit(MessageEmbed embed) {
+        edit(MessageEditData.fromEmbeds(embed));
     }
 
-    @Override
-    public void accept(Modal modal) {
-        throw new UnsupportedOperationException("Cannot edit a message with a modal");
+    default void edit(Icon icon, String content, Object... variables) {
+        edit(new EmbedBuilder()
+            .setColor(icon.getColor())
+            .setDescription(icon + " " + String.format(content, variables))
+            .build()
+        );
     }
 
-    @Override
-    public Reply defer(boolean ephemeral) {
-        return this;
-    }
-
-    @Override
-    public Reply hide() {
-        return this;
+    default void edit(BotException e) {
+        edit(new EmbedBuilder()
+            .setColor(e.getColor())
+            .setDescription(e.getMessage())
+            .build()
+        );
     }
 
 }

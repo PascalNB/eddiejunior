@@ -62,7 +62,7 @@ public class Session extends Component {
                     }
                     String joined = String.join("\n", list.toArray(new String[0]));
 
-                    reply.accept(new EmbedBuilder()
+                    reply.send(new EmbedBuilder()
                         .setTitle("Sessions")
                         .setColor(Colors.TRANSPARENT)
                         .setDescription(joined)
@@ -151,7 +151,7 @@ public class Session extends Component {
                     String[] array = channels.toArray(String[]::new);
                     String joined = String.join("\n", array);
 
-                    reply.accept(new EmbedBuilder()
+                    reply.send(new EmbedBuilder()
                         .setColor(Colors.TRANSPARENT)
                         .setTitle("Session " + string)
                         .setDescription(joined)
@@ -226,7 +226,7 @@ public class Session extends Component {
         String[] array = executeOnChannels(session, actions);
         String joined = String.join(", ", array);
 
-        reply.accept(Icon.STOP, "Session `%s` stopped.%n" +
+        reply.send(Icon.STOP, "Session `%s` stopped.%n" +
             "The following channels have been made private:%n%s", session, joined);
     }
 
