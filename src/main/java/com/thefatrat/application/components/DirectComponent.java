@@ -227,7 +227,7 @@ public abstract class DirectComponent extends Component implements RunnableCompo
     protected abstract void handleDirect(Message message, Reply reply);
 
     public void stop(Reply reply) {
-        getServer().getDirectHandler().removeListener(getName());
+        getServer().getDirectMessageHandler().removeListener(getName());
         this.running = false;
         if (autoRun) {
             getDatabaseManager().setSetting("running", "false");
@@ -236,7 +236,7 @@ public abstract class DirectComponent extends Component implements RunnableCompo
 
     public void start(Reply reply) {
         this.running = true;
-        getServer().getDirectHandler().addListener(getName(), receiver);
+        getServer().getDirectMessageHandler().addListener(getName(), receiver);
         if (autoRun) {
             getDatabaseManager().setSetting("running", "true");
         }

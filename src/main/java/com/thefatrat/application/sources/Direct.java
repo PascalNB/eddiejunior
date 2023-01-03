@@ -1,6 +1,7 @@
 package com.thefatrat.application.sources;
 
 import com.thefatrat.application.Bot;
+import com.thefatrat.application.HandlerCollection;
 import com.thefatrat.application.events.ButtonEvent;
 import com.thefatrat.application.events.StringSelectEvent;
 import com.thefatrat.application.exceptions.BotErrorException;
@@ -32,8 +33,7 @@ import java.util.Set;
 public class Direct {
 
     private final Map<String, Message> cache = new HashMap<>();
-    private final MapHandler<StringSelectEvent, ?> stringSelectHandler = new MapHandler<>();
-    private final MapHandler<ButtonEvent<User>, ?> buttonHandler = new MapHandler<>();
+    private final HandlerCollection<User> handlerCollection = new HandlerCollection<>();
 
     public Direct() {
         getStringSelectHandler().addListener("component", (event, reply) -> {
@@ -48,7 +48,7 @@ public class Direct {
                 throw new BotErrorException("Something went wrong");
             }
 
-            MapHandler<Message, Reply> handler = server.getDirectHandler();
+            MapHandler<Message, Reply> handler = server.getDirectMessageHandler();
 
             if (!handler.getKeys().contains(component)) {
                 throw new BotErrorException("Could not send to the given service, try again");
@@ -66,14 +66,13 @@ public class Direct {
         });
     }
 
-    @SuppressWarnings("unchecked")
     public <T extends Reply & EphemeralReply & EditReply> MapHandler<StringSelectEvent, T> getStringSelectHandler() {
-        return (MapHandler<StringSelectEvent, T>) stringSelectHandler;
+        return handlerCollection.getStringSelectHandler();
     }
 
     @SuppressWarnings("unchecked")
     public <T extends Reply & EphemeralReply & EditReply> MapHandler<ButtonEvent<User>, T> getButtonHandler() {
-        return (MapHandler<ButtonEvent<User>, T>) buttonHandler;
+        return (MapHandler<ButtonEvent<User>, T>) handlerCollection.getButtonMapHandler();
     }
 
     public <T extends Reply> void receiveMessage(Message message, T reply) {
@@ -105,7 +104,7 @@ public class Direct {
             throw new BotErrorException("Something went wrong");
         }
 
-        Set<String> keys = server.getDirectHandler().getKeys();
+        Set<String> keys = server.getDirectMessageHandler().getKeys();
 
         if (keys.isEmpty()) {
             cache.remove(userId);
@@ -114,7 +113,7 @@ public class Direct {
 
         StringSelectMenu.Builder menu = StringSelectMenu.create("component")
             .setMaxValues(1);
-        for (String key : server.getDirectHandler().getKeys()) {
+        for (String key : server.getDirectMessageHandler().getKeys()) {
             String name = key.substring(0, 1).toUpperCase() + key.substring(1);
             menu.addOption(name, serverId + "-" + key);
         }

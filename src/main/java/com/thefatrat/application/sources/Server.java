@@ -2,6 +2,7 @@ package com.thefatrat.application.sources;
 
 import com.thefatrat.application.Bot;
 import com.thefatrat.application.CommandRegister;
+import com.thefatrat.application.HandlerCollection;
 import com.thefatrat.application.components.Component;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.entities.Interaction;
@@ -29,13 +30,7 @@ import java.util.*;
 public class Server {
 
     private final String id;
-    private final MapHandler<CommandEvent, ?> commandHandler = new MapHandler<>();
-    private final MapHandler<MessageInteractionEvent, ?> messageInteractionHandler = new MapHandler<>();
-    private final MapHandler<Message, ?> directHandler = new MapHandler<>();
-    private final SetHandler<ArchiveEvent, Void> archiveHandler = new SetHandler<>();
-    private final SetHandler<ButtonEvent<Member>, ?> buttonHandler = new SetHandler<>();
-    private final MapHandler<ModalEvent, ?> modalHandler = new MapHandler<>();
-    private final SetHandler<EventEvent, Void> eventHandler = new SetHandler<>();
+    private final HandlerCollection<Member> handlerCollection = new HandlerCollection<>();
     private final Map<String, Component> components = new HashMap<>();
 
     public static Server dummy() {
@@ -144,43 +139,38 @@ public class Server {
 
     public Set<String> getRegisteredCommands() {
         Set<String> set = new HashSet<>();
-        set.addAll(commandHandler.getKeys());
-        set.addAll(messageInteractionHandler.getKeys());
+        set.addAll(handlerCollection.getCommandHandler().getKeys());
+        set.addAll(handlerCollection.getMessageInteractionHandler().getKeys());
         return set;
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends Reply> MapHandler<Message, T> getDirectHandler() {
-        return (MapHandler<Message, T>) directHandler;
+    public <T extends Reply> MapHandler<Message, T> getDirectMessageHandler() {
+        return handlerCollection.getMessageHandler();
     }
 
-    @SuppressWarnings("unchecked")
     public <T extends Reply & EphemeralReply & ModalReply> MapHandler<CommandEvent, T> getCommandHandler() {
-        return (MapHandler<CommandEvent, T>) commandHandler;
+        return handlerCollection.getCommandHandler();
     }
 
-    @SuppressWarnings("unchecked")
     public <T extends Reply & EphemeralReply & ModalReply> MapHandler<MessageInteractionEvent, T> getInteractionHandler() {
-        return (MapHandler<MessageInteractionEvent, T>) messageInteractionHandler;
+        return handlerCollection.getMessageInteractionHandler();
     }
 
     public SetHandler<ArchiveEvent, Void> getArchiveHandler() {
-        return archiveHandler;
+        return handlerCollection.getArchiveHandler();
     }
 
-    @SuppressWarnings("unchecked")
     public <T extends Reply & EphemeralReply & EditReply & ModalReply>
     SetHandler<ButtonEvent<Member>, T> getButtonHandler() {
-        return (SetHandler<ButtonEvent<Member>, T>) buttonHandler;
+        return handlerCollection.getButtonHandler();
     }
 
-    @SuppressWarnings("unchecked")
     public <T extends Reply & EphemeralReply> MapHandler<ModalEvent, T> getModalHandler() {
-        return (MapHandler<ModalEvent, T>) modalHandler;
+        return handlerCollection.getModalHandler();
     }
 
     public SetHandler<EventEvent, Void> getEventHandler() {
-        return eventHandler;
+        return handlerCollection.getEventHandler();
     }
 
 }
