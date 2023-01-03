@@ -11,6 +11,7 @@ import com.thefatrat.application.util.PermissionChecker;
 import com.thefatrat.application.util.URLUtil;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.entities.IMentionable;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.ThreadMember;
 import net.dv8tion.jda.api.entities.User;
@@ -30,6 +31,7 @@ import net.dv8tion.jda.api.interactions.modals.Modal;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import net.dv8tion.jda.internal.utils.PermissionUtil;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -37,10 +39,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ModMail extends DirectComponent {
 
     public static final String NAME = "Modmail";
+
+    private static final Pattern MENTION_PATTERN = Pattern.compile("^.*(\\d+).*$");
 
     private final Map<String, Long> timeouts = new ConcurrentHashMap<>();
     private final Map<String, Integer> userCount = new ConcurrentHashMap<>();
@@ -50,21 +56,43 @@ public class ModMail extends DirectComponent {
     private int maxTickets;
     private int maxTicketsPerUser;
     private boolean privateThreads;
+    private IMentionable mention;
 
     public ModMail(Server server) {
         super(server, NAME, true);
 
-        timeout = getDatabaseManager().getSettingOrDefault("timeout", 0);
-        threadId = getDatabaseManager().getSettingOrDefault("threadid", 0);
-        maxTickets = getDatabaseManager().getSettingOrDefault("maxtickets", 0);
-        maxTicketsPerUser = getDatabaseManager().getSettingOrDefault("maxticketsperuser", 0);
-        privateThreads = getDatabaseManager().getSettingOrDefault("privatethreads", false);
-        if (getDestination() != null) {
-            getDestination().getThreadChannels().forEach(threadChannel -> {
-                if (!threadChannel.isArchived() && threadChannel.getName().matches("^t\\d+-.+$")) {
-                    tickets++;
+        {
+            timeout = getDatabaseManager().getSettingOrDefault("timeout", 0);
+            threadId = getDatabaseManager().getSettingOrDefault("threadid", 0);
+            maxTickets = getDatabaseManager().getSettingOrDefault("maxtickets", 0);
+            maxTicketsPerUser = getDatabaseManager().getSettingOrDefault("maxticketsperuser", 0);
+            privateThreads = getDatabaseManager().getSettingOrDefault("privatethreads", false);
+            String mentionString = getDatabaseManager().getSetting("mention");
+            if (mentionString != null) {
+                Matcher matcher = MENTION_PATTERN.matcher(mentionString);
+                if (matcher.find()) {
+                    long id = Long.parseLong(matcher.group(1));
+                    mention = new IMentionable() {
+                        @NotNull
+                        @Override
+                        public String getAsMention() {
+                            return mentionString;
+                        }
+
+                        @Override
+                        public long getIdLong() {
+                            return id;
+                        }
+                    };
                 }
-            });
+            }
+            if (getDestination() != null) {
+                getDestination().getThreadChannels().forEach(threadChannel -> {
+                    if (!threadChannel.isArchived() && threadChannel.getName().matches("^t\\d+-.+$")) {
+                        tickets++;
+                    }
+                });
+            }
         }
 
         addSubcommands(
@@ -177,7 +205,29 @@ public class ModMail extends DirectComponent {
                         }
                     }
                     reply.ok("Recheck completed, found **%d** open tickets", tickets);
-                })
+                }),
+
+            new Command("mention", "set which role the bot should mention upon a new ticket")
+                .addOption(new OptionData(OptionType.MENTIONABLE, "mention", "mention", false))
+                .setAction(((command, reply) -> {
+                    if (!command.getArgs().containsKey("mention")) {
+                        if (mention == null) {
+                            throw new BotErrorException("Please provide a mentionable target");
+                        }
+                        reply.ok("Removed mention %s", mention.getAsMention());
+                        mention = null;
+                        getDatabaseManager().removeSetting("mention");
+                        return;
+                    }
+
+                    IMentionable newMention = command.getArgs().get("mention").getAsMentionable();
+                    if (Message.MentionType.EVERYONE.getPattern().matcher(newMention.getAsMention()).matches()) {
+                        throw new BotErrorException("Cannot mention %s", newMention.getAsMention());
+                    }
+                    mention = newMention;
+                    reply.ok("Set mention to %s", mention.getAsMention());
+                    getDatabaseManager().setSetting("mention", mention.getAsMention());
+                }))
         );
 
         getServer().getArchiveHandler().addListener((event, reply) -> {
@@ -288,6 +338,9 @@ public class ModMail extends DirectComponent {
         String dest = Optional.ofNullable(getDestination())
             .map(Channel::getAsMention)
             .orElse(null);
+        String ment = Optional.ofNullable(mention)
+            .map(IMentionable::getAsMention)
+            .orElse(null);
         return String.format("""
                 Enabled: %b
                 Running: %b
@@ -297,9 +350,10 @@ public class ModMail extends DirectComponent {
                 Max tickets: %d
                 Max tickets per user: %d
                 Private tickets: %b
+                Mention: %s
                 """,
             isEnabled(), isRunning(), dest, timeout, tickets, maxTickets, maxTicketsPerUser,
-            privateThreads);
+            privateThreads, ment);
     }
 
     private synchronized void createTicket(User author, String subject, String message,
@@ -358,6 +412,10 @@ public class ModMail extends DirectComponent {
             }
 
             MessageCreateBuilder builder = new MessageCreateBuilder();
+
+            if (mention != null) {
+                builder.addContent(mention.getAsMention());
+            }
 
             EmbedBuilder userEmbed = new EmbedBuilder()
                 .setColor(Colors.TRANSPARENT)
