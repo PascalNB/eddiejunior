@@ -11,13 +11,12 @@ import com.thefatrat.application.reply.ModalReply;
 import com.thefatrat.application.reply.Reply;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
+import com.thefatrat.application.util.StringMapping;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.MessageEmbed;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
+import java.util.*;
 
 public abstract class Component {
 
@@ -40,7 +39,7 @@ public abstract class Component {
      * @param title           the component title
      * @param globalComponent whether the component should always be enabled
      */
-    public Component(Server server, String title, boolean globalComponent) {
+    public Component(@NotNull Server server, @NotNull String title, boolean globalComponent) {
         this.source = server;
         this.title = title;
         this.name = title.toLowerCase(Locale.ROOT);
@@ -134,6 +133,10 @@ public abstract class Component {
         }
     }
 
+    public Map<String, StringMapping> getSettings(String... settings) {
+        return getDatabaseManager().getAll(List.of(settings));
+    }
+
     /**
      * Returns an embed with a list of all the component's commands
      *
@@ -200,7 +203,7 @@ public abstract class Component {
      *
      * @param interactions the interactions
      */
-    protected void addInteractions(Interaction... interactions) {
+    protected void addInteractions(@NotNull Interaction... interactions) {
         for (Interaction i : interactions) {
             i.setName(getName() + " " + i.getName());
         }

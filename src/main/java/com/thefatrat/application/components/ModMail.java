@@ -5,10 +5,7 @@ import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
 import com.thefatrat.application.reply.Reply;
 import com.thefatrat.application.sources.Server;
-import com.thefatrat.application.util.Colors;
-import com.thefatrat.application.util.Icon;
-import com.thefatrat.application.util.PermissionChecker;
-import com.thefatrat.application.util.URLUtil;
+import com.thefatrat.application.util.*;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.IMentionable;
@@ -62,21 +59,23 @@ public class ModMail extends DirectComponent {
         super(server, NAME, true);
 
         {
-            timeout = getDatabaseManager().getSettingOrDefault("timeout", 0);
-            threadId = getDatabaseManager().getSettingOrDefault("threadid", 0);
-            maxTickets = getDatabaseManager().getSettingOrDefault("maxtickets", 0);
-            maxTicketsPerUser = getDatabaseManager().getSettingOrDefault("maxticketsperuser", 0);
-            privateThreads = getDatabaseManager().getSettingOrDefault("privatethreads", false);
-            String mentionString = getDatabaseManager().getSetting("mention");
-            if (mentionString != null) {
-                Matcher matcher = MENTION_PATTERN.matcher(mentionString);
+            Map<String, StringMapping> settings = getSettings("timeout", "threadid", "maxtickets", "maxticketsperuser",
+                "privatethreads", "mention");
+
+            timeout = settings.get("timeout").asOrDefault(0);
+            threadId = settings.get("threadid").asOrDefault(0);
+            maxTickets = settings.get("maxtickets").asOrDefault(0);
+            maxTicketsPerUser = settings.get("maxticketsperuser").asOrDefault(0);
+            privateThreads = settings.get("privatethreads").asOrDefault(false);
+            mention = settings.get("mention").applyIfNotNull(string -> {
+                Matcher matcher = MENTION_PATTERN.matcher(string);
                 if (matcher.find()) {
                     long id = Long.parseLong(matcher.group(1));
-                    mention = new IMentionable() {
+                    return new IMentionable() {
                         @NotNull
                         @Override
                         public String getAsMention() {
-                            return mentionString;
+                            return string;
                         }
 
                         @Override
@@ -85,7 +84,9 @@ public class ModMail extends DirectComponent {
                         }
                     };
                 }
-            }
+                return null;
+            });
+
             if (getDestination() != null) {
                 getDestination().getThreadChannels().forEach(threadChannel -> {
                     if (!threadChannel.isArchived() && threadChannel.getName().matches("^t\\d+-.+$")) {
@@ -457,7 +458,7 @@ public class ModMail extends DirectComponent {
     }
 
     @Override
-    protected synchronized void handleDirect(Message message, Reply reply) {
+    protected synchronized void handleDirect(@NotNull Message message, Reply reply) {
         String content = message.getContentRaw();
         synchronized (userCount) {
             synchronized (timeouts) {

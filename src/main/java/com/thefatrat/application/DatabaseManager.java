@@ -1,12 +1,12 @@
 package com.thefatrat.application;
 
+import com.thefatrat.application.util.StringMapping;
 import com.thefatrat.database.Query;
 import com.thefatrat.database.Tuple;
 import com.thefatrat.database.action.DatabaseAction;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 public class DatabaseManager {
@@ -36,6 +36,30 @@ public class DatabaseManager {
     public DatabaseManager(String server, String component) {
         this.server = server;
         this.component = component;
+    }
+
+    public Map<String, StringMapping> getAll(@NotNull Collection<String> settings) {
+        List<DatabaseAction<Object[]>> actions = new ArrayList<>(settings.size());
+        for (String setting : settings) {
+            actions.add(
+                DatabaseAction.of(Query.of(GET_SETTINGS, server, component, setting),
+                    table -> {
+                        if (table.isEmpty()) {
+                            return new Object[]{setting, StringMapping.of(null)};
+                        }
+                        return new Object[]{setting, StringMapping.of(table.getRow(0).get(0))};
+                    })
+            );
+        }
+        return DatabaseAction.allOf(actions)
+            .query(list -> {
+                Map<String, StringMapping> map = new HashMap<>();
+                for (Object[] pair : list) {
+                    map.put((String) pair[0], (StringMapping) pair[1]);
+                }
+                return map;
+            })
+            .join();
     }
 
     public CompletableFuture<Void> removeSetting(String setting) {
@@ -73,39 +97,11 @@ public class DatabaseManager {
                     if (defaultValue == null) {
                         return (T) string;
                     }
-                    return (T) toPrimitive(string, defaultValue.getClass());
+                    return (T) StringMapping.of(string).as(defaultValue.getClass());
                 }
             )
             .query()
             .join();
-    }
-
-    private static Object toPrimitive(String string, Class<?> clazz) {
-        if (clazz == String.class) {
-            return string;
-        }
-        if (clazz == Integer.TYPE || clazz == Integer.class) {
-            return Integer.parseInt(string);
-        }
-        if (clazz == Boolean.TYPE || clazz == Boolean.class) {
-            return Boolean.parseBoolean(string);
-        }
-        if (clazz == Double.TYPE || clazz == Double.class) {
-            return Double.parseDouble(string);
-        }
-        if (clazz == Long.TYPE || clazz == Long.class) {
-            return Long.parseLong(string);
-        }
-        if (clazz == Float.TYPE || clazz == Float.class) {
-            return Float.parseFloat(string);
-        }
-        if (clazz == Character.TYPE || clazz == Character.class) {
-            return string.charAt(0);
-        }
-        if (clazz == Short.TYPE || clazz == Short.class) {
-            return Short.parseShort(string);
-        }
-        return null;
     }
 
     public List<String> getSettings(String setting) {
