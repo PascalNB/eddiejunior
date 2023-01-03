@@ -118,8 +118,8 @@ public class ModMail extends DirectComponent {
                 .setAction((command, reply) -> {
                     long timeout = command.getArgs().get("timeout").getAsInt();
                     this.timeout = timeout;
-                    getDatabaseManager().setSetting("timeout", String.valueOf(timeout))
-                        .thenRun(() -> reply.ok("Timout set to %d seconds", timeout));
+                    reply.ok("Timout set to %d seconds", timeout);
+                    getDatabaseManager().setSetting("timeout", String.valueOf(timeout));
                 }),
 
             new Command("archive", "archives the current ticket thread")
@@ -141,8 +141,8 @@ public class ModMail extends DirectComponent {
                 .setAction((command, reply) -> {
                     int max = command.getArgs().get("max").getAsInt();
                     this.maxTicketsPerUser = max;
-                    getDatabaseManager().setSetting("maxticketsperuser", String.valueOf(max))
-                        .thenRun(() -> reply.ok("Maximum set to %d tickets", max));
+                    reply.ok("Maximum set to %d tickets", max);
+                    getDatabaseManager().setSetting("maxticketsperuser", String.valueOf(max));
                 }),
 
             new Command("maxtickets", "sets the maximum number of overall tickets")
@@ -152,8 +152,8 @@ public class ModMail extends DirectComponent {
                 .setAction((command, reply) -> {
                     int max = command.getArgs().get("max").getAsInt();
                     this.maxTickets = max;
-                    getDatabaseManager().setSetting("maxtickets", String.valueOf(max))
-                        .thenRun(() -> reply.ok("Maximum set to %d tickets", max));
+                    reply.ok("Maximum set to %d tickets", max);
+                    getDatabaseManager().setSetting("maxtickets", String.valueOf(max));
                 }),
 
             new Command("privatethreads", "determines if the created threads are private or public")
@@ -161,8 +161,8 @@ public class ModMail extends DirectComponent {
                 .setAction((command, reply) -> {
                     boolean value = command.getArgs().get("value").getAsBoolean();
                     this.privateThreads = value;
-                    getDatabaseManager().setSetting("privatethreads", String.valueOf(value))
-                        .thenRun(() -> reply.ok("Thread creation set to %s", value ? "private" : "public"));
+                    reply.ok("Thread creation set to %s", value ? "private" : "public");
+                    getDatabaseManager().setSetting("privatethreads", String.valueOf(value));
                 }),
 
             new Command("recheck", "rechecks the amount of open tickets")

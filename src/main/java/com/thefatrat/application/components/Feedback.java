@@ -75,8 +75,8 @@ public class Feedback extends DirectComponent {
                     Submission submission = submissions.get(0);
                     submissions.remove(0);
 
-                    destination.sendMessage(submission.submission()).queue(m ->
-                        reply.accept(Icon.WIN, "%s has won!", submission.user().getAsMention()));
+                    reply.accept(Icon.WIN, "%s has won!", submission.user().getAsMention());
+                    destination.sendMessage(submission.submission()).queue();
                 }),
 
             new Command("reset", "allow submissions for users again")

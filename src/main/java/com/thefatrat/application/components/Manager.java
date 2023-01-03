@@ -76,11 +76,9 @@ public class Manager extends Component {
                         throw new BotWarningException("This component is always enabled");
                     }
 
-                    component.getDatabaseManager().toggleComponent(true)
-                        .thenRun(() -> {
-                            getServer().toggleComponent(component, true).queue();
-                            reply.accept(Icon.ENABLE, "Component `%s` enabled", componentString);
-                        });
+                    component.getDatabaseManager().toggleComponent(true);
+                    getServer().toggleComponent(component, true).queue();
+                    reply.accept(Icon.ENABLE, "Component `%s` enabled", componentString);
                 }),
 
             new Command("disable", "disable a specific component by name")
