@@ -4,10 +4,7 @@ import com.thefatrat.application.components.Component;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.events.*;
 import com.thefatrat.application.exceptions.BotException;
-import com.thefatrat.application.reply.ComponentReply;
-import com.thefatrat.application.reply.GenericReply;
-import com.thefatrat.application.reply.InteractionReply;
-import com.thefatrat.application.reply.Reply;
+import com.thefatrat.application.reply.*;
 import com.thefatrat.application.sources.Direct;
 import com.thefatrat.application.sources.Server;
 import net.dv8tion.jda.api.JDA;
@@ -319,7 +316,7 @@ public class Bot extends ListenerAdapter {
         }
 
         Message message = event.getMessage();
-        Reply reply = Reply.defaultMessageReply(message);
+        Reply reply = new MessageReply(message);
 
         try {
             direct.receiveMessage(message, reply);

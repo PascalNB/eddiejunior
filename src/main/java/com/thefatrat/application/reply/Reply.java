@@ -65,10 +65,6 @@ public interface Reply {
         send(exception.getColor(), exception.getMessage());
     }
 
-    static Reply defaultMessageReply(Message message) {
-        return (data, callback) -> message.reply(data).queue(callback);
-    }
-
     Reply EMPTY = (data, callback) -> {};
 
 }
