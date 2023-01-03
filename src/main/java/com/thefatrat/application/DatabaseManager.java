@@ -1,7 +1,8 @@
 package com.thefatrat.application;
 
-import com.thefatrat.database.DatabaseAction;
+import com.thefatrat.database.Query;
 import com.thefatrat.database.Tuple;
+import com.thefatrat.database.action.DatabaseAction;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -38,22 +39,22 @@ public class DatabaseManager {
     }
 
     public CompletableFuture<Void> removeSetting(String setting) {
-        return new DatabaseAction<>(REMOVE_SETTING, server, component, setting).execute();
+        return DatabaseAction.of(REMOVE_SETTING, server, component, setting).execute();
     }
 
     public CompletableFuture<Void> removeSetting(String setting, @NotNull String value) {
-        return new DatabaseAction<>(REMOVE_SETTING_VALUE, server, component, setting, value).execute();
+        return DatabaseAction.of(REMOVE_SETTING_VALUE, server, component, setting, value).execute();
     }
 
     public CompletableFuture<Void> setSetting(String setting, @NotNull Object value) {
-        return DatabaseAction.executeAll(
-            new DatabaseAction<>(REMOVE_SETTING, server, component, setting),
-            new DatabaseAction<>(ADD_SETTING, server, component, setting, value)
-        );
+        return DatabaseAction.allOf(
+            DatabaseAction.of(REMOVE_SETTING, server, component, setting),
+            DatabaseAction.of(ADD_SETTING, server, component, setting, value)
+        ).execute();
     }
 
     public CompletableFuture<Void> addSetting(String setting, String value) {
-        return new DatabaseAction<>(ADD_SETTING, server, component, setting, value).execute();
+        return DatabaseAction.of(ADD_SETTING, server, component, setting, value).execute();
     }
 
     public String getSetting(String setting) {
@@ -62,17 +63,20 @@ public class DatabaseManager {
 
     @SuppressWarnings("unchecked")
     public <T> T getSettingOrDefault(String setting, T defaultValue) {
-        return new DatabaseAction<T>(GET_SETTINGS, server, component, setting)
-            .queue(table -> {
-                if (table.isEmpty()) {
-                    return defaultValue;
+        return DatabaseAction.of(
+                Query.of(GET_SETTINGS, server, component, setting),
+                table -> {
+                    if (table.isEmpty()) {
+                        return defaultValue;
+                    }
+                    String string = table.getRow(0).get(0);
+                    if (defaultValue == null) {
+                        return (T) string;
+                    }
+                    return (T) toPrimitive(string, defaultValue.getClass());
                 }
-                String string = table.getRow(0).get(0);
-                if (defaultValue == null) {
-                    return (T) string;
-                }
-                return (T) toPrimitive(string, defaultValue.getClass());
-            })
+            )
+            .query()
             .join();
     }
 
@@ -105,26 +109,29 @@ public class DatabaseManager {
     }
 
     public List<String> getSettings(String setting) {
-        return new DatabaseAction<List<String>>(GET_SETTINGS, server, component, setting)
-            .queue(table -> {
-                List<String> list = new ArrayList<>();
-                for (Tuple t : table.getTuples()) {
-                    String s = t.get(0);
-                    list.add(s);
+        return DatabaseAction.of(
+                Query.of(GET_SETTINGS, server, component, setting),
+                table -> {
+                    List<String> list = new ArrayList<>();
+                    for (Tuple t : table.getTuples()) {
+                        String s = t.get(0);
+                        list.add(s);
+                    }
+                    return list;
                 }
-                return list;
-            })
+            )
+            .query()
             .join();
     }
 
     public boolean isComponentEnabled() {
-        return new DatabaseAction<Boolean>(GET_COMPONENT_ENABLED, server, component)
-            .queue(table -> !table.isEmpty() && "1".equals(table.getRow(0).get(0)))
+        return DatabaseAction.of(GET_COMPONENT_ENABLED, server, component)
+            .query(table -> !table.isEmpty() && "1".equals(table.getRow(0).get(0)))
             .join();
     }
 
     public CompletableFuture<Void> toggleComponent(boolean enable) {
-        return new DatabaseAction<>(TOGGLE_COMPONENT, server, component, enable, enable).execute();
+        return DatabaseAction.of(TOGGLE_COMPONENT, server, component, enable, enable).execute();
     }
 
 }
