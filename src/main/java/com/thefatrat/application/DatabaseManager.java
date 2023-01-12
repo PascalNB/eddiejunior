@@ -1,9 +1,9 @@
 package com.thefatrat.application;
 
-import com.thefatrat.application.util.StringMapping;
-import com.thefatrat.database.Query;
-import com.thefatrat.database.Tuple;
-import com.thefatrat.database.action.DatabaseAction;
+import com.pascalnb.dbwrapper.Mapper;
+import com.pascalnb.dbwrapper.Query;
+import com.pascalnb.dbwrapper.StringMapping;
+import com.pascalnb.dbwrapper.action.DatabaseAction;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -82,39 +82,22 @@ public class DatabaseManager {
     }
 
     public String getSetting(String setting) {
-        return getSettingOrDefault(setting, null);
+        return DatabaseAction.of(GET_SETTINGS, server, component, setting)
+            .query(Mapper.stringValue())
+            .join();
     }
 
     @SuppressWarnings("unchecked")
     public <T> T getSettingOrDefault(String setting, T defaultValue) {
-        return DatabaseAction.of(
-                Query.of(GET_SETTINGS, server, component, setting),
-                table -> {
-                    if (table.isEmpty()) {
-                        return defaultValue;
-                    }
-                    String string = table.getRow(0).get(0);
-                    if (defaultValue == null) {
-                        return (T) string;
-                    }
-                    return (T) StringMapping.of(string).as(defaultValue.getClass());
-                }
-            )
-            .query()
+        return (T) DatabaseAction.of(GET_SETTINGS, server, component, setting)
+            .query(Mapper.toPrimitive(defaultValue.getClass()).orDefault(defaultValue))
             .join();
     }
 
     public List<String> getSettings(String setting) {
         return DatabaseAction.of(
                 Query.of(GET_SETTINGS, server, component, setting),
-                table -> {
-                    List<String> list = new ArrayList<>();
-                    for (Tuple t : table.getTuples()) {
-                        String s = t.get(0);
-                        list.add(s);
-                    }
-                    return list;
-                }
+                Mapper.stringList()
             )
             .query()
             .join();

@@ -80,13 +80,9 @@ public class Server {
                 commandData.add(Commands.message(interaction.getName()).setGuildOnly(true));
             }
 
-            component.enable();
-
             return register.registerServerCommands(id, commandData);
+
         } else {
-
-            component.disable();
-
             List<RestAction<Void>> actions = new ArrayList<>();
 
             for (Command command : component.getCommands()) {
@@ -130,6 +126,7 @@ public class Server {
                 }
 
                 if (instance.getDatabaseManager().isComponentEnabled()) {
+                    instance.enable();
                     toggleComponent(instance, true).queue();
                 }
 

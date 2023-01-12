@@ -1,5 +1,6 @@
 package com.thefatrat.application.components;
 
+import com.pascalnb.dbwrapper.StringMapping;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;

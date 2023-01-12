@@ -1,8 +1,6 @@
 package com.thefatrat.application;
 
 import com.thefatrat.application.components.*;
-import com.thefatrat.database.DatabaseAuthenticator;
-import com.thefatrat.database.DatabaseException;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
@@ -43,12 +41,6 @@ public class Initializer {
     }
 
     public static void main(String[] args) {
-        try {
-            DatabaseAuthenticator.getInstance().authenticate();
-        } catch (DatabaseException e) {
-            throw new RuntimeException(e);
-        }
-
         final String token = getInstance().getProperty("bot_token");
         final JDA jda;
 

@@ -1,5 +1,6 @@
 package com.thefatrat.application.components;
 
+import com.pascalnb.dbwrapper.StringMapping;
 import com.thefatrat.application.DatabaseManager;
 import com.thefatrat.application.builders.HelpBuilder;
 import com.thefatrat.application.entities.Command;
@@ -11,7 +12,6 @@ import com.thefatrat.application.reply.ModalReply;
 import com.thefatrat.application.reply.Reply;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
-import com.thefatrat.application.util.StringMapping;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import org.jetbrains.annotations.NotNull;

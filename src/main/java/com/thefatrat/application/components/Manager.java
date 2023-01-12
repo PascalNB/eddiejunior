@@ -1,5 +1,7 @@
 package com.thefatrat.application.components;
 
+import com.pascalnb.dbwrapper.Database;
+import com.pascalnb.dbwrapper.DatabaseException;
 import com.thefatrat.application.Bot;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.exceptions.BotErrorException;
@@ -9,8 +11,6 @@ import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
 import com.thefatrat.application.util.Icon;
 import com.thefatrat.application.util.PermissionChecker;
-import com.thefatrat.database.Database;
-import com.thefatrat.database.DatabaseException;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
@@ -77,6 +77,7 @@ public class Manager extends Component {
                     }
 
                     component.getDatabaseManager().toggleComponent(true);
+                    component.enable();
                     getServer().toggleComponent(component, true).queue();
                     reply.send(Icon.ENABLE, "Component `%s` enabled", componentString);
                 }),
@@ -97,6 +98,7 @@ public class Manager extends Component {
                     }
 
                     component.getDatabaseManager().toggleComponent(false);
+                    component.disable();
                     getServer().toggleComponent(component, false).queue();
                     reply.send(Icon.DISABLE, "Component `%s` disabled", componentString);
                 }),
@@ -152,6 +154,15 @@ public class Manager extends Component {
                         .build();
 
                     reply.send(embed);
+                }),
+
+            new Command("reload", "reload a component's commands")
+                .addOption(new OptionData(OptionType.STRING, "component", "component name", true))
+                .setAction((command, reply) -> {
+                    Component component = getComponentSafe(command.getArgs().get("component").getAsString());
+                    getServer().toggleComponent(component, false).queue(__ ->
+                        getServer().toggleComponent(component, true).queue());
+                    reply.ok("Reloaded component `%s`", component.getName());
                 })
         );
     }
