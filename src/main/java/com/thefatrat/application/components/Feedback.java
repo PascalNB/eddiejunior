@@ -5,6 +5,7 @@ import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.entities.Interaction;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
+import com.thefatrat.application.reply.EditReply;
 import com.thefatrat.application.reply.Reply;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
@@ -373,7 +374,7 @@ public class Feedback extends DirectComponent {
     }
 
     @Override
-    protected synchronized void handleDirect(@NotNull Message message, Reply reply) {
+    protected synchronized <T extends Reply & EditReply> void handleDirect(@NotNull Message message, T reply) {
         List<Message.Attachment> attachments = message.getAttachments();
 
         String url = null;
@@ -445,7 +446,12 @@ public class Feedback extends DirectComponent {
 
         submissions.add(new Submission(author, builder.build()));
         submissionCount++;
-        reply.ok("Successfully submitted");
+        reply.edit(new EmbedBuilder()
+            .setDescription(Icon.OK + " Successfully submitted")
+            .setColor(Icon.OK.getColor())
+            .build()
+        );
+
     }
 
     public void start(Reply reply) {

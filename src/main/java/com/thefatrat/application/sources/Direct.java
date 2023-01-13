@@ -49,13 +49,11 @@ public class Direct {
                 throw new BotErrorException("Something went wrong");
             }
 
-            MapHandler<Message, Reply> handler = server.getDirectMessageHandler();
-
-            if (!handler.getKeys().contains(component)) {
+            if (!server.getDirectMessageHandler().getKeys().contains(component)) {
                 throw new BotErrorException("Could not send to the given service, try again");
             }
 
-            handler.handle(component, userMessage, reply);
+            server.getDirectMessageHandler().handle(component, userMessage, reply);
         });
         getStringSelectHandler().addListener("server", (event, reply) ->
             reply.edit(MessageEditData.fromCreateData(getComponentMenu(event.getUser().getId(), event.getOption())))
@@ -113,9 +111,9 @@ public class Direct {
             throw new BotWarningException("The server does not handle any messages at the moment");
         }
 
-        StringSelectMenu.Builder menu = StringSelectMenu.create("component")
-            .setMaxValues(1);
-        for (String key : server.getDirectMessageHandler().getKeys()) {
+        StringSelectMenu.Builder menu = StringSelectMenu.create("component").setMaxValues(1);
+
+        for (String key : keys) {
             String name = key.substring(0, 1).toUpperCase() + key.substring(1);
             menu.addOption(name, serverId + "-" + key);
         }

@@ -3,6 +3,7 @@ package com.thefatrat.application.components;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
+import com.thefatrat.application.reply.EditReply;
 import com.thefatrat.application.reply.Reply;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
@@ -29,15 +30,17 @@ public abstract class DirectComponent extends Component implements RunnableCompo
     private boolean running = false;
     private String destination;
 
-    private final BiConsumer<Message, Reply> receiver = (message, reply) -> {
-        if (getDestination() == null) {
-            throw new BotErrorException("Something went wrong");
-        }
-        if (getBlacklist().contains(message.getAuthor().getId())) {
-            throw new BotWarningException("You are not allowed to send messages at the moment");
-        }
-        handleDirect(message, reply);
-    };
+    private <T extends Reply & EditReply> BiConsumer<Message, T> getReceiver() {
+        return (message, reply) -> {
+            if (getDestination() == null) {
+                throw new BotErrorException("Something went wrong");
+            }
+            if (getBlacklist().contains(message.getAuthor().getId())) {
+                throw new BotWarningException("You are not allowed to send messages at the moment");
+            }
+            handleDirect(message, reply);
+        };
+    }
 
     public DirectComponent(Server server, String name, boolean autoRun) {
         super(server, name, false);
@@ -226,7 +229,7 @@ public abstract class DirectComponent extends Component implements RunnableCompo
         return blacklist;
     }
 
-    protected abstract void handleDirect(Message message, Reply reply);
+    protected abstract <T extends Reply & EditReply> void handleDirect(Message message, T reply);
 
     public void stop(Reply reply) {
         getServer().getDirectMessageHandler().removeListener(getName());
@@ -238,7 +241,7 @@ public abstract class DirectComponent extends Component implements RunnableCompo
 
     public void start(Reply reply) {
         this.running = true;
-        getServer().getDirectMessageHandler().addListener(getName(), receiver);
+        getServer().getDirectMessageHandler().addListener(getName(), getReceiver());
         if (autoRun) {
             getDatabaseManager().setSetting("running", "true");
         }

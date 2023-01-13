@@ -146,7 +146,7 @@ public class Server {
         return set;
     }
 
-    public <T extends Reply> MapHandler<Message, T> getDirectMessageHandler() {
+    public <T extends Reply & EditReply> MapHandler<Message, T> getDirectMessageHandler() {
         return handlerCollection.getMessageHandler();
     }
 

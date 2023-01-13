@@ -4,9 +4,13 @@ import com.pascalnb.dbwrapper.StringMapping;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
+import com.thefatrat.application.reply.EditReply;
 import com.thefatrat.application.reply.Reply;
 import com.thefatrat.application.sources.Server;
-import com.thefatrat.application.util.*;
+import com.thefatrat.application.util.Colors;
+import com.thefatrat.application.util.Icon;
+import com.thefatrat.application.util.PermissionChecker;
+import com.thefatrat.application.util.URLUtil;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.IMentionable;
@@ -329,7 +333,7 @@ public class ModMail extends DirectComponent {
             reply.hide();
             synchronized (userCount) {
                 synchronized (timeouts) {
-                    createTicket(event.getMember().getUser(), subject, message, List.of(), reply);
+                    reply.send(createTicket(event.getMember().getUser(), subject, message, List.of()));
                 }
             }
         });
@@ -358,8 +362,8 @@ public class ModMail extends DirectComponent {
             privateThreads, ment);
     }
 
-    private synchronized void createTicket(User author, String subject, String message,
-        List<Message.Attachment> attachments, Reply reply) {
+    private synchronized MessageCreateData createTicket(User author, String subject, String message,
+        List<Message.Attachment> attachments) {
         if (!isRunning()) {
             throw new BotWarningException("The server does not accept tickets at the moment");
         }
@@ -401,70 +405,68 @@ public class ModMail extends DirectComponent {
         String topic = String.format("t%d-%s", threadId, subject);
         topic = topic.substring(0, Math.min(topic.length(), 25));
 
-        destination.createThreadChannel(topic, privateThreads).queue(thread -> {
-            String urls = "";
-            if (!attachments.isEmpty()) {
-                List<String> list = new ArrayList<>();
+        ThreadChannel thread = destination.createThreadChannel(topic, privateThreads).complete();
+        String urls = "";
+        if (!attachments.isEmpty()) {
+            List<String> list = new ArrayList<>();
 
-                for (Message.Attachment attachment : attachments) {
-                    list.add(attachment.getUrl());
-                }
-
-                urls = String.join("\n", list.toArray(new String[0]));
+            for (Message.Attachment attachment : attachments) {
+                list.add(attachment.getUrl());
             }
 
-            MessageCreateBuilder builder = new MessageCreateBuilder();
+            urls = String.join("\n", list.toArray(new String[0]));
+        }
 
-            if (mention != null) {
-                builder.addContent(mention.getAsMention());
-            }
+        MessageCreateBuilder builder = new MessageCreateBuilder();
 
-            EmbedBuilder userEmbed = new EmbedBuilder()
-                .setColor(Colors.TRANSPARENT)
-                .setDescription(String.format("%s `%s`", author.getAsMention(), author.getId()))
-                .setFooter(getName(), author.getEffectiveAvatarUrl())
-                .setTimestamp(Instant.now());
+        if (mention != null) {
+            builder.addContent(mention.getAsMention());
+        }
 
-            EmbedBuilder messageEmbed = new EmbedBuilder()
-                .setColor(Colors.TRANSPARENT)
-                .setTitle(subject)
-                .setDescription(String.format("```%s```", message));
+        EmbedBuilder userEmbed = new EmbedBuilder()
+            .setColor(Colors.TRANSPARENT)
+            .setDescription(String.format("%s `%s`", author.getAsMention(), author.getId()))
+            .setFooter(getName(), author.getEffectiveAvatarUrl())
+            .setTimestamp(Instant.now());
 
-            if (urls.length() > 1) {
-                messageEmbed.addField("Attachments", String.format("```%s```", urls), false);
-            }
+        EmbedBuilder messageEmbed = new EmbedBuilder()
+            .setColor(Colors.TRANSPARENT)
+            .setTitle(subject)
+            .setDescription(String.format("```%s```", message));
 
-            builder.addEmbeds(userEmbed.build(), messageEmbed.build())
-                .addActionRow(
-                    Button.secondary("modmail-archive-" + thread.getId(), "Archive ticket")
-                        .withEmoji(Emoji.fromUnicode("\uD83D\uDCE5"))
-                );
+        if (urls.length() > 1) {
+            messageEmbed.addField("Attachments", String.format("```%s```", urls), false);
+        }
 
-            thread.addThreadMember(author).queue(success ->
-                thread.sendMessage(builder.build()).queue()
+        builder.addEmbeds(userEmbed.build(), messageEmbed.build())
+            .addActionRow(
+                Button.secondary("modmail-archive-" + thread.getId(), "Archive ticket")
+                    .withEmoji(Emoji.fromUnicode("\uD83D\uDCE5"))
             );
 
-            reply.send(new MessageCreateBuilder()
-                .addEmbeds(new EmbedBuilder()
-                    .setColor(Colors.GREEN)
-                    .setDescription(Icon.OK + " Message successfully submitted")
-                    .build()
-                )
-                .addActionRow(Button.link(thread.getJumpUrl(), "Go to ticket"))
-                .build()
-            );
-        });
+        thread.addThreadMember(author).queue(success ->
+            thread.sendMessage(builder.build()).queue()
+        );
 
         ++tickets;
+
+        return new MessageCreateBuilder()
+            .addEmbeds(new EmbedBuilder()
+                .setColor(Colors.GREEN)
+                .setDescription(Icon.OK + " Message successfully submitted")
+                .build()
+            )
+            .addActionRow(Button.link(thread.getJumpUrl(), "Go to ticket"))
+            .build();
     }
 
     @Override
-    protected synchronized void handleDirect(@NotNull Message message, Reply reply) {
+    protected synchronized <T extends Reply & EditReply> void handleDirect(@NotNull Message message, T reply) {
         String content = message.getContentRaw();
         synchronized (userCount) {
             synchronized (timeouts) {
-                createTicket(message.getAuthor(), message.getAuthor().getAsTag(), content, message.getAttachments(),
-                    reply);
+                reply.edit(createTicket(message.getAuthor(), message.getAuthor().getAsTag(), content,
+                    message.getAttachments()));
             }
         }
     }
