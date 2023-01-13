@@ -11,24 +11,24 @@ import java.util.concurrent.CompletableFuture;
 
 public class DatabaseManager {
 
-    private static final String GET_COMPONENT_ENABLED =
-        "SELECT enabled FROM component WHERE server_id=? AND component_name=?;";
+    private static final Query GET_COMPONENT_ENABLED = new Query(
+        "SELECT enabled FROM component WHERE server_id=? AND component_name=?;");
 
-    private static final String TOGGLE_COMPONENT =
+    private static final Query TOGGLE_COMPONENT = new Query(
         "INSERT INTO component (server_id,component_name,enabled) VALUES(?,?,?) " +
-            "ON DUPLICATE KEY UPDATE enabled=?;";
+            "ON DUPLICATE KEY UPDATE enabled=?;");
 
-    private static final String GET_SETTINGS =
-        "SELECT value FROM setting WHERE server_id=? AND component_name=? AND name=?;";
+    private static final Query GET_SETTINGS = new Query(
+        "SELECT value FROM setting WHERE server_id=? AND component_name=? AND name=?;");
 
-    private static final String ADD_SETTING =
-        "INSERT INTO setting (server_id,component_name,name,value) VALUES(?,?,?,?);";
+    private static final Query ADD_SETTING = new Query(
+        "INSERT INTO setting (server_id,component_name,name,value) VALUES(?,?,?,?);");
 
-    private static final String REMOVE_SETTING =
-        "DELETE FROM setting WHERE server_id=? AND component_name=? AND name=?;";
+    private static final Query REMOVE_SETTING = new Query(
+        "DELETE FROM setting WHERE server_id=? AND component_name=? AND name=?;");
 
-    private static final String REMOVE_SETTING_VALUE =
-        "DELETE FROM setting WHERE server_id=? AND component_name=? AND name=? AND value=?;";
+    private static final Query REMOVE_SETTING_VALUE = new Query(
+        "DELETE FROM setting WHERE server_id=? AND component_name=? AND name=? AND value=?;");
 
     private final String server;
     private final String component;
@@ -42,7 +42,7 @@ public class DatabaseManager {
         List<DatabaseAction<Object[]>> actions = new ArrayList<>(settings.size());
         for (String setting : settings) {
             actions.add(
-                DatabaseAction.of(Query.of(GET_SETTINGS, server, component, setting),
+                DatabaseAction.of(GET_SETTINGS.withArgs(server, component, setting),
                     table -> {
                         if (table.isEmpty()) {
                             return new Object[]{setting, StringMapping.of(null)};
@@ -63,40 +63,40 @@ public class DatabaseManager {
     }
 
     public CompletableFuture<Void> removeSetting(String setting) {
-        return DatabaseAction.of(REMOVE_SETTING, server, component, setting).execute();
+        return DatabaseAction.of(REMOVE_SETTING.withArgs(server, component, setting)).execute();
     }
 
     public CompletableFuture<Void> removeSetting(String setting, @NotNull String value) {
-        return DatabaseAction.of(REMOVE_SETTING_VALUE, server, component, setting, value).execute();
+        return DatabaseAction.of(REMOVE_SETTING_VALUE.withArgs(server, component, setting, value)).execute();
     }
 
     public CompletableFuture<Void> setSetting(String setting, @NotNull Object value) {
         return DatabaseAction.allOf(
-            DatabaseAction.of(REMOVE_SETTING, server, component, setting),
-            DatabaseAction.of(ADD_SETTING, server, component, setting, value)
+            DatabaseAction.of(REMOVE_SETTING.withArgs(server, component, setting)),
+            DatabaseAction.of(ADD_SETTING.withArgs(server, component, setting, value))
         ).execute();
     }
 
     public CompletableFuture<Void> addSetting(String setting, String value) {
-        return DatabaseAction.of(ADD_SETTING, server, component, setting, value).execute();
+        return DatabaseAction.of(ADD_SETTING.withArgs(server, component, setting, value)).execute();
     }
 
     public String getSetting(String setting) {
-        return DatabaseAction.of(GET_SETTINGS, server, component, setting)
+        return DatabaseAction.of(GET_SETTINGS.withArgs(server, component, setting))
             .query(Mapper.stringValue())
             .join();
     }
 
     @SuppressWarnings("unchecked")
     public <T> T getSettingOrDefault(String setting, T defaultValue) {
-        return (T) DatabaseAction.of(GET_SETTINGS, server, component, setting)
+        return (T) DatabaseAction.of(GET_SETTINGS.withArgs(server, component, setting))
             .query(Mapper.toPrimitive(defaultValue.getClass()).orDefault(defaultValue))
             .join();
     }
 
     public List<String> getSettings(String setting) {
         return DatabaseAction.of(
-                Query.of(GET_SETTINGS, server, component, setting),
+                GET_SETTINGS.withArgs(server, component, setting),
                 Mapper.stringList()
             )
             .query()
@@ -104,13 +104,13 @@ public class DatabaseManager {
     }
 
     public boolean isComponentEnabled() {
-        return DatabaseAction.of(GET_COMPONENT_ENABLED, server, component)
+        return DatabaseAction.of(GET_COMPONENT_ENABLED.withArgs(server, component))
             .query(table -> !table.isEmpty() && "1".equals(table.getRow(0).get(0)))
             .join();
     }
 
     public CompletableFuture<Void> toggleComponent(boolean enable) {
-        return DatabaseAction.of(TOGGLE_COMPONENT, server, component, enable, enable).execute();
+        return DatabaseAction.of(TOGGLE_COMPONENT.withArgs(server, component, enable, enable)).execute();
     }
 
 }

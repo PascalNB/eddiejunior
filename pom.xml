@@ -99,8 +99,7 @@
         <dependency>
             <groupId>com.github.PascalNB</groupId>
             <artifactId>dbwrapper</artifactId>
-            <!--suppress MavenModelInspection -->
-            <version>master-9ae825d4a7-1</version>
+            <version>master-69b6bb8581-1</version>
         </dependency>
 
     </dependencies>
