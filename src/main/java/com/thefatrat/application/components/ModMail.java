@@ -1,6 +1,6 @@
 package com.thefatrat.application.components;
 
-import com.pascalnb.dbwrapper.StringMapping;
+import com.pascalnb.dbwrapper.StringMapper;
 import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.exceptions.BotWarningException;
@@ -64,7 +64,7 @@ public class ModMail extends DirectComponent {
         super(server, NAME, true);
 
         {
-            Map<String, StringMapping> settings = getSettings("timeout", "threadid", "maxtickets", "maxticketsperuser",
+            Map<String, StringMapper> settings = getSettings("timeout", "threadid", "maxtickets", "maxticketsperuser",
                 "privatethreads", "mention");
 
             timeout = settings.get("timeout").asOrDefault(0);
@@ -163,9 +163,12 @@ public class ModMail extends DirectComponent {
                         throw new BotErrorException("Cannot archive this channel");
                     }
                     reply.ok(callback ->
-                        command.getChannel().asThreadChannel().getManager().setLocked(true).queue(success ->
-                            command.getChannel().asThreadChannel().getManager().setArchived(true).queue()
-                        ), "Current thread archived");
+                        command.getChannel().asThreadChannel().getManager().setLocked(true).queue(success -> {
+                            command.getChannel().asThreadChannel().getManager().setArchived(true).queue();
+                            getServer().log(command.getMember().getUser(), "Archived thread %s (`%s`)%n%s",
+                                command.getChannel().getAsMention(), command.getChannel().getName(),
+                                command.getChannel().getJumpUrl());
+                        }), "Current thread archived");
                 }),
 
             new Command("maxperuser", "sets the maximum number of active tickets per user")
@@ -290,6 +293,8 @@ public class ModMail extends DirectComponent {
                             thread.getManager().setArchived(true).queue()
                         ),
                     "Current thread archived");
+                getServer().log(event.getUser().getUser(), "Archived thread %s (`%s`)%n%s", thread.getAsMention(),
+                    thread.getName(), thread.getJumpUrl());
             }
         });
         getServer().getButtonHandler().addListener((event, reply) -> {
@@ -403,7 +408,7 @@ public class ModMail extends DirectComponent {
         ++threadId;
         getDatabaseManager().setSetting("threadid", String.valueOf(threadId));
         String topic = String.format("t%d-%s", threadId, subject);
-        topic = topic.substring(0, Math.min(topic.length(), 25));
+        topic = topic.substring(0, Math.min(topic.length(), 100));
 
         ThreadChannel thread = destination.createThreadChannel(topic, privateThreads).complete();
         String urls = "";
@@ -449,6 +454,9 @@ public class ModMail extends DirectComponent {
         );
 
         ++tickets;
+
+        getServer().log(author, "Created modmail ticked %s (`%s`)%n%s", thread.getAsMention(), thread.getName(),
+            thread.getJumpUrl());
 
         return new MessageCreateBuilder()
             .addEmbeds(new EmbedBuilder()

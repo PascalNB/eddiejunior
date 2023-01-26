@@ -1,9 +1,12 @@
 package com.thefatrat.application.util;
 
+import net.dv8tion.jda.api.entities.emoji.Emoji;
+import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import net.dv8tion.jda.api.interactions.components.buttons.ButtonStyle;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
-public final class EmojiChecker {
+public final class EmojiUtil {
 
     @SuppressWarnings({"RegExpDuplicateAlternationBranch", "UnnecessaryUnicodeEscape"})
     private static final String REGEX = "(?:[\uD83C\uDF00-\uD83D\uDDFF]|[\uD83E\uDD00-\uD83E\uDDFF]|" +
@@ -21,6 +24,22 @@ public final class EmojiChecker {
     @Contract(pure = true)
     public static boolean isEmoji(@NotNull String message) {
         return message.matches(REGEX);
+    }
+
+    public static Button formatButton(String id, @NotNull String label, ButtonStyle style) {
+        String[] split = label.split(" ?\\| ?", 2);
+
+        if (isEmoji(split[0])) {
+            Emoji emoji = Emoji.fromUnicode(split[0]);
+
+            if (split.length > 1) {
+                return Button.of(style, id, split[1]).withEmoji(emoji);
+            } else {
+                return Button.of(style, id, emoji);
+            }
+        } else {
+            return Button.of(style, id, label);
+        }
     }
 
 }

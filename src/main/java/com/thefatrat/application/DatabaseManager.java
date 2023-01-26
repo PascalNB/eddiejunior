@@ -2,7 +2,7 @@ package com.thefatrat.application;
 
 import com.pascalnb.dbwrapper.Mapper;
 import com.pascalnb.dbwrapper.Query;
-import com.pascalnb.dbwrapper.StringMapping;
+import com.pascalnb.dbwrapper.StringMapper;
 import com.pascalnb.dbwrapper.action.DatabaseAction;
 import org.jetbrains.annotations.NotNull;
 
@@ -38,24 +38,24 @@ public class DatabaseManager {
         this.component = component;
     }
 
-    public Map<String, StringMapping> getAll(@NotNull Collection<String> settings) {
+    public Map<String, StringMapper> getAll(@NotNull Collection<String> settings) {
         List<DatabaseAction<Object[]>> actions = new ArrayList<>(settings.size());
         for (String setting : settings) {
             actions.add(
                 DatabaseAction.of(GET_SETTINGS.withArgs(server, component, setting),
                     table -> {
                         if (table.isEmpty()) {
-                            return new Object[]{setting, StringMapping.of(null)};
+                            return new Object[]{setting, new StringMapper(null)};
                         }
-                        return new Object[]{setting, StringMapping.of(table.getRow(0).get(0))};
+                        return new Object[]{setting, new StringMapper(table.getRow(0).get(0))};
                     })
             );
         }
         return DatabaseAction.allOf(actions)
             .query(list -> {
-                Map<String, StringMapping> map = new HashMap<>();
+                Map<String, StringMapper> map = new HashMap<>();
                 for (Object[] pair : list) {
-                    map.put((String) pair[0], (StringMapping) pair[1]);
+                    map.put((String) pair[0], (StringMapper) pair[1]);
                 }
                 return map;
             })

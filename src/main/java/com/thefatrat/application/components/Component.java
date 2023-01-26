@@ -1,6 +1,6 @@
 package com.thefatrat.application.components;
 
-import com.pascalnb.dbwrapper.StringMapping;
+import com.pascalnb.dbwrapper.StringMapper;
 import com.thefatrat.application.DatabaseManager;
 import com.thefatrat.application.builders.HelpBuilder;
 import com.thefatrat.application.entities.Command;
@@ -133,7 +133,7 @@ public abstract class Component {
         }
     }
 
-    public Map<String, StringMapping> getSettings(String... settings) {
+    public Map<String, StringMapper> getSettings(String... settings) {
         return getDatabaseManager().getAll(List.of(settings));
     }
 

@@ -12,10 +12,15 @@ import com.thefatrat.application.util.Colors;
 import com.thefatrat.application.util.Icon;
 import com.thefatrat.application.util.PermissionChecker;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.IMentionable;
 import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.entities.channel.ChannelType;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Optional;
 
 public class Manager extends Component {
 
@@ -23,6 +28,11 @@ public class Manager extends Component {
 
     public Manager(Server server) {
         super(server, NAME, true);
+
+        String logChannelId = getDatabaseManager().getSetting("log");
+        if (logChannelId != null) {
+            getServer().setLog(getServer().getGuild().getTextChannelById(logChannelId));
+        }
 
         addCommands(
             new Command("help", "show the available commands")
@@ -80,6 +90,7 @@ public class Manager extends Component {
                     component.enable();
                     getServer().toggleComponent(component, true).queue();
                     reply.send(Icon.ENABLE, "Component `%s` enabled", componentString);
+                    getServer().log(command.getMember().getUser(), "Enabled component `%s`", componentString);
                 }),
 
             new Command("disable", "disable a specific component by name")
@@ -101,6 +112,7 @@ public class Manager extends Component {
                     component.disable();
                     getServer().toggleComponent(component, false).queue();
                     reply.send(Icon.DISABLE, "Component `%s` disabled", componentString);
+                    getServer().log(command.getMember().getUser(), "Disabled component `%s`", componentString);
                 }),
 
             new Command("components", "shows a list of all the components")
@@ -163,6 +175,18 @@ public class Manager extends Component {
                     getServer().toggleComponent(component, false).queue(__ ->
                         getServer().toggleComponent(component, true).queue());
                     reply.ok("Reloaded component `%s`", component.getName());
+                }),
+
+            new Command("log", "set the logging channel")
+                .addOption(new OptionData(OptionType.CHANNEL, "channel", "log channel", true)
+                    .setChannelTypes(ChannelType.TEXT)
+                )
+                .setAction((command, reply) -> {
+                    TextChannel channel = command.getArgs().get("channel").getAsChannel().asTextChannel();
+                    PermissionChecker.requireSend(channel);
+                    getServer().setLog(channel);
+                    getDatabaseManager().setSetting("log", channel.getId());
+                    reply.ok("Set logging channel to %s", channel.getAsMention());
                 })
         );
     }
@@ -193,9 +217,11 @@ public class Manager extends Component {
         return String.format("""
                 Components enabled: %d
                 Uptime: %s
+                Log: %s
                 """,
             count,
-            Bot.getInstance().getUptime());
+            Bot.getInstance().getUptime(),
+            Optional.ofNullable(getServer().getLog()).map(IMentionable::getAsMention).orElse(null));
     }
 
 }

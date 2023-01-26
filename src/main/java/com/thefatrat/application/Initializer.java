@@ -50,6 +50,7 @@ public class Initializer {
             ModMail.class,
             Feedback.class,
 
+            PollComponent.class,
             Session.class,
             Event.class,
 

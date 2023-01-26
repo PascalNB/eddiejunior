@@ -13,9 +13,13 @@ import com.thefatrat.application.reply.EditReply;
 import com.thefatrat.application.reply.EphemeralReply;
 import com.thefatrat.application.reply.ModalReply;
 import com.thefatrat.application.reply.Reply;
+import com.thefatrat.application.util.Colors;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
@@ -27,6 +31,7 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.CheckReturnValue;
 import java.lang.reflect.InvocationTargetException;
+import java.time.Instant;
 import java.util.*;
 
 public class Server {
@@ -34,6 +39,7 @@ public class Server {
     private final String id;
     private final HandlerCollection<Member> handlerCollection = new HandlerCollection<>();
     private final Map<String, Component> components = new HashMap<>();
+    private TextChannel log = null;
 
     @NotNull
     @Contract(" -> new")
@@ -144,6 +150,41 @@ public class Server {
         set.addAll(handlerCollection.getCommandHandler().getKeys());
         set.addAll(handlerCollection.getMessageInteractionHandler().getKeys());
         return set;
+    }
+
+    public void setLog(TextChannel log) {
+        this.log = log;
+    }
+
+    @Nullable
+    public TextChannel getLog() {
+        return log;
+    }
+
+    public void log(User user, String message, Object... args) {
+        if (log == null || !log.canTalk()) {
+            return;
+        }
+        log.sendMessageEmbeds(new EmbedBuilder()
+            .setColor(Colors.TRANSPARENT)
+            .setDescription(String.format("%s ", user.getAsMention()) +
+                String.format(message, args))
+            .setFooter(user.getId(), user.getEffectiveAvatarUrl())
+            .setTimestamp(Instant.now())
+            .build()
+        ).queue();
+    }
+
+    public void log(String message, Object... args) {
+        if (log == null || !log.canTalk()) {
+            return;
+        }
+        log.sendMessageEmbeds(new EmbedBuilder()
+            .setColor(Colors.TRANSPARENT)
+            .setDescription(String.format(message, args))
+            .setTimestamp(Instant.now())
+            .build()
+        ).queue();
     }
 
     public <T extends Reply & EditReply> MapHandler<Message, T> getDirectMessageHandler() {

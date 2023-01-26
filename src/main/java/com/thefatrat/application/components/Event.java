@@ -69,12 +69,14 @@ public class Event extends Component {
                     && sessionComponent.isSession(link.session())) {
                     try {
                         sessionComponent.openSession(link.session(), Reply.EMPTY);
+                        getServer().log("Opened session `%s`", link.session());
                     } catch (BotException ignore) {
                     }
                 }
 
                 if (link.component() != null && component != null && !component.isRunning()) {
                     component.start(Reply.EMPTY);
+                    getServer().log("Component `%s` started running", link.component());
                 }
 
             } else if (event.getStatus().equals(ScheduledEvent.Status.COMPLETED)) {
@@ -82,12 +84,14 @@ public class Event extends Component {
                     && sessionComponent.isSession(link.session())) {
                     try {
                         sessionComponent.closeSession(link.session(), Reply.EMPTY);
+                        getServer().log("Closed session `%s`", link.session());
                     } catch (BotException ignore) {
                     }
                 }
 
                 if (link.component() != null && component != null) {
                     component.stop(Reply.EMPTY);
+                    getServer().log("Component `%s` stopped running", link.component());
                 }
             }
         });

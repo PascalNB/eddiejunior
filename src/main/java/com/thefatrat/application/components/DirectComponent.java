@@ -88,10 +88,14 @@ public abstract class DirectComponent extends Component implements RunnableCompo
                         );
                     }
 
-                    start(reply);
+                    this.start(reply);
+                    getServer().log(command.getMember().getUser(), "Component `%s` started running", getName());
                 }),
             new Command("stop", "stops the component")
-                .setAction((command, reply) -> this.stop(reply)),
+                .setAction((command, reply) -> {
+                    this.stop(reply);
+                    getServer().log(command.getMember().getUser(), "Component `%s` stopped running", getName());
+                }),
             new Command("destination", "sets the destination channel")
                 .addOption(new OptionData(OptionType.CHANNEL, "channel", "destination channel", false)
                     .setChannelTypes(ChannelType.TEXT)

@@ -75,6 +75,7 @@ public class MessageComponent extends Component {
                                 reply.send(new BotErrorException("Couldn't edit message"));
                             } else {
                                 reply.ok("Message was edited");
+                                getServer().log(command.getMember().getUser(), "Edited message\n(%s)", url);
                             }
                         });
                 }),
@@ -89,7 +90,10 @@ public class MessageComponent extends Component {
                         throw new BotErrorException("Message was not sent by me");
                     }
                     reply.hide();
-                    message.delete().queue(success -> reply.ok("Removed message"));
+                    message.delete().queue(success -> {
+                        reply.ok("Removed message");
+                        getServer().log(command.getMember().getUser(), "Deleted message\n(%s)", url);
+                    });
                 })
         );
 

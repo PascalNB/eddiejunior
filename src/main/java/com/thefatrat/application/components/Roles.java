@@ -4,7 +4,7 @@ import com.thefatrat.application.entities.Command;
 import com.thefatrat.application.exceptions.BotErrorException;
 import com.thefatrat.application.sources.Server;
 import com.thefatrat.application.util.Colors;
-import com.thefatrat.application.util.EmojiChecker;
+import com.thefatrat.application.util.EmojiUtil;
 import com.thefatrat.application.util.PermissionChecker;
 import com.thefatrat.application.util.URLUtil;
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -14,16 +14,17 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
-import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.components.ActionRow;
 import net.dv8tion.jda.api.interactions.components.LayoutComponent;
-import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import net.dv8tion.jda.api.interactions.components.buttons.ButtonStyle;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import net.dv8tion.jda.internal.utils.PermissionUtil;
+
+import java.util.Optional;
 
 public class Roles extends Component {
 
@@ -63,13 +64,17 @@ public class Roles extends Component {
 
             reply.hide();
             if ("1".equals(split[1])) {
-                getServer().getGuild().addRoleToMember(member, role).queue(success ->
-                    reply.ok("You received role " + role.getAsMention())
-                );
+                getServer().getGuild().addRoleToMember(member, role).queue(success -> {
+                    reply.ok("You received role " + role.getAsMention());
+                    getServer().log("Gave role %s (`%s`) to %s (`%s`)", role.getId(), role.getAsMention(),
+                        member.getAsMention(), member.getId());
+                });
             } else {
-                getServer().getGuild().removeRoleFromMember(member, role).queue(success ->
-                    reply.ok("Role " + role.getAsMention() + " has been removed")
-                );
+                getServer().getGuild().removeRoleFromMember(member, role).queue(success -> {
+                    reply.ok("Role " + role.getAsMention() + " has been removed");
+                    getServer().log("Removed role %s (`%s`) from %s (`%s`)", role.getId(), role.getAsMention(),
+                        member.getAsMention(), member.getId());
+                });
             }
         });
 
@@ -157,34 +162,10 @@ public class Roles extends Component {
                         }
                     }
 
-                    Button buttonAdd;
-                    Button buttonRemove;
-                    String[] splitAdd = labelAdd.split(" ?\\| ?", 2);
-                    String[] splitRemove = labelRemove.split(" ?\\| ?", 2);
-
-                    if (EmojiChecker.isEmoji(splitAdd[0])) {
-                        Emoji emoji = Emoji.fromUnicode(splitAdd[0]);
-                        if (splitAdd.length > 1) {
-                            buttonAdd = Button.success("roles-1-" + role.getId(), splitAdd[1]).withEmoji(emoji);
-                        } else {
-                            buttonAdd = Button.success("roles-1-" + role.getId(), emoji);
-                        }
-                    } else {
-                        buttonAdd = Button.success("roles-1-" + role.getId(), labelAdd);
-                    }
-
-                    if (EmojiChecker.isEmoji(splitRemove[0])) {
-                        Emoji emoji = Emoji.fromUnicode(splitRemove[0]);
-                        if (splitRemove.length > 1) {
-                            buttonRemove = Button.danger("roles-0-" + role.getId(), splitRemove[1]).withEmoji(emoji);
-                        } else {
-                            buttonRemove = Button.danger("roles-0-" + role.getId(), emoji);
-                        }
-                    } else {
-                        buttonRemove = Button.danger("roles-0-" + role.getId(), labelRemove);
-                    }
-
-                    LayoutComponent component = ActionRow.of(buttonAdd, buttonRemove);
+                    LayoutComponent component = ActionRow.of(
+                        EmojiUtil.formatButton("roles-1-" + role.getId(), labelAdd, ButtonStyle.SUCCESS),
+                        EmojiUtil.formatButton("roles-0-" + role.getId(), labelRemove, ButtonStyle.DANGER)
+                    );
 
                     builder.addComponents(component);
 
@@ -192,19 +173,16 @@ public class Roles extends Component {
                         throw new BotErrorException("Cannot reference a message without content");
                     }
 
-                    OptionMapping channelObject = command.getArgs().get("channel");
-
-                    if (channelObject == null) {
-                        reply.send(builder.build());
-                        return;
-                    }
-
-                    TextChannel channel = channelObject.getAsChannel().asTextChannel();
-
-                    PermissionChecker.requireSend(channel);
-
-                    channel.sendMessage(builder.build()).queue();
-                    reply.ok("Message sent in %s", channel.getAsMention());
+                    Optional.ofNullable(command.getArgs().get("channel"))
+                        .ifPresentOrElse(
+                            object -> {
+                                TextChannel channel = object.getAsChannel().asTextChannel();
+                                PermissionChecker.requireSend(channel);
+                                channel.sendMessage(builder.build()).queue();
+                                reply.ok("Message sent in %s", channel.getAsMention());
+                            },
+                            () -> reply.send(builder.build())
+                        );
                 })
         );
     }

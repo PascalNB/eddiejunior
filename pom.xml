@@ -99,7 +99,7 @@
         <dependency>
             <groupId>com.github.PascalNB</groupId>
             <artifactId>dbwrapper</artifactId>
-            <version>master-69b6bb8581-1</version>
+            <version>7fa75801a5</version>
         </dependency>
 
     </dependencies>
