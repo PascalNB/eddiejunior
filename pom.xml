@@ -19,7 +19,7 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>com.thefatrat.application.Initializer</mainClass>
+                            <mainClass>com.thefatrat.eddiejunior.Initializer</mainClass>
                         </manifest>
                     </archive>
                     <descriptors>
