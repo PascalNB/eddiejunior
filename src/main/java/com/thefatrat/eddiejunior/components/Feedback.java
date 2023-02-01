@@ -381,7 +381,7 @@ public class Feedback extends DirectComponent {
         Matcher matcher = null;
         if (!attachments.isEmpty()) {
             url = attachments.get(0).getUrl();
-
+            matcher = URLUtil.matchUrl(url);
         } else {
             String[] content = message.getContentRaw().split("\\s+");
 
