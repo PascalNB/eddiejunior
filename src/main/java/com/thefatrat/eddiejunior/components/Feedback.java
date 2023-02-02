@@ -1,8 +1,6 @@
 package com.thefatrat.eddiejunior.components;
 
-import com.thefatrat.eddiejunior.Bot;
 import com.thefatrat.eddiejunior.entities.Command;
-import com.thefatrat.eddiejunior.entities.Interaction;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotWarningException;
 import com.thefatrat.eddiejunior.reply.EditReply;
@@ -15,14 +13,12 @@ import com.thefatrat.eddiejunior.util.URLUtil;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.Channel;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
-import net.dv8tion.jda.api.interactions.components.ActionRow;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
@@ -43,6 +39,7 @@ public class Feedback extends DirectComponent {
     private final Set<String> filetypes = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Set<String> users = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final List<Submission> submissions = new CopyOnWriteArrayList<>();
+    private String winChannel;
     private int submissionCount = 0;
 
     public Feedback(Server server) {
@@ -50,35 +47,18 @@ public class Feedback extends DirectComponent {
 
         domains.addAll(getDatabaseManager().getSettings("domains"));
         filetypes.addAll(getDatabaseManager().getSettings("filetypes"));
+        winChannel = getDatabaseManager().getSetting("winchannel");
 
         addSubcommands(
-            new Command("raffle", "pick a random submission")
+            new Command("winchannel", "set the channel where win messages will be sent to")
+                .addOption(new OptionData(OptionType.CHANNEL, "channel", "channel", true))
                 .setAction((command, reply) -> {
-                    if (!isRunning()) {
-                        throw new BotWarningException("There is no feedback session at the moment");
-                    }
-                    if (submissionCount == 0) {
-                        throw new BotWarningException("No submissions have been received yet");
-                    }
-                    if (submissions.size() == 0) {
-                        throw new BotWarningException("There are no submissions left in the queue");
-                    }
+                    TextChannel channel = command.getArgs().get("channel").getAsChannel().asTextChannel();
+                    PermissionChecker.requireSend(channel);
 
-                    TextChannel destination = getDestination();
-
-                    if (destination == null) {
-                        throw new BotErrorException("Destination not set yet");
-                    }
-
-                    PermissionChecker.requireSend(getDestination());
-
-                    Collections.shuffle(submissions);
-
-                    Submission submission = submissions.get(0);
-                    submissions.remove(0);
-
-                    reply.send(Icon.WIN, "%s has won!", submission.user().getAsMention());
-                    destination.sendMessage(submission.submission()).queue();
+                    winChannel = channel.getId();
+                    getDatabaseManager().setSetting("winchannel", winChannel);
+                    reply.ok("Set win channel to %s", channel.getAsMention());
                 }),
 
             new Command("reset", "allow submissions for users again")
@@ -287,38 +267,6 @@ public class Feedback extends DirectComponent {
                 })
         );
 
-        addInteractions(
-            new Interaction("mark read")
-                .setAction((event, reply) -> {
-                    interactionCheck(event.getMessage());
-
-                    MessageEditBuilder builder = MessageEditBuilder.fromMessage(event.getMessage());
-                    EmbedBuilder embed = new EmbedBuilder(builder.getEmbeds().get(0));
-                    embed.setColor(Colors.TRANSPARENT);
-                    builder.setEmbeds(embed.build());
-                    builder.setComponents();
-                    event.getMessage().editMessage(builder.build()).queue();
-                    reply.hide();
-                    reply.ok("Submission marked as read");
-                }),
-
-            new Interaction("mark unread")
-                .setAction((event, reply) -> {
-                    interactionCheck(event.getMessage());
-
-                    MessageEditBuilder builder = MessageEditBuilder.fromMessage(event.getMessage());
-                    EmbedBuilder embed = new EmbedBuilder(builder.getEmbeds().get(0));
-                    embed.setColor(Colors.GREEN);
-                    builder.setEmbeds(embed.build());
-                    builder.setComponents(ActionRow.of(
-                        Button.secondary("feedback-mark_read", "Mark as read").withEmoji(Emoji.fromUnicode("✅"))
-                    ));
-                    event.getMessage().editMessage(builder.build()).queue();
-                    reply.hide();
-                    reply.ok("Submission marked as unread");
-                })
-        );
-
         getServer().getButtonHandler().addListener((event, reply) -> {
             String buttonId = event.getButtonId();
             if (!buttonId.startsWith("feedback-")) {
@@ -328,35 +276,48 @@ public class Feedback extends DirectComponent {
             String[] split = buttonId.split("-");
             String action = split[1];
 
-            if ("mark_read".equals(action)) {
-                PermissionChecker.requireSend(
-                    event.getMessage().getChannel().asGuildMessageChannel().getPermissionContainer());
+            if ("next".equals(action)) {
+                if (!isRunning()) {
+                    throw new BotWarningException("There is no feedback session at the moment");
+                }
+                if (submissionCount == 0) {
+                    throw new BotWarningException("No submissions have been received yet");
+                }
+                if (submissions.size() == 0) {
+                    throw new BotWarningException("There are no submissions left in the queue");
+                }
+
+                TextChannel channel = event.getMessage().getChannel().asTextChannel();
+                PermissionChecker.requireSend(channel);
+
+                Collections.shuffle(submissions);
+
+                Submission submission = submissions.get(0);
+                submissions.remove(0);
+
+                if (winChannel != null) {
+                    TextChannel output = getServer().getGuild().getTextChannelById(winChannel);
+                    if (output != null && output.canTalk()) {
+                        output.sendMessageEmbeds(
+                                new EmbedBuilder()
+                                    .setColor(Icon.WIN.getColor())
+                                    .setDescription(String.format(
+                                        "%s %s has won!",
+                                        Icon.WIN, submission.user().getAsMention()
+                                    ))
+                                    .build()
+                            )
+                            .queue();
+                    }
+                }
+
+                channel.sendMessage(submission.submission()).queue();
 
                 MessageEditBuilder builder = MessageEditBuilder.fromMessage(event.getMessage());
-                EmbedBuilder embed = new EmbedBuilder(builder.getEmbeds().get(0));
-                embed.setColor(Colors.TRANSPARENT);
-                builder.setEmbeds(embed.build());
                 builder.setComponents();
                 reply.edit(builder.build());
             }
         });
-    }
-
-    private void interactionCheck(@NotNull Message message) {
-        if (!Bot.getInstance().getJDA().getSelfUser().getId()
-            .equals(message.getAuthor().getId())) {
-            throw new BotWarningException("Message was not send by me");
-        }
-        List<MessageEmbed> embeds = message.getEmbeds();
-        if (embeds.isEmpty()) {
-            throw new BotErrorException("Message does not contain embeds");
-        }
-        MessageEmbed embed = embeds.get(0);
-        if (embed.getFooter() == null || !getName().equals(embed.getFooter().getText())) {
-            throw new BotErrorException("Could not perform action");
-        }
-
-        PermissionChecker.requireSend(message.getChannel().asGuildMessageChannel().getPermissionContainer());
     }
 
     @Override
@@ -425,7 +386,7 @@ public class Feedback extends DirectComponent {
         MessageCreateBuilder builder = new MessageCreateBuilder();
 
         EmbedBuilder embed = new EmbedBuilder()
-            .setColor(Colors.GREEN)
+            .setColor(Colors.TRANSPARENT)
             .setTimestamp(Instant.now())
             .setAuthor(author.getAsTag(), null, author.getEffectiveAvatarUrl())
             .addField("User", String.format("%s `(%s)`", author.getAsMention(), author.getId()), true)
@@ -441,9 +402,10 @@ public class Feedback extends DirectComponent {
 
         builder.setEmbeds(embed.build());
         builder.addActionRow(
-            Button.secondary("feedback-mark_read", "Mark as read").withEmoji(Emoji.fromUnicode("✅"))
+            Button.primary("feedback-next", "Get next song").withEmoji(Emoji.fromUnicode("🎵"))
         );
 
+        getServer().log(author, "Submitted song <%s>", url);
         submissions.add(new Submission(author, builder.build()));
         submissionCount++;
         reply.edit(new EmbedBuilder()
@@ -459,6 +421,29 @@ public class Feedback extends DirectComponent {
         users.clear();
         submissions.clear();
         submissionCount = 0;
+
+        TextChannel channel = getDestination();
+        if (channel == null) {
+            reply.send(new BotErrorException("Could not start feedback session: destination channel not set"));
+            stop(Reply.EMPTY);
+            return;
+        }
+
+        channel.sendMessage(
+                new MessageCreateBuilder()
+                    .setEmbeds(
+                        new EmbedBuilder()
+                            .setColor(Colors.TRANSPARENT)
+                            .setTitle("Feedback session started")
+                            .build()
+                    )
+                    .setActionRow(
+                        Button.primary("feedback-next", "Get first song").withEmoji(Emoji.fromUnicode("🎵"))
+                    )
+                    .build()
+            )
+            .queue();
+
         reply.ok("Feedback session started");
     }
 

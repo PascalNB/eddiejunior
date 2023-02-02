@@ -68,8 +68,8 @@ public class Event extends Component {
                 if (link.session() != null && sessionComponent != null && sessionComponent.isEnabled()
                     && sessionComponent.isSession(link.session())) {
                     try {
-                        sessionComponent.openSession(link.session(), Reply.EMPTY);
                         getServer().log("Opened session `%s`", link.session());
+                        sessionComponent.openSession(link.session(), Reply.EMPTY);
                     } catch (BotException ignore) {
                     }
                 }
@@ -83,8 +83,8 @@ public class Event extends Component {
                 if (link.session() != null && sessionComponent != null && sessionComponent.isEnabled()
                     && sessionComponent.isSession(link.session())) {
                     try {
-                        sessionComponent.closeSession(link.session(), Reply.EMPTY);
                         getServer().log("Closed session `%s`", link.session());
+                        sessionComponent.closeSession(link.session(), Reply.EMPTY);
                     } catch (BotException ignore) {
                     }
                 }
