@@ -47,6 +47,7 @@ public final class URLUtil {
         return null;
     }
 
+    @NotNull
     public static Message messageFromURL(@NotNull String url, @NotNull Guild guild) throws BotException {
         Matcher matcher = Message.JUMP_URL_PATTERN.matcher(url);
         String[] jump;

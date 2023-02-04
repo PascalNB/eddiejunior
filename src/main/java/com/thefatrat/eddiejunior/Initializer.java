@@ -29,8 +29,7 @@ public class Initializer {
             properties.load(new FileInputStream(propertiesPath + "/config.cfg"));
 
         } catch (FileNotFoundException e) {
-            try (InputStream config = Initializer.class.getClassLoader()
-                .getResourceAsStream("config.cfg")) {
+            try (InputStream config = Initializer.class.getClassLoader().getResourceAsStream("config.cfg")) {
                 properties.load(config);
             } catch (IOException e2) {
                 throw new UncheckedIOException(e2);

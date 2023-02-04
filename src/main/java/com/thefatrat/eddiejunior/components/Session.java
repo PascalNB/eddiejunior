@@ -7,18 +7,20 @@ import com.thefatrat.eddiejunior.reply.Reply;
 import com.thefatrat.eddiejunior.sources.Server;
 import com.thefatrat.eddiejunior.util.Colors;
 import com.thefatrat.eddiejunior.util.Icon;
+import com.thefatrat.eddiejunior.util.URLUtil;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
-import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.IMentionable;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.PermissionOverride;
+import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.entities.channel.ChannelType;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.requests.RestAction;
+import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import net.dv8tion.jda.internal.utils.PermissionUtil;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
@@ -32,7 +34,7 @@ public class Session extends Component {
         Permission.VIEW_CHANNEL,
         Permission.MANAGE_PERMISSIONS};
 
-    private final Map<String, Set<String>> sessions = new HashMap<>();
+    private final Map<String, Map<String, Message>> sessions = new HashMap<>();
 
     public Session(Server server) {
         super(server, NAME, false);
@@ -40,10 +42,13 @@ public class Session extends Component {
         {
             List<String> list = getDatabaseManager().getSettings("session");
             for (String session : list) {
-                sessions.put(session, new HashSet<>());
+                Map<String, Message> map = new HashMap<>();
+                sessions.put(session, map);
                 List<String> ids = getDatabaseManager().getSettings("session_" + session);
                 for (String id : ids) {
-                    sessions.get(session).add(id);
+                    String messageString = getDatabaseManager().getSetting("message_" + session + "_" + id);
+                    Message message = getMessage(messageString);
+                    map.put(id, message);
                 }
             }
         }
@@ -79,15 +84,73 @@ public class Session extends Component {
                 .setAction((command, reply) -> {
                     String session = command.getArgs().get("session").getAsString();
                     if (!sessions.containsKey(session)) {
-                        sessions.put(session, new HashSet<>());
+                        sessions.put(session, new HashMap<>());
                         getDatabaseManager().addSetting("session", session);
                     }
                     IMentionable channel = command.getArgs().get("channel").getAsChannel();
-                    sessions.get(session).add(channel.getId());
+                    sessions.get(session).put(channel.getId(), null);
                     getDatabaseManager().addSetting("session_" + session, channel.getId());
 
                     reply.ok("%s added to session `%s`", channel.getAsMention(), session);
                 }),
+
+            new Command("setmessage", "set the message to be sent in the given channel during the given session")
+                .addOptions(
+                    new OptionData(OptionType.STRING, "session", "session name", true)
+                        .setRequiredLength(3, 20),
+                    new OptionData(OptionType.CHANNEL, "channel", "channel", true)
+                        .setChannelTypes(ChannelType.TEXT),
+                    new OptionData(OptionType.STRING, "message", "message url", true)
+                )
+                .setAction((command, reply) -> {
+                    String session = command.getArgs().get("session").getAsString();
+                    if (!isSession(session)) {
+                        throw new BotErrorException(ERROR_SESSION_NONEXISTENT);
+                    }
+                    TextChannel channel = command.getArgs().get("channel").getAsChannel().asTextChannel();
+                    String channelId = channel.getId();
+                    Map<String, Message> map = sessions.get(session);
+                    if (!map.containsKey(channelId)) {
+                        throw new BotErrorException("Channel %s is not a part of session `%s`",
+                            channel.getAsMention(), session);
+                    }
+
+                    String url = command.getArgs().get("message").getAsString();
+                    Message message = URLUtil.messageFromURL(url, getServer().getGuild());
+                    String messageString = message.getChannel().getId() + "_" + message.getId();
+                    map.put(channelId, message);
+                    getDatabaseManager().setSetting("message_" + session + "_" + channelId, messageString);
+                    reply.ok("Set message for session `%s`", session);
+                }),
+
+            new Command("removemessage", "remove the message from the session")
+                .addOptions(
+                    new OptionData(OptionType.STRING, "session", "session name", true),
+                    new OptionData(OptionType.CHANNEL, "channel", "channel", true)
+                        .setChannelTypes(ChannelType.TEXT)
+                )
+                .setAction((command, reply) -> {
+                    String session = command.getArgs().get("session").getAsString();
+                    if (!isSession(session)) {
+                        throw new BotErrorException(ERROR_SESSION_NONEXISTENT);
+                    }
+                    TextChannel channel = command.getArgs().get("channel").getAsChannel().asTextChannel();
+
+                    Map<String, Message> map = sessions.get(session);
+                    if (!map.containsKey(channel.getId())) {
+                        throw new BotErrorException("Channel %s is not a part of session `%s`",
+                            channel.getAsMention(), session);
+                    }
+                    if (map.get(channel.getId()) == null) {
+                        throw new BotErrorException("Channel %s does not have an associated message for session `%s`",
+                            channel.getAsMention(), session);
+                    }
+
+                    map.put(channel.getId(), null);
+                    getDatabaseManager().removeSetting("message_" + session + "_" + channel.getId());
+                    reply.ok("Removed message from channel %s for session `%s`", channel.getAsMention(), session);
+                }),
+
             new Command("remove",
                 "removes a channel from a session, removes the session if no channels are left")
                 .addOptions(
@@ -102,13 +165,14 @@ public class Session extends Component {
                     }
                     if (command.getArgs().containsKey("channel")) {
                         IMentionable channel = command.getArgs().get("channel").getAsChannel();
-                        Set<String> session = sessions.get(string);
-                        if (!session.contains(channel.getId())) {
+                        Map<String, Message> session = sessions.get(string);
+                        if (!session.containsKey(channel.getId())) {
                             throw new BotErrorException("The given channel is a not part of the session");
                         }
 
                         session.remove(channel.getId());
                         getDatabaseManager().removeSetting("session_" + string, channel.getId());
+                        getDatabaseManager().removeSetting("message_" + string + "_" + channel.getId());
                         if (session.isEmpty()) {
                             sessions.remove(string);
                             removeSessionFromDatabase(string);
@@ -130,15 +194,21 @@ public class Session extends Component {
                         throw new BotErrorException(ERROR_SESSION_NONEXISTENT);
                     }
 
-                    Set<String> session = sessions.get(string);
+                    Map<String, Message> session = sessions.get(string);
                     Guild guild = getServer().getGuild();
                     List<String> channels = new ArrayList<>();
-                    for (String id : session) {
-                        IMentionable channel = guild.getGuildChannelById(id);
-                        if (channel == null) {
-                            sessions.get(string).remove(id);
+                    for (Map.Entry<String, Message> entry : session.entrySet()) {
+                        IMentionable channel = guild.getGuildChannelById(entry.getKey());
+                        if (channel != null) {
+                            Message message = entry.getValue();
+                            String listString = channel.getAsMention();
+                            if (message != null) {
+                                listString += " Message: <" + message.getJumpUrl() + ">";
+                            }
+                            channels.add(listString);
                         } else {
-                            channels.add(channel.getAsMention());
+                            session.remove(entry.getKey());
+                            getDatabaseManager().removeSetting("message_" + string + "_" + entry.getKey());
                         }
                     }
 
@@ -188,13 +258,13 @@ public class Session extends Component {
     }
 
     public void openSession(String session, Reply reply) {
-        Set<String> sessionChannels = sessions.get(session);
+        Map<String, Message> sessionChannels = sessions.get(session);
         Guild guild = getServer().getGuild();
         List<RestAction<PermissionOverride>> actions = new ArrayList<>();
-        for (String id : sessionChannels) {
+        for (String id : sessionChannels.keySet()) {
             GuildChannel channel = guild.getGuildChannelById(id);
             if (channel == null) {
-                sessions.get(session).remove(id);
+                sessionChannels.remove(id);
             } else {
                 checkPermissions(channel);
                 actions.add(channel.getPermissionContainer()
@@ -209,11 +279,21 @@ public class Session extends Component {
         reply.ok("Session `%s` started.%n" +
             "The following channels have been made public:%n%s", session, joined);
 
+        for (Map.Entry<String, Message> entry : sessionChannels.entrySet()) {
+            TextChannel channel = guild.getTextChannelById(entry.getKey());
+            if (channel != null && channel.canTalk()) {
+                Message message = entry.getValue();
+                if (message != null) {
+                    channel.sendMessage(MessageCreateData.fromMessage(message)).queue();
+                }
+            }
+        }
+
         getServer().log("Opened %s", joined);
     }
 
     public void closeSession(String session, Reply reply) {
-        Set<String> sessionChannels = sessions.get(session);
+        Set<String> sessionChannels = sessions.get(session).keySet();
         Guild guild = getServer().getGuild();
         List<RestAction<PermissionOverride>> actions = new ArrayList<>();
         for (String id : sessionChannels) {
@@ -271,6 +351,24 @@ public class Session extends Component {
     private void removeSessionFromDatabase(String session) {
         getDatabaseManager().removeSetting("session_" + session);
         getDatabaseManager().removeSetting("session", session);
+        for (String id : sessions.get(session).keySet()) {
+            getDatabaseManager().removeSetting("message_" + session + "_" + id);
+        }
+    }
+
+    @Nullable
+    private Message getMessage(@Nullable String messageString) {
+        if (messageString == null) {
+            return null;
+        }
+        String[] split = messageString.split("_", 2);
+        TextChannel channel = getServer().getGuild().getTextChannelById(split[0]);
+        if (channel == null) {
+            return null;
+        }
+        return channel.retrieveMessageById(split[1])
+            .onErrorMap(e -> null)
+            .complete();
     }
 
     @Override

@@ -4,10 +4,7 @@ import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotWarningException;
 import com.thefatrat.eddiejunior.sources.Server;
-import com.thefatrat.eddiejunior.util.Colors;
-import com.thefatrat.eddiejunior.util.EmojiUtil;
-import com.thefatrat.eddiejunior.util.PermissionChecker;
-import com.thefatrat.eddiejunior.util.URLUtil;
+import com.thefatrat.eddiejunior.util.*;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
@@ -43,6 +40,12 @@ public class PollComponent extends Component {
                     new OptionData(OptionType.STRING, "option2", "option2", true),
                     new OptionData(OptionType.STRING, "option3", "option3", false),
                     new OptionData(OptionType.STRING, "option4", "option4", false),
+                    new OptionData(OptionType.STRING, "option5", "option5", false),
+                    new OptionData(OptionType.STRING, "option6", "option6", false),
+                    new OptionData(OptionType.STRING, "option7", "option7", false),
+                    new OptionData(OptionType.STRING, "option8", "option8", false),
+                    new OptionData(OptionType.STRING, "option9", "option9", false),
+                    new OptionData(OptionType.STRING, "option10", "option10", false),
                     new OptionData(OptionType.CHANNEL, "channel", "channel", false)
                         .setChannelTypes(ChannelType.TEXT)
                 )
@@ -63,14 +66,34 @@ public class PollComponent extends Component {
                         MessageEditBuilder edit = MessageEditBuilder.fromMessage(message);
                         List<Button> buttons = new ArrayList<>();
                         List<String> options = new ArrayList<>();
+                        Set<String> ids = new HashSet<>();
+                        int added = 0;
 
-                        for (int i = 1; i <= 4; i++) {
+                        for (int i = 1; i <= 10; i++) {
                             OptionMapping option = command.getArgs().get("option" + i);
                             if (option == null) {
                                 continue;
                             }
                             Button temp = EmojiUtil.formatButton("p", option.getAsString(), ButtonStyle.SECONDARY);
-                            String id = message.getId() + "-" + temp.getLabel();
+                            String label;
+                            if ("".equals(temp.getLabel())) {
+                                label = Objects.requireNonNull(temp.getEmoji()).asUnicode().getAsCodepoints();
+                            } else {
+                                label = temp.getLabel();
+                            }
+                            String id = message.getId() + "-" + label;
+                            ids.add(id);
+                            added++;
+                            if (ids.size() != added) {
+                                message.editMessageEmbeds(
+                                        new EmbedBuilder()
+                                            .setColor(Icon.ERROR.getColor())
+                                            .setDescription(Icon.ERROR + " All poll options should be unique")
+                                            .build()
+                                    )
+                                    .queue();
+                                return;
+                            }
                             buttons.add(
                                 EmojiUtil.formatButton("poll-" + id, option.getAsString(), ButtonStyle.SECONDARY)
                             );
