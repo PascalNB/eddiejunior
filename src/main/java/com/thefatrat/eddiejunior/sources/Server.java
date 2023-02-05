@@ -188,8 +188,8 @@ public class Server {
         ).queue();
     }
 
+    @SuppressWarnings("unchecked")
     public <T extends Reply & EditReply> ComponentHandler<T> getDirectMessageHandler() {
-        //noinspection unchecked
         return (ComponentHandler<T>) directHandler;
     }
 
