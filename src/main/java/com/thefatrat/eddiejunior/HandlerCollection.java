@@ -7,12 +7,10 @@ import com.thefatrat.eddiejunior.reply.EditReply;
 import com.thefatrat.eddiejunior.reply.EphemeralReply;
 import com.thefatrat.eddiejunior.reply.ModalReply;
 import com.thefatrat.eddiejunior.reply.Reply;
-import net.dv8tion.jda.api.entities.Message;
 
 @SuppressWarnings("unchecked")
 public class HandlerCollection<V> {
 
-    private MapHandler<Message, ?> directHandler;
     private MapHandler<CommandEvent, ?> commandHandler;
     private MapHandler<MessageInteractionEvent, ?> messageInteractionHandler;
     private SetHandler<ArchiveEvent, Void> archiveHandler;
@@ -21,13 +19,6 @@ public class HandlerCollection<V> {
     private MapHandler<ModalEvent, ?> modalHandler;
     private SetHandler<EventEvent, Void> eventHandler;
     private MapHandler<StringSelectEvent, ?> stringSelectHandler;
-
-    public <T extends Reply> MapHandler<Message, T> getMessageHandler() {
-        if (directHandler == null) {
-            directHandler = new MapHandler<>();
-        }
-        return (MapHandler<Message, T>) directHandler;
-    }
 
     public <T extends Reply & EphemeralReply & ModalReply> MapHandler<CommandEvent, T> getCommandHandler() {
         if (commandHandler == null) {

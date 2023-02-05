@@ -13,8 +13,8 @@ public class MapHandler<T, R> {
         map.put(key, listener);
     }
 
-    public void removeListener(String component) {
-        map.remove(component);
+    public void removeListener(String key) {
+        map.remove(key);
     }
 
     public Set<String> getKeys() {

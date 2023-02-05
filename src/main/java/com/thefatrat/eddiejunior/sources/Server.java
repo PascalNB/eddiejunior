@@ -7,6 +7,7 @@ import com.thefatrat.eddiejunior.components.Component;
 import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.entities.Interaction;
 import com.thefatrat.eddiejunior.events.*;
+import com.thefatrat.eddiejunior.handlers.ComponentHandler;
 import com.thefatrat.eddiejunior.handlers.MapHandler;
 import com.thefatrat.eddiejunior.handlers.SetHandler;
 import com.thefatrat.eddiejunior.reply.EditReply;
@@ -17,7 +18,6 @@ import com.thefatrat.eddiejunior.util.Colors;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
@@ -38,6 +38,7 @@ public class Server {
 
     private final String id;
     private final HandlerCollection<Member> handlerCollection = new HandlerCollection<>();
+    private final ComponentHandler<?> directHandler = new ComponentHandler<>();
     private final Map<String, Component> components = new HashMap<>();
     private TextChannel log = null;
 
@@ -187,8 +188,9 @@ public class Server {
         ).queue();
     }
 
-    public <T extends Reply & EditReply> MapHandler<Message, T> getDirectMessageHandler() {
-        return handlerCollection.getMessageHandler();
+    public <T extends Reply & EditReply> ComponentHandler<T> getDirectMessageHandler() {
+        //noinspection unchecked
+        return (ComponentHandler<T>) directHandler;
     }
 
     public <T extends Reply & EphemeralReply & ModalReply> MapHandler<CommandEvent, T> getCommandHandler() {

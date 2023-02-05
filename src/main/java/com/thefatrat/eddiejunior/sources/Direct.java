@@ -104,18 +104,17 @@ public class Direct {
             throw new BotErrorException("Something went wrong");
         }
 
-        Set<String> keys = server.getDirectMessageHandler().getKeys();
+        Set<Map.Entry<String, String>> names = server.getDirectMessageHandler().getNames();
 
-        if (keys.isEmpty()) {
+        if (names.isEmpty()) {
             cache.remove(userId);
             throw new BotWarningException("The server does not handle any messages at the moment");
         }
 
         StringSelectMenu.Builder menu = StringSelectMenu.create("component").setMaxValues(1);
 
-        for (String key : keys) {
-            String name = key.substring(0, 1).toUpperCase() + key.substring(1);
-            menu.addOption(name, serverId + "-" + key);
+        for (Map.Entry<String, String> name : names) {
+            menu.addOption(name.getValue(), serverId + "-" + name.getKey());
         }
 
         return new MessageCreateBuilder()

@@ -25,6 +25,7 @@ import java.util.function.Function;
 
 public abstract class DirectComponent extends Component implements RunnableComponent {
 
+    private final String alt;
     private final boolean autoRun;
     private final Set<String> blacklist = new HashSet<>();
     private boolean running = false;
@@ -42,8 +43,9 @@ public abstract class DirectComponent extends Component implements RunnableCompo
         };
     }
 
-    public DirectComponent(Server server, String name, boolean autoRun) {
+    public DirectComponent(Server server, String name, String alt, boolean autoRun) {
         super(server, name, false);
+        this.alt = alt;
         this.autoRun = autoRun;
         destination = getDatabaseManager().getSetting("destination");
         if (autoRun && getDatabaseManager().getSettingOrDefault("running", false)) {
@@ -53,7 +55,8 @@ public abstract class DirectComponent extends Component implements RunnableCompo
 
         setComponentCommand();
 
-        addSubcommands(new Command("start", "starts the component")
+        addSubcommands(
+            new Command("start", "starts the component")
                 .addOption(new OptionData(OptionType.CHANNEL, "channel", "channel destination")
                     .setChannelTypes(ChannelType.TEXT)
                 )
@@ -245,7 +248,7 @@ public abstract class DirectComponent extends Component implements RunnableCompo
 
     public void start(Reply reply) {
         this.running = true;
-        getServer().getDirectMessageHandler().addListener(getName(), getReceiver());
+        getServer().getDirectMessageHandler().addListener(getName(), alt, getReceiver());
         if (autoRun) {
             getDatabaseManager().setSetting("running", "true");
         }

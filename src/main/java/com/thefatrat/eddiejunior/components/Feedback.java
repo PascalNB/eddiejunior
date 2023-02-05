@@ -43,7 +43,7 @@ public class Feedback extends DirectComponent {
     private int submissionCount = 0;
 
     public Feedback(Server server) {
-        super(server, NAME, false);
+        super(server, NAME, "Song Review (Feedback)", false);
 
         domains.addAll(getDatabaseManager().getSettings("domains"));
         filetypes.addAll(getDatabaseManager().getSettings("filetypes"));
