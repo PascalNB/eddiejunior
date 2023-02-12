@@ -90,7 +90,8 @@ public class Manager extends Component {
                     component.enable();
                     getServer().toggleComponent(component, true).queue();
                     reply.send(Icon.ENABLE, "Component `%s` enabled", componentString);
-                    getServer().log(command.getMember().getUser(), "Enabled component `%s`", componentString);
+                    getServer().log(Colors.BLUE, command.getMember().getUser(),
+                        "Enabled component `%s`", componentString);
                 }),
 
             new Command("disable", "disable a specific component by name")
@@ -112,7 +113,8 @@ public class Manager extends Component {
                     component.disable();
                     getServer().toggleComponent(component, false).queue();
                     reply.send(Icon.DISABLE, "Component `%s` disabled", componentString);
-                    getServer().log(command.getMember().getUser(), "Disabled component `%s`", componentString);
+                    getServer().log(Colors.BLUE, command.getMember().getUser(),
+                        "Disabled component `%s`", componentString);
                 }),
 
             new Command("components", "shows a list of all the components")

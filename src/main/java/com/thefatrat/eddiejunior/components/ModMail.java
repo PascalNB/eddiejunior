@@ -455,8 +455,8 @@ public class ModMail extends DirectComponent {
 
         ++tickets;
 
-        getServer().log(author, "Created modmail ticked %s (`%s`)%n%s", thread.getAsMention(), thread.getName(),
-            thread.getJumpUrl());
+        getServer().log(Colors.GRAY, author, "Created modmail ticked %s (`%s`)%n%s", thread.getAsMention(),
+            thread.getName(), thread.getJumpUrl());
 
         return new MessageCreateBuilder()
             .addEmbeds(new EmbedBuilder()

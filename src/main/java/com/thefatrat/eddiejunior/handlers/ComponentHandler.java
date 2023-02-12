@@ -17,6 +17,11 @@ public class ComponentHandler<R extends Reply & EditReply> extends MapHandler<Me
         return names.entrySet();
     }
 
+    @Override
+    public void addListener(String key, BiConsumer<Message, R> listener) {
+        this.addListener(key, key, listener);
+    }
+
     public void addListener(String key, String name, BiConsumer<Message, R> listener) {
         super.addListener(key, listener);
         names.put(key, name);

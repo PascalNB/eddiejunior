@@ -68,7 +68,7 @@ public class Event extends Component {
                 if (link.session() != null && sessionComponent != null && sessionComponent.isEnabled()
                     && sessionComponent.isSession(link.session())) {
                     try {
-                        getServer().log("Opened session `%s`", link.session());
+                        getServer().log(Colors.GREEN, "Opened session `%s`", link.session());
                         sessionComponent.openSession(link.session(), Reply.EMPTY);
                     } catch (BotException ignore) {
                     }
@@ -76,14 +76,14 @@ public class Event extends Component {
 
                 if (link.component() != null && component != null && !component.isRunning()) {
                     component.start(Reply.EMPTY);
-                    getServer().log("Component `%s` started running", link.component());
+                    getServer().log(Colors.GREEN, "Component `%s` started running", link.component());
                 }
 
             } else if (event.getStatus().equals(ScheduledEvent.Status.COMPLETED)) {
                 if (link.session() != null && sessionComponent != null && sessionComponent.isEnabled()
                     && sessionComponent.isSession(link.session())) {
                     try {
-                        getServer().log("Closed session `%s`", link.session());
+                        getServer().log(Colors.RED, "Closed session `%s`", link.session());
                         sessionComponent.closeSession(link.session(), Reply.EMPTY);
                     } catch (BotException ignore) {
                     }
@@ -91,7 +91,7 @@ public class Event extends Component {
 
                 if (link.component() != null && component != null) {
                     component.stop(Reply.EMPTY);
-                    getServer().log("Component `%s` stopped running", link.component());
+                    getServer().log(Colors.RED, "Component `%s` stopped running", link.component());
                 }
             }
         });

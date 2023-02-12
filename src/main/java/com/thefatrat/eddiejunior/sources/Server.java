@@ -162,12 +162,12 @@ public class Server {
         return log;
     }
 
-    public void log(User user, String message, Object... args) {
+    public void log(int color, User user, String message, Object... args) {
         if (log == null || !log.canTalk()) {
             return;
         }
         log.sendMessageEmbeds(new EmbedBuilder()
-            .setColor(Colors.TRANSPARENT)
+            .setColor(color)
             .setDescription(String.format("%s ", user.getAsMention()) +
                 String.format(message, args))
             .setFooter(user.getId(), user.getEffectiveAvatarUrl())
@@ -176,16 +176,24 @@ public class Server {
         ).queue();
     }
 
-    public void log(String message, Object... args) {
+    public void log(User user, String message, Object... args) {
+        log(Colors.TRANSPARENT, user, message, args);
+    }
+
+    public void log(int color, String message, Object... args) {
         if (log == null || !log.canTalk()) {
             return;
         }
         log.sendMessageEmbeds(new EmbedBuilder()
-            .setColor(Colors.TRANSPARENT)
+            .setColor(color)
             .setDescription(String.format(message, args))
             .setTimestamp(Instant.now())
             .build()
         ).queue();
+    }
+
+    public void log(String message, Object... args) {
+        log(Colors.TRANSPARENT, message, args);
     }
 
     @SuppressWarnings("unchecked")

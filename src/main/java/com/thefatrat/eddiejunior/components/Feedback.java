@@ -405,7 +405,7 @@ public class Feedback extends DirectComponent {
             Button.primary("feedback-next", "Get next song").withEmoji(Emoji.fromUnicode("🎵"))
         );
 
-        getServer().log(author, "Submitted song <%s>", url);
+        getServer().log(Colors.GRAY, author, "Submitted song <%s>", url);
         submissions.add(new Submission(author, builder.build()));
         submissionCount++;
         reply.edit(new EmbedBuilder()

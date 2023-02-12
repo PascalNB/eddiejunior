@@ -238,7 +238,7 @@ public class Session extends Component {
                     if (!isSession(session)) {
                         throw new BotErrorException(ERROR_SESSION_NONEXISTENT);
                     }
-                    getServer().log(command.getMember().getUser(), "Opened session `%s`", session);
+                    getServer().log(Colors.GREEN, command.getMember().getUser(), "Opened session `%s`", session);
                     openSession(session, reply);
                 }),
             new Command("close", "closes channels of a session")
@@ -250,7 +250,7 @@ public class Session extends Component {
                     if (!isSession(session)) {
                         throw new BotErrorException("The given session does not exist");
                     }
-                    getServer().log(command.getMember().getUser(), "Closed session `%s`", session);
+                    getServer().log(Colors.RED, command.getMember().getUser(), "Closed session `%s`", session);
                     closeSession(session, reply);
                 })
         );
