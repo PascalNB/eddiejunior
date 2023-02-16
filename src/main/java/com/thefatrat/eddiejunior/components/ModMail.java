@@ -373,10 +373,10 @@ public class ModMail extends DirectComponent {
             throw new BotWarningException("The server does not accept tickets at the moment");
         }
         if (message.length() < 20) {
-            throw new BotWarningException("Messages have to be between at least 20 characters");
+            throw new BotWarningException("Messages must be longer than 20 characters");
         }
         if (message.length() > 4090) {
-            throw new BotWarningException("Message cannot be longer than 4090 characters");
+            throw new BotWarningException("Messages must be shorter than 4090 characters");
         }
         if (!message.contains(" ")) {
             throw new BotWarningException("Spam is not allowed");
