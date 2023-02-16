@@ -372,6 +372,9 @@ public class ModMail extends DirectComponent {
         if (!isRunning()) {
             throw new BotWarningException("The server does not accept tickets at the moment");
         }
+        if (getBlacklist().contains(author.getId())) {
+            throw new BotWarningException("You cannot create tickets at the moment");
+        }
         if (message.length() < 20) {
             throw new BotWarningException("Messages must be longer than 20 characters");
         }
@@ -379,7 +382,7 @@ public class ModMail extends DirectComponent {
             throw new BotWarningException("Messages must be shorter than 4090 characters");
         }
         if (!message.contains(" ")) {
-            throw new BotWarningException("Spam is not allowed");
+            throw new BotWarningException("Message was detected as an invalid message");
         }
 
         if (maxTickets != 0 && tickets == maxTickets) {

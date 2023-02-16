@@ -89,6 +89,9 @@ public abstract class DirectComponent extends Component implements RunnableCompo
                         reply.send(Icon.SETTING, "Destination set to %s `(%s)`%n",
                             newDestination.getAsMention(), newDestination.getId()
                         );
+                        getServer().log(Colors.GRAY, command.getMember().getUser().getId(),
+                            "Set destination of `%s` to %s (`%s`)", getName(), newDestination.getAsMention(),
+                            newDestination.getId());
                     }
 
                     this.start(reply);
@@ -121,6 +124,8 @@ public abstract class DirectComponent extends Component implements RunnableCompo
 
                     setDestination(newDestination.getId());
 
+                    getServer().log(Colors.GRAY, command.getMember().getUser(), "Set `%s` destination channel to %s " +
+                        "(`%s`)", getName(), newDestination.getAsMention(), newDestination.getId());
                     reply.send(Icon.SETTING, "Destination set to %s `(%s)`%n",
                         newDestination.getAsMention(), newDestination.getId());
                 }),
@@ -190,6 +195,15 @@ public abstract class DirectComponent extends Component implements RunnableCompo
 
                     if (member != null) {
                         blacklist(member, add, msg, reply);
+                        if (add) {
+                            getServer().log(Colors.RED, command.getMember().getUser(),
+                                "Added %s (`%s`) to blacklist of `%s`", member.getAsMention(), member.getId(),
+                                getName());
+                        } else {
+                            getServer().log(Colors.GREEN, command.getMember().getUser(),
+                                "Removed %s (`%s`) from blacklist of `%s`", member.getAsMention(), member.getId(),
+                                getName());
+                        }
                         return;
                     }
                     throw new BotErrorException("The given member was not found");

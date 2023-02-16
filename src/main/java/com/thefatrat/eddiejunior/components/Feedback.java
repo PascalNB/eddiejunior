@@ -173,6 +173,8 @@ public class Feedback extends DirectComponent {
 
                     reply.ok("Domain%s %s %s the whitelist", changed.size() == 1 ? "" : "s",
                         String.join(", ", changed), msg);
+                    getServer().log(Colors.GRAY, command.getMember().getUser(), "Domain%s %s %s the whitelist of `%s`",
+                        changed.size() == 1 ? "" : "s", String.join(", ", changed), msg, getName());
                 }),
 
             new Command("filetypes", "manage discordapp filetypes filter, " +
@@ -264,6 +266,8 @@ public class Feedback extends DirectComponent {
 
                     reply.ok("Filetype%s %s %s the filetype list", changed.size() == 1 ? "" : "s",
                         String.join(", ", changed), msg);
+                    getServer().log(Colors.GRAY, command.getMember().getUser(), "Filetype%s %s %s the `%s` " +
+                        "filetype list", changed.size() == 1 ? "" : "s", String.join(", ", changed), msg, getName());
                 })
         );
 
