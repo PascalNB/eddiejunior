@@ -55,6 +55,7 @@ public class Initializer {
 
             Grab.class,
             Roles.class,
+            Hoist.class,
 
             MessageComponent.class
         );
