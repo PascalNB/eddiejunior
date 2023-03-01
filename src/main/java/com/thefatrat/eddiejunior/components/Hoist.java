@@ -24,7 +24,7 @@ public class Hoist extends Component {
         set.addAll(getDatabaseManager().getSettings("roles"));
 
         addCommands(
-            new Command("hoist", "hoist or dehoist a role")
+            new Command("hoist", "hoist or unhoist a role")
                 .addOption(new OptionData(OptionType.ROLE, "role", "role", true))
                 .setAction((command, reply) -> {
                     Role role = command.getArgs().get("role").getAsRole();
@@ -43,8 +43,8 @@ public class Hoist extends Component {
 
                     if (role.isHoisted()) {
                         role.getManager().setHoisted(false).queue();
-                        reply.ok("Dehoisted role %s", role.getAsMention());
-                        getServer().log(Colors.RED, command.getMember().getUser(), "Dehoisted role %s (`%s`)",
+                        reply.ok("Unhoisted role %s", role.getAsMention());
+                        getServer().log(Colors.RED, command.getMember().getUser(), "Unhoisted role %s (`%s`)",
                             role.getAsMention(), role.getId());
                     } else {
                         role.getManager().setHoisted(true).queue();
@@ -54,7 +54,7 @@ public class Hoist extends Component {
                     }
                 }),
 
-            new Command("hoistable", "toggle a role to be hoisted or dehoisted by the hoist command")
+            new Command("hoistable", "toggle a role to be hoisted or unhoisted by the hoist command")
                 .addOption(new OptionData(OptionType.ROLE, "role", "role", true))
                 .setAction((command, reply) -> {
                     Role role = command.getArgs().get("role").getAsRole();
