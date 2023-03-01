@@ -39,6 +39,10 @@ public class Initializer {
         }
     }
 
+    public String getProperty(String property) {
+        return properties.getProperty(property);
+    }
+
     public static void main(String[] args) {
         final String token = getInstance().getProperty("bot_token");
         final JDA jda;
@@ -52,6 +56,7 @@ public class Initializer {
             PollComponent.class,
             Session.class,
             Event.class,
+            ChannelManager.class,
 
             Grab.class,
             Roles.class,
@@ -79,10 +84,6 @@ public class Initializer {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public String getProperty(String property) {
-        return properties.getProperty(property);
     }
 
 }
