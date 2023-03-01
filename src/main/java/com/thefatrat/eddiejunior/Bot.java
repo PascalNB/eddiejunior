@@ -148,7 +148,7 @@ public class Bot extends ListenerAdapter {
         commandRegister.registerDefaultCommands(slashCommands).complete();
         commandRegister.filterDefaultCommands(commandNames).queue();
 
-        jda.getPresence().setPresence(OnlineStatus.ONLINE, Activity.listening("DMs"));
+        jda.getPresence().setPresence(OnlineStatus.ONLINE, Activity.listening("✉️ DMs"));
         time = System.currentTimeMillis();
     }
 

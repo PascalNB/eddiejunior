@@ -29,6 +29,38 @@ public class ChannelManager extends Component {
                     reply.ok("Set slow mode to %d seconds", time);
                     getServer().log(Colors.GRAY, command.getMember().getUser(), "Set slow mode of %s (`%s`) to `%d` " +
                         "seconds", channel.getAsMention(), channel.getId(), time);
+                }),
+
+            new Command("closechannel", "closes the current channel")
+                .setAction((command, reply) -> {
+                    TextChannel channel = command.getChannel().asTextChannel();
+                    PermissionChecker.requirePermission(channel, Permission.MANAGE_PERMISSIONS);
+
+                    channel.getPermissionContainer().getPermissionContainer()
+                        .upsertPermissionOverride(getServer().getGuild().getPublicRole())
+                        .deny(Permission.VIEW_CHANNEL)
+                        .queue(x -> {
+                            reply.hide();
+                            reply.ok("Closed channel");
+                            getServer().log(Colors.RED, command.getMember().getUser(), "Closed %s (`%s`)",
+                                channel.getAsMention(), channel.getId());
+                        });
+                }),
+
+            new Command("openchannel", "opens the current channel")
+                .setAction((command, reply) -> {
+                    TextChannel channel = command.getChannel().asTextChannel();
+                    PermissionChecker.requirePermission(channel, Permission.MANAGE_PERMISSIONS);
+
+                    channel.getPermissionContainer().getPermissionContainer()
+                        .upsertPermissionOverride(getServer().getGuild().getPublicRole())
+                        .grant(Permission.VIEW_CHANNEL)
+                        .queue(x -> {
+                            reply.hide();
+                            reply.ok("Opened channel");
+                            getServer().log(Colors.GREEN, command.getMember().getUser(), "Opened %s (`%s`)",
+                                channel.getAsMention(), channel.getId());
+                        });
                 })
         );
     }
