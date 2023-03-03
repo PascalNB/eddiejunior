@@ -55,6 +55,7 @@ public class Hoist extends Component {
                 }),
 
             new Command("hoistable", "toggle a role to be hoisted or unhoisted by the hoist command")
+                .addPermissions(Permission.MANAGE_ROLES)
                 .addOption(new OptionData(OptionType.ROLE, "role", "role", true))
                 .setAction((command, reply) -> {
                     Role role = command.getArgs().get("role").getAsRole();
