@@ -446,7 +446,11 @@ public class ModMail extends DirectComponent {
             messageEmbed.addField("Attachments", String.format("```%s```", urls), false);
         }
 
-        builder.addEmbeds(userEmbed.build(), messageEmbed.build())
+        EmbedBuilder infoEmbed = new EmbedBuilder()
+            .setColor(Colors.TRANSPARENT)
+            .setDescription("Archiving this thread will close and lock it, only moderators can open it again.");
+
+        builder.addEmbeds(userEmbed.build(), messageEmbed.build(), infoEmbed.build())
             .addActionRow(
                 Button.secondary("modmail-archive-" + thread.getId(), "Archive ticket")
                     .withEmoji(Emoji.fromUnicode("\uD83D\uDCE5"))
