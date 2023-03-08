@@ -18,19 +18,30 @@ import net.dv8tion.jda.api.entities.sticker.StickerItem;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.requests.RestAction;
+import net.dv8tion.jda.api.utils.FileUpload;
 import net.dv8tion.jda.api.utils.ImageProxy;
 import net.dv8tion.jda.api.utils.Result;
 import net.dv8tion.jda.api.utils.TimeFormat;
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.Iterator;
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.util.List;
+import java.util.*;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
 
 public class Grab extends Component {
 
     public static final String NAME = "Grab";
+
+    private static final Predicate<String> hexMatcher = Pattern.compile("^[\\da-f]{6}$").asMatchPredicate();
 
     public Grab(Server server) {
         super(server, NAME, false);
@@ -299,6 +310,43 @@ public class Grab extends Component {
                     embed.setFooter(channel.getId());
                     reply.hide();
                     reply.send(embed.build());
+                }),
+
+            new Command("color", "grab a hex color")
+                .addOption(
+                    new OptionData(OptionType.STRING, "hex", "hex", true)
+                        .setRequiredLength(6, 7)
+                )
+                .setAction((command, reply) -> {
+                    String hexString = command.getArgs().get("hex").getAsString().toLowerCase(Locale.ROOT);
+
+                    if (hexString.charAt(0) == '#') {
+                        hexString = hexString.substring(1);
+                    }
+
+                    if (!hexMatcher.test(hexString)) {
+                        throw new BotErrorException("Not a valid hex");
+                    }
+
+                    int color = Integer.parseInt(hexString, 16);
+                    BufferedImage image = new BufferedImage(50, 50, BufferedImage.TYPE_INT_RGB);
+                    Graphics2D g = image.createGraphics();
+                    g.setColor(new Color(color));
+                    g.fillRect(0, 0, 50, 50);
+
+                    try {
+                        PipedInputStream inputStream = new PipedInputStream();
+                        OutputStream outputStream = new PipedOutputStream(inputStream);
+                        ImageIO.write(image, "jpg", outputStream);
+                        outputStream.close();
+
+                        reply.send(new MessageCreateBuilder()
+                            .setFiles(FileUpload.fromData(inputStream, "color.jpg"))
+                            .build());
+
+                    } catch (IOException e) {
+                        throw new BotErrorException("Error: %s", e.getMessage());
+                    }
                 })
         );
 

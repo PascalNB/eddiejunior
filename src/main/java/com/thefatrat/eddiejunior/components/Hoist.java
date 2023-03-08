@@ -72,7 +72,13 @@ public class Hoist extends Component {
                 if (!target.getUser().isBot()) {
                     throw new BotErrorException("The selected member is not a bot");
                 }
+
                 Role role = getServer().getGuild().getRoleByBot(target.getId());
+
+                if (role == null) {
+                    throw new BotErrorException("The selected bot does not have a dedicated role");
+                }
+
                 reply.hide();
 
                 hoist(role, event.getMember().getUser(), reply);
