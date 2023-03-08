@@ -13,6 +13,8 @@ import com.thefatrat.eddiejunior.reply.Reply;
 import com.thefatrat.eddiejunior.sources.Server;
 import com.thefatrat.eddiejunior.util.Colors;
 import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import org.jetbrains.annotations.NotNull;
 
@@ -27,7 +29,8 @@ public abstract class Component {
     private boolean enabled;
     private final DatabaseManager databaseManager;
     private final List<Command> commands = new ArrayList<>();
-    private final List<Interaction> interactions = new ArrayList<>();
+    private final List<Interaction<Message>> messageInteractions = new ArrayList<>();
+    private final List<Interaction<Member>> memberInteractions = new ArrayList<>();
     private final MapHandler<CommandEvent, ?> subHandler = new MapHandler<>();
     private MessageEmbed help = null;
     private boolean isComponentCommand = false;
@@ -113,8 +116,12 @@ public abstract class Component {
             }
         }
 
-        for (Interaction interaction : interactions) {
-            getServer().getInteractionHandler().addListener(interaction.getName(), interaction.getAction());
+        for (Interaction<Message> interaction : messageInteractions) {
+            getServer().getMessageInteractionHandler().addListener(interaction.getName(), interaction.getAction());
+        }
+
+        for (Interaction<Member> interaction : memberInteractions) {
+            getServer().getMemberInteractionHandler().addListener(interaction.getName(), interaction.getAction());
         }
 
         help = new HelpBuilder(getTitle(), getCommands()).build(Colors.TRANSPARENT);
@@ -164,8 +171,12 @@ public abstract class Component {
     /**
      * @return a list of the component's interactions
      */
-    public List<Interaction> getInteractions() {
-        return interactions;
+    public List<Interaction<Message>> getMessageInteractions() {
+        return messageInteractions;
+    }
+
+    public List<Interaction<Member>> getMemberInteractions() {
+        return memberInteractions;
     }
 
     /**
@@ -203,11 +214,20 @@ public abstract class Component {
      *
      * @param interactions the interactions
      */
-    protected void addInteractions(@NotNull Interaction... interactions) {
-        for (Interaction i : interactions) {
+    @SafeVarargs
+    protected final void addMessageInteractions(@NotNull Interaction<Message>... interactions) {
+        for (Interaction<Message> i : interactions) {
             i.setName(getName() + " " + i.getName());
         }
-        this.interactions.addAll(List.of(interactions));
+        this.messageInteractions.addAll(List.of(interactions));
+    }
+
+    @SafeVarargs
+    protected final void addMemberInteractions(@NotNull Interaction<Member>... interactions) {
+        for (Interaction<Member> i : interactions) {
+            i.setName(getName() + " " + i.getName());
+        }
+        this.memberInteractions.addAll(List.of(interactions));
     }
 
     /**

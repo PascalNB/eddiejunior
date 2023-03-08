@@ -71,7 +71,7 @@ public class Initializer {
                 GatewayIntent.MESSAGE_CONTENT,
                 GatewayIntent.SCHEDULED_EVENTS
             )
-            .enableCache(CacheFlag.MEMBER_OVERRIDES, CacheFlag.SCHEDULED_EVENTS)
+            .enableCache(CacheFlag.MEMBER_OVERRIDES, CacheFlag.SCHEDULED_EVENTS, CacheFlag.ROLE_TAGS)
             .setRawEventsEnabled(false)
             .addEventListeners(Bot.getInstance())
             .build();

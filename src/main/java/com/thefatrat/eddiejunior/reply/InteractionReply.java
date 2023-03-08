@@ -11,11 +11,11 @@ import java.util.function.Consumer;
 public class InteractionReply<T extends IReplyCallback & IModalCallback> implements Reply, ModalReply, EphemeralReply {
 
     private final T event;
-    private final GenericReply<T> reply;
+    private final GenericReply reply;
 
     public InteractionReply(T event) {
         this.event = event;
-        this.reply = new GenericReply<>(event);
+        this.reply = new GenericReply(event);
     }
 
     @Override

@@ -18,6 +18,7 @@ import com.thefatrat.eddiejunior.util.Colors;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
@@ -83,8 +84,13 @@ public class Server {
                     .addOptions(command.getOptions())
                     .addSubcommands(command.getSubcommandsData()));
             }
-            for (Interaction interaction : component.getInteractions()) {
+
+            for (Interaction<Message> interaction : component.getMessageInteractions()) {
                 commandData.add(Commands.message(interaction.getName()).setGuildOnly(true));
+            }
+
+            for (Interaction<Member> interaction : component.getMemberInteractions()) {
+                commandData.add(Commands.user(interaction.getName()).setGuildOnly(true));
             }
 
             return register.registerServerCommands(id, commandData);
@@ -96,7 +102,11 @@ public class Server {
                 actions.add(register.removeServerCommand(id, command.getName()));
             }
 
-            for (Interaction interaction : component.getInteractions()) {
+            for (Interaction<Message> interaction : component.getMessageInteractions()) {
+                actions.add(register.removeServerCommand(id, interaction.getName()));
+            }
+
+            for (Interaction<Member> interaction : component.getMemberInteractions()) {
                 actions.add(register.removeServerCommand(id, interaction.getName()));
             }
 
@@ -150,6 +160,7 @@ public class Server {
         Set<String> set = new HashSet<>();
         set.addAll(handlerCollection.getCommandHandler().getKeys());
         set.addAll(handlerCollection.getMessageInteractionHandler().getKeys());
+        set.addAll(handlerCollection.getMemberInteractionHandler().getKeys());
         return set;
     }
 
@@ -205,8 +216,12 @@ public class Server {
         return handlerCollection.getCommandHandler();
     }
 
-    public <T extends Reply & EphemeralReply & ModalReply> MapHandler<MessageInteractionEvent, T> getInteractionHandler() {
+    public <T extends Reply & EphemeralReply & ModalReply> MapHandler<InteractionEvent<Message>, T> getMessageInteractionHandler() {
         return handlerCollection.getMessageInteractionHandler();
+    }
+
+    public <T extends Reply & EphemeralReply & ModalReply> MapHandler<InteractionEvent<Member>, T> getMemberInteractionHandler() {
+        return handlerCollection.getMemberInteractionHandler();
     }
 
     public SetHandler<ArchiveEvent, Void> getArchiveHandler() {

@@ -6,12 +6,12 @@ import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 
 import java.util.function.Consumer;
 
-public class GenericReply<T extends IReplyCallback> implements Reply, EphemeralReply {
+public class GenericReply implements Reply, EphemeralReply {
 
-    private final T event;
+    private final IReplyCallback event;
     private boolean ephemeral = false;
 
-    public GenericReply(T event) {
+    public GenericReply(IReplyCallback event) {
         this.event = event;
     }
 

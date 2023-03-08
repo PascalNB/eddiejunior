@@ -7,12 +7,15 @@ import com.thefatrat.eddiejunior.reply.EditReply;
 import com.thefatrat.eddiejunior.reply.EphemeralReply;
 import com.thefatrat.eddiejunior.reply.ModalReply;
 import com.thefatrat.eddiejunior.reply.Reply;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Message;
 
 @SuppressWarnings("unchecked")
 public class HandlerCollection<V> {
 
     private MapHandler<CommandEvent, ?> commandHandler;
-    private MapHandler<MessageInteractionEvent, ?> messageInteractionHandler;
+    private MapHandler<InteractionEvent<Message>, ?> messageInteractionHandler;
+    private MapHandler<InteractionEvent<Member>, ?> memberInteractionHandler;
     private SetHandler<ArchiveEvent, Void> archiveHandler;
     private SetHandler<ButtonEvent<V>, ?> buttonHandler;
     private MapHandler<ButtonEvent<V>, ?> buttonMapHandler;
@@ -27,11 +30,18 @@ public class HandlerCollection<V> {
         return (MapHandler<CommandEvent, T>) commandHandler;
     }
 
-    public <T extends Reply & EphemeralReply & ModalReply> MapHandler<MessageInteractionEvent, T> getMessageInteractionHandler() {
+    public <T extends Reply & EphemeralReply & ModalReply> MapHandler<InteractionEvent<Message>, T> getMessageInteractionHandler() {
         if (messageInteractionHandler == null) {
             messageInteractionHandler = new MapHandler<>();
         }
-        return (MapHandler<MessageInteractionEvent, T>) messageInteractionHandler;
+        return (MapHandler<InteractionEvent<Message>, T>) messageInteractionHandler;
+    }
+
+    public <T extends Reply & EphemeralReply & ModalReply> MapHandler<InteractionEvent<Member>, T> getMemberInteractionHandler() {
+        if (memberInteractionHandler == null) {
+            memberInteractionHandler = new MapHandler<>();
+        }
+        return (MapHandler<InteractionEvent<Member>, T>) memberInteractionHandler;
     }
 
     public SetHandler<ArchiveEvent, Void> getArchiveHandler() {

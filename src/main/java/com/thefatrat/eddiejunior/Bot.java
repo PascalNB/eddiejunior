@@ -19,6 +19,7 @@ import net.dv8tion.jda.api.events.guild.scheduledevent.update.ScheduledEventUpda
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.events.interaction.command.UserContextInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -234,8 +235,29 @@ public class Bot extends ListenerAdapter {
 
         try {
             String interaction = event.getName();
-            servers.get(guild.getId()).getInteractionHandler().handle(interaction,
-                new MessageInteractionEvent(message, interaction), reply);
+            servers.get(guild.getId()).getMessageInteractionHandler().handle(interaction,
+                new InteractionEvent<>(message, event.getMember(), interaction), reply);
+        } catch (BotException e) {
+            reply.hide();
+            reply.send(e);
+        }
+    }
+
+    @Override
+    public void onUserContextInteraction(@NotNull UserContextInteractionEvent event) {
+        if (event.getUser().isBot() || event.getUser().isSystem() || !event.isFromGuild()) {
+            event.reply("Context interactions not allowed").queue();
+            return;
+        }
+
+        Member member = event.getInteraction().getTargetMember();
+        Guild guild = Objects.requireNonNull(event.getGuild());
+        InteractionReply<UserContextInteractionEvent> reply = new InteractionReply<>(event);
+
+        try {
+            String interaction = event.getName();
+            servers.get(guild.getId()).getMemberInteractionHandler().handle(interaction,
+                new InteractionEvent<>(member, event.getMember(), interaction), reply);
         } catch (BotException e) {
             reply.hide();
             reply.send(e);
@@ -283,7 +305,7 @@ public class Bot extends ListenerAdapter {
         }
 
         ModalEvent modalEvent = new ModalEvent(event.getMember(), event.getModalId(), map);
-        GenericReply<ModalInteractionEvent> reply = new GenericReply<>(event);
+        GenericReply reply = new GenericReply(event);
 
         try {
             servers.get(guild.getId()).getModalHandler().handle(event.getModalId(), modalEvent, reply);

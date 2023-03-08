@@ -302,9 +302,9 @@ public class Grab extends Component {
                 })
         );
 
-        addInteractions(new Interaction("sticker")
-            .setAction((command, reply) -> {
-                List<StickerItem> stickers = command.getMessage().getStickers();
+        addMessageInteractions(new Interaction<Message>("sticker")
+            .setAction((event, reply) -> {
+                List<StickerItem> stickers = event.getEntity().getStickers();
 
                 if (stickers.size() == 0) {
                     throw new BotWarningException("No sticker found in the message");
