@@ -281,7 +281,7 @@ public class Bot extends ListenerAdapter {
         InteractionReply<SlashCommandInteractionEvent> reply = new InteractionReply<>(event);
 
         CommandEvent commandEvent = new CommandEvent(event.getName(), event.getSubcommandName(),
-            options, guild, event.getGuildChannel(), Objects.requireNonNull(event.getMember()));
+            options, event.getGuildChannel(), Objects.requireNonNull(event.getMember()));
 
         try {
             servers.get(guild.getId()).getCommandHandler().handle(event.getName(), commandEvent, reply);

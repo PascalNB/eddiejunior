@@ -155,7 +155,7 @@ public abstract class DirectComponent extends Component implements RunnableCompo
                             blacklistIds[i] = Long.parseLong(s);
                             ++i;
                         }
-                        command.getGuild()
+                        getServer().getGuild()
                             .retrieveMembersByIds(blacklistIds)
                             .onSuccess(list -> {
                                 String[] strings = fillAbsent(blacklist, list, ISnowflake::getId,
