@@ -66,14 +66,14 @@ public class Roles extends Component {
             if ("1".equals(split[1])) {
                 getServer().getGuild().addRoleToMember(member, role).queue(success -> {
                     reply.ok("You received role " + role.getAsMention());
-                    getServer().log("Gave role %s (`%s`) to %s (`%s`)", role.getAsMention(), role.getId(),
-                        member.getAsMention(), member.getId());
+                    getServer().log("Gave role %s (`%s`) to %s (`%s`) (`%s`)", role.getAsMention(), role.getId(),
+                        member.getAsMention(), member.getUser().getAsTag(), member.getId());
                 });
             } else {
                 getServer().getGuild().removeRoleFromMember(member, role).queue(success -> {
                     reply.ok("Role " + role.getAsMention() + " has been removed");
-                    getServer().log("Removed role %s (`%s`) from %s (`%s`)", role.getAsMention(), role.getId(),
-                        member.getAsMention(), member.getId());
+                    getServer().log("Removed role %s (`%s`) from %s (`%s`) (`%s`)", role.getAsMention(), role.getId(),
+                        member.getAsMention(), member.getUser().getAsTag(), member.getId());
                 });
             }
         });

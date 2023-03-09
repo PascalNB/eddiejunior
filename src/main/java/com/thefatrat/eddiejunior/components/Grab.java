@@ -354,7 +354,7 @@ public class Grab extends Component {
             .setAction((event, reply) -> {
                 List<StickerItem> stickers = event.getEntity().getStickers();
 
-                if (stickers.size() == 0) {
+                if (stickers.isEmpty()) {
                     throw new BotWarningException("No sticker found in the message");
                 }
 
