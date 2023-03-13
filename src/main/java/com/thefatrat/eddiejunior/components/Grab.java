@@ -77,6 +77,27 @@ public class Grab extends Component {
                         .build());
                 }),
 
+            new Command("membericon", "Get a member's guild icon")
+                .addOption(new OptionData(OptionType.USER, "user", "user", false))
+                .setAction((command, reply) -> {
+                    User user = getEffectiveUser(command);
+                    Member member = getServer().getGuild().retrieveMember(user)
+                        .onErrorMap(e -> null)
+                        .complete();
+
+                    if (member == null) {
+                        throw new BotErrorException("Member not found");
+                    }
+
+                    String url = member.getEffectiveAvatar().getUrl(1024);
+                    reply.hide();
+                    reply.send(new EmbedBuilder()
+                        .setColor(Colors.TRANSPARENT)
+                        .setAuthor(user.getAsTag(), null)
+                        .setImage(url)
+                        .build());
+                }),
+
             new Command("banner", "Get the server banner")
                 .setAction((command, reply) -> {
                     ImageProxy banner = getServer().getGuild().getBanner();
