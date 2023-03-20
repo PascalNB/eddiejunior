@@ -54,6 +54,7 @@ public class MessageComponent extends Component {
                         String content = data.getContent();
 
                         String target = command.getArgs().get("target").getAsString();
+                        target = target.replaceAll("\\\\n", "\n");
                         String newContent = content.replaceAll(regex, target);
 
                         if (newContent.isBlank()) {
