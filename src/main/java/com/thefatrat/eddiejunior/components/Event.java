@@ -40,12 +40,13 @@ public class Event extends Component {
                 return;
             }
 
-            String name = event.getName();
+            String name = event.getName().toLowerCase(Locale.ROOT);
             Link link = null;
+
             for (Link l : links.values()) {
-                if (name.toLowerCase(Locale.ROOT).contains(l.keyword())) {
+                if (name.contains(l.keyword())
+                    && (link == null || link.keyword().length() < l.keyword().length())) {
                     link = l;
-                    break;
                 }
             }
             if (link == null) {
