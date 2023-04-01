@@ -123,6 +123,7 @@ public class Manager extends Component {
                         .setColor(Colors.TRANSPARENT)
                         .setTitle("Components");
 
+                    int empty = 0;
                     for (Component component : getServer().getComponents()) {
                         if (component.isGlobalComponent()) {
                             continue;
@@ -135,8 +136,6 @@ public class Manager extends Component {
                             if (component instanceof RunnableComponent runComp) {
                                 builder.append("Running: ").append(runComp.isRunning() ? Icon.OK : Icon.ERROR)
                                     .append("\n");
-                                builder.append("Runs auto: ").append(runComp.isAutoRunnable() ? Icon.OK : Icon.ERROR)
-                                    .append("\n");
                             }
                             if (component instanceof DirectComponent direct && direct.isRunning()) {
                                 builder.append("Listens to DMs\n");
@@ -144,7 +143,14 @@ public class Manager extends Component {
                         }
 
                         embed.addField(component.getTitle(), builder.toString(), true);
+                        empty++;
                     }
+
+                    empty = (3 - empty % 3) % 3;
+                    for (int i = 0; i < empty; i++) {
+                        embed.addBlankField(true);
+                    }
+
                     reply.send(embed.build());
                 }),
 

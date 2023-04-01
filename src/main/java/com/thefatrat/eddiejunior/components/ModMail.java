@@ -61,7 +61,7 @@ public class ModMail extends DirectComponent {
     private IMentionable mention;
 
     public ModMail(Server server) {
-        super(server, NAME, "Mod Mail", true);
+        super(server, NAME, "Mod Mail (Reports/Questions)", true);
 
         {
             Map<String, StringMapper> settings = getSettings("timeout", "threadid", "maxtickets", "maxticketsperuser",

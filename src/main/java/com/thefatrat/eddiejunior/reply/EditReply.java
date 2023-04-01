@@ -1,6 +1,7 @@
 package com.thefatrat.eddiejunior.reply;
 
 import com.thefatrat.eddiejunior.exceptions.BotException;
+import com.thefatrat.eddiejunior.util.Colors;
 import com.thefatrat.eddiejunior.util.Icon;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
@@ -14,6 +15,10 @@ import java.util.function.Consumer;
 public interface EditReply {
 
     void edit(MessageEditData data, Consumer<Message> callback);
+
+    default void edit(String content) {
+        edit(new EmbedBuilder().setColor(Colors.TRANSPARENT).setDescription(content).build());
+    }
 
     default void edit(MessageCreateData data) {
         edit(data, m -> {});
