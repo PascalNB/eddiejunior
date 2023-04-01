@@ -19,8 +19,18 @@ import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import org.jetbrains.annotations.NotNull;
+import oshi.SystemInfo;
+import oshi.hardware.CentralProcessor;
+import oshi.hardware.GlobalMemory;
+import oshi.software.os.OSFileStore;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.Locale;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class Manager extends Component {
 
@@ -195,6 +205,83 @@ public class Manager extends Component {
                     getServer().setLog(channel);
                     getDatabaseManager().setSetting("log", channel.getId());
                     reply.ok("Set logging channel to %s", channel.getAsMention());
+                }),
+
+            new Command("errorlog", "show the error log")
+                .setAction(((command, reply) -> {
+                    File log = Bot.getInstance().getLog();
+                    if (log == null) {
+                        throw new BotErrorException("Could not find log file");
+                    }
+
+                    try (BufferedReader reader = new BufferedReader(new FileReader(log))) {
+                        String lines = reader.lines()
+                            .map(line -> '`' + line + '`')
+                            .collect(Collectors.joining(System.lineSeparator()));
+
+                        if (lines.length() > 2048) {
+                            lines = lines.substring(lines.length() - 2049);
+                            if (lines.charAt(0) != '`') {
+                                lines = '`' + lines;
+                            }
+                        }
+
+                        reply.send(lines);
+                    } catch (IOException e) {
+                        throw new BotErrorException("Could not read log file");
+                    }
+                })),
+
+            new Command("vitals", "show system vitals")
+                .setAction((command, reply) -> {
+                    reply.defer();
+
+                    SystemInfo info = new SystemInfo();
+
+                    CentralProcessor processor = info.getHardware().getProcessor();
+                    GlobalMemory memory = info.getHardware().getMemory();
+                    OSFileStore fileStore;
+                    try {
+                        fileStore = info.getOperatingSystem().getFileSystem().getFileStores().get(0);
+                    } catch (IndexOutOfBoundsException e) {
+                        throw new BotErrorException("No disk found");
+                    }
+
+                    long totalStorage = fileStore.getTotalSpace() / 1_048_576;
+                    long totalMemory = memory.getTotal() / 1_048_576;
+
+                    String vitals = String.format(Locale.ROOT, """
+                            System: `%s`
+                            OS: `%s`
+                                                        
+                            CPU: `%s`
+                            - Cores: `%d`
+                            - Usage: `%.2f%%`
+                            - Speed: `%d MHz`
+                            - Temp: `%.2f °C`
+                                                        
+                            Memory: `%d / %d MB`
+                                                        
+                            Storage: `%d / %d MB`
+                            """,
+                        info.getHardware().getComputerSystem().getModel(),
+                        info.getOperatingSystem(),
+                        processor.getProcessorIdentifier().getName().trim(),
+                        processor.getLogicalProcessorCount(),
+                        processor.getSystemCpuLoad(1000L) * 100.0,
+                        processor.getProcessorIdentifier().getVendorFreq() / 1_000_000,
+                        info.getHardware().getSensors().getCpuTemperature(),
+                        totalMemory - memory.getAvailable() / 1_048_576,
+                        totalMemory,
+                        totalStorage - fileStore.getFreeSpace() / 1_048_576,
+                        totalStorage
+                    );
+
+                    reply.send(new EmbedBuilder()
+                        .setColor(Colors.TRANSPARENT)
+                        .setTitle("System Vitals")
+                        .setDescription(vitals)
+                        .build());
                 })
         );
     }

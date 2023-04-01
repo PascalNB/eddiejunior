@@ -45,6 +45,7 @@ public class Initializer {
 
     public static void main(String[] args) {
         final String token = getInstance().getProperty("bot_token");
+        final String logFilePath = getInstance().getProperty("log_file");
         final JDA jda;
 
         Bot.getInstance().setComponents(
@@ -78,6 +79,14 @@ public class Initializer {
             .build();
 
         Bot.getInstance().setJDA(jda);
+
+        if (logFilePath != null) {
+            File logFile = new File(logFilePath);
+            if (logFile.exists()) {
+                Bot.getInstance().setLog(logFile);
+            }
+        }
+
         jda.getPresence().setPresence(OnlineStatus.IDLE, Activity.playing("Starting..."));
 
         try {

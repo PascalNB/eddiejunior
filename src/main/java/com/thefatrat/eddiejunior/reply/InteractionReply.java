@@ -24,6 +24,11 @@ public class InteractionReply<T extends IReplyCallback & IModalCallback> impleme
     }
 
     @Override
+    public void defer() {
+        reply.defer();
+    }
+
+    @Override
     public void sendModal(Modal modal) {
         if (event.isAcknowledged()) {
             throw new UnsupportedOperationException("Can only reply with a modal once");

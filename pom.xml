@@ -102,6 +102,14 @@
             <version>85b5d4f0de</version>
         </dependency>
 
+        <!-- https://mvnrepository.com/artifact/com.github.oshi/oshi-core -->
+        <dependency>
+            <groupId>com.github.oshi</groupId>
+            <artifactId>oshi-core</artifactId>
+            <version>6.4.1</version>
+        </dependency>
+
+
     </dependencies>
 
 </project>

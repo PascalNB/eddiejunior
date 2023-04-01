@@ -34,6 +34,7 @@ import net.dv8tion.jda.api.requests.RestAction;
 import net.dv8tion.jda.api.utils.Result;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -47,6 +48,7 @@ public class Bot extends ListenerAdapter {
     private long time = 0;
     private JDA jda = null;
     private CommandRegister commandRegister = null;
+    private File log = null;
 
     private Bot() {
     }
@@ -65,6 +67,14 @@ public class Bot extends ListenerAdapter {
 
     public JDA getJDA() {
         return jda;
+    }
+
+    public void setLog(File log) {
+        this.log = log;
+    }
+
+    public File getLog() {
+        return log;
     }
 
     public CommandRegister getCommandRegister() {

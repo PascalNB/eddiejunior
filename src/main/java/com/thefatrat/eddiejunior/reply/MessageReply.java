@@ -18,4 +18,9 @@ public class MessageReply implements Reply {
         message.reply(data).queue(callback);
     }
 
+    @Override
+    public void defer() {
+
+    }
+
 }

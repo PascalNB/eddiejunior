@@ -15,6 +15,8 @@ public interface Reply {
 
     void send(MessageCreateData data, Consumer<Message> callback);
 
+    void defer();
+
     default void send(MessageEmbed embed, Consumer<Message> callback) {
         send(MessageCreateData.fromEmbeds(embed), callback);
     }
@@ -66,6 +68,16 @@ public interface Reply {
         send(exception.getColor(), exception.getMessage());
     }
 
-    Reply EMPTY = (data, callback) -> {};
+    Reply EMPTY = new Reply() {
+        @Override
+        public void send(MessageCreateData data, Consumer<Message> callback) {
+
+        }
+
+        @Override
+        public void defer() {
+
+        }
+    };
 
 }

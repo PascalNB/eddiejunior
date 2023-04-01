@@ -37,6 +37,11 @@ public class ComponentReply<T extends IModalCallback & IReplyCallback & IMessage
     }
 
     @Override
+    public void defer() {
+        this.reply.defer();
+    }
+
+    @Override
     public void hide() {
         this.reply.hide();
     }
