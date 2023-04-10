@@ -64,12 +64,18 @@ public class Roles extends Component {
 
             reply.hide();
             if ("1".equals(split[1])) {
+                if(member.getRoles().stream().map(Role::getId).anyMatch(role.getId()::equals)) {
+                    throw new BotWarningException("You already have " + role.getAsMention());
+                } 
                 getServer().getGuild().addRoleToMember(member, role).queue(success -> {
                     reply.ok("You received role " + role.getAsMention());
                     getServer().log("Gave role %s (`%s`) to %s (`%s`) (`%s`)", role.getAsMention(), role.getId(),
                         member.getAsMention(), member.getUser().getAsTag(), member.getId());
                 });
             } else {
+                if(member.getRoles().stream().map(Role::getId).noneMatch(role.getId()::equals)) {
+                    throw new BotWarningException("You already do not have " + role.getAsMention());
+                } 
                 getServer().getGuild().removeRoleFromMember(member, role).queue(success -> {
                     reply.ok("Role " + role.getAsMention() + " has been removed");
                     getServer().log("Removed role %s (`%s`) from %s (`%s`) (`%s`)", role.getAsMention(), role.getId(),
