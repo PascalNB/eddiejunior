@@ -111,8 +111,8 @@ public class PollComponent extends Component {
                             object -> {
                                 TextChannel channel = object.getAsChannel().asTextChannel();
                                 PermissionChecker.requireSend(channel);
-                                channel.sendMessage(builder.build()).queue();
-                                reply.ok(consumer, "Message sent in %s", channel.getAsMention());
+                                channel.sendMessage(builder.build()).queue(consumer);
+                                reply.ok("Message sent in %s", channel.getAsMention());
                             },
                             () -> reply.send(builder.build(), consumer)
                         );
