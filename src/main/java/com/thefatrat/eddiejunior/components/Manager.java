@@ -22,7 +22,6 @@ import org.jetbrains.annotations.NotNull;
 import oshi.SystemInfo;
 import oshi.hardware.CentralProcessor;
 import oshi.hardware.GlobalMemory;
-import oshi.software.os.OSFileStore;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -240,14 +239,7 @@ public class Manager extends Component {
 
                     CentralProcessor processor = info.getHardware().getProcessor();
                     GlobalMemory memory = info.getHardware().getMemory();
-                    OSFileStore fileStore;
-                    try {
-                        fileStore = info.getOperatingSystem().getFileSystem().getFileStores().get(0);
-                    } catch (IndexOutOfBoundsException e) {
-                        throw new BotErrorException("No disk found");
-                    }
 
-                    long totalStorage = fileStore.getTotalSpace() / 1_048_576;
                     long totalMemory = memory.getTotal() / 1_048_576;
 
                     String vitals = String.format(Locale.ROOT, """
@@ -261,8 +253,6 @@ public class Manager extends Component {
                             - Temp: `%.2f °C`
                                                         
                             Memory: `%d / %d MB`
-                                                        
-                            Storage: `%d / %d MB`
                             """,
                         info.getHardware().getComputerSystem().getModel(),
                         info.getOperatingSystem(),
@@ -272,9 +262,7 @@ public class Manager extends Component {
                         processor.getProcessorIdentifier().getVendorFreq() / 1_000_000,
                         info.getHardware().getSensors().getCpuTemperature(),
                         totalMemory - memory.getAvailable() / 1_048_576,
-                        totalMemory,
-                        totalStorage - fileStore.getFreeSpace() / 1_048_576,
-                        totalStorage
+                        totalMemory
                     );
 
                     reply.send(new EmbedBuilder()
