@@ -8,14 +8,23 @@ import com.thefatrat.eddiejunior.reply.Reply;
 import com.thefatrat.eddiejunior.sources.Server;
 import com.thefatrat.eddiejunior.util.Colors;
 import com.thefatrat.eddiejunior.util.Icon;
+import com.thefatrat.eddiejunior.util.PermissionChecker;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.entities.channel.ChannelType;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
+import net.dv8tion.jda.api.utils.messages.MessageCreateData;
+import net.dv8tion.jda.api.utils.messages.MessageEditData;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -26,12 +35,14 @@ public class FanMail extends DirectComponent {
 
     private final Map<String, Long> timeouts = new ConcurrentHashMap<>();
 
+    private String submissionChannelId;
     private long timeout;
 
     public FanMail(Server server) {
         super(server, "Fanart", "Fan art", true);
 
         timeout = Long.parseLong(getDatabaseManager().getSettingOrDefault("timeout", "0"));
+        submissionChannelId = getDatabaseManager().getSetting("submissionchannel");
 
         addSubcommands(
             new Command("timeout", "sets the timeout")
@@ -43,8 +54,62 @@ public class FanMail extends DirectComponent {
                     this.timeout = timeout;
                     reply.ok("Timout set to %d seconds", timeout);
                     getDatabaseManager().setSetting("timeout", String.valueOf(timeout));
+                }),
+
+            new Command("submissionchannel", "sets the channel were submissions will be posted to for review")
+                .addOption(new OptionData(OptionType.CHANNEL, "channel", "channel", true)
+                    .setChannelTypes(ChannelType.TEXT)
+                )
+                .setAction((command, reply) -> {
+                    TextChannel channel = command.getArgs().get("channel").getAsChannel().asTextChannel();
+                    submissionChannelId = channel.getId();
+
+                    PermissionChecker.requireSend(channel);
+
+                    reply.ok("Set submission review channel to %s", channel.getAsMention());
+                    getDatabaseManager().setSetting("submissionchannel", channel.getId());
+                    getServer().log(command.getMember().getUser(), "Set fan art submission review channel to %s " +
+                        "(`%s`)", channel.getAsMention(), channel.getId());
                 })
         );
+
+        getServer().getButtonHandler().addListener((event, reply) -> {
+            if (event.getButtonId().equals("fanart_approve")) {
+                MessageCreateData data = MessageCreateBuilder.fromMessage(event.getMessage())
+                    .setComponents()
+                    .build();
+
+                TextChannel destination = getDestination();
+
+                if (destination == null || !destination.canTalk()) {
+                    throw new BotErrorException("Destination channel not accessible");
+                }
+
+                Message response = destination.sendMessage(data)
+                    .onErrorMap(e -> null)
+                    .complete();
+
+                if (response == null) {
+                    throw new BotErrorException("Couldn't approve submission");
+                }
+
+                event.getMessage().editMessage(MessageEditData.fromCreateData(data)).queue();
+                reply.hide();
+                reply.ok("Submission approved\n%s", response.getJumpUrl());
+                getServer().log(event.getUser().getUser(), "Approved fan art submission\n%s", response.getJumpUrl());
+
+            } else if (event.getButtonId().equals("fanart_deny")) {
+                Message message = event.getMessage();
+                message.delete().queue();
+
+                MessageEmbed embed = message.getEmbeds().get(0);
+
+                reply.hide();
+                reply.send(Icon.STOP, "Denied fan art submission");
+                getServer().log(event.getUser().getUser(), "Denied fan art submission by %s (`%s`)",
+                    embed.getDescription(), Objects.requireNonNull(embed.getFooter()).getText());
+            }
+        });
     }
 
     @Override
@@ -52,7 +117,7 @@ public class FanMail extends DirectComponent {
         if (!isRunning()) {
             throw new BotWarningException("The server does not accept submissions at the moment");
         }
-        if (getDestination() == null) {
+        if (submissionChannelId == null) {
             throw new BotErrorException("Fan mail service not accessible");
         }
         if (getBlacklist().contains(message.getAuthor().getId())) {
@@ -80,15 +145,25 @@ public class FanMail extends DirectComponent {
 
         timeouts.put(message.getAuthor().getId(), System.currentTimeMillis());
 
-        MessageEmbed embed = new EmbedBuilder()
-            .setAuthor(message.getAuthor().getAsTag(), null, message.getAuthor().getEffectiveAvatarUrl())
-            .setDescription(message.getAuthor().getAsMention())
-            .setColor(Colors.TRANSPARENT)
-            .setImage(attachment.getProxyUrl())
-            .setFooter(message.getAuthor().getId())
+        MessageCreateData data = new MessageCreateBuilder()
+            .addEmbeds(new EmbedBuilder()
+                .setAuthor(message.getAuthor().getAsTag(), null, message.getAuthor().getEffectiveAvatarUrl())
+                .setDescription(message.getAuthor().getAsMention())
+                .setColor(Colors.TRANSPARENT)
+                .setImage(attachment.getProxyUrl())
+                .setFooter(message.getAuthor().getId())
+                .build())
+            .addActionRow(Button.success("fanart_approve", "Approve").withEmoji(Emoji.fromUnicode("✔️")))
+            .addActionRow(Button.danger("fanart_deny", "Deny").withEmoji(Emoji.fromUnicode("✖️")))
             .build();
 
-        getDestination().sendMessageEmbeds(embed)
+        TextChannel output = getServer().getGuild().getTextChannelById(submissionChannelId);
+
+        if (output == null) {
+            throw new BotErrorException("Fan mail service not accessible");
+        }
+
+        output.sendMessage(data)
             .onErrorMap(e -> null)
             .queue(m -> {
                 if (m == null) {
