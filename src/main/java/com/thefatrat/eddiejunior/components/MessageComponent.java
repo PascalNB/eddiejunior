@@ -75,7 +75,7 @@ public class MessageComponent extends Component {
 
                     TextInput input = TextInput.create("message_send_input_" + channel.getId(), "Text",
                             TextInputStyle.PARAGRAPH)
-                        .setMinLength(1)
+                        .setRequiredRange(1, 2000)
                         .build();
 
                     reply.sendModal(Modal.create("message_send", "Send message")
@@ -127,14 +127,18 @@ public class MessageComponent extends Component {
                         throw new BotWarningException("Message is empty");
                     }
 
-                    content = content.replaceAll("```", "<codeblock>");
-
-                    if (content.length() > 2042) {
-                        content = content.substring(0, 2042);
-                    }
-
-                    reply.hide();
-                    reply.send("```%s```", content);
+                    reply.sendModal(Modal.create("message_copy", "Copy message")
+                        .addActionRow(
+                            TextInput.create("input", "Raw text", TextInputStyle.PARAGRAPH)
+                                .setValue(message.getContentRaw())
+                                .build()
+                        )
+                        .addActionRow(
+                            TextInput.create("input2", "Displayed text", TextInputStyle.PARAGRAPH)
+                                .setValue(message.getContentDisplay())
+                                .build()
+                        )
+                        .build());
                 })
         );
 
@@ -195,6 +199,11 @@ public class MessageComponent extends Component {
             reply.ok("Message has been edited");
             getServer().log(event.getMember().getUser(), "Edited message in %s (`%s`)\n(%s)",
                 channel.getAsMention(), channel.getId(), message.getJumpUrl());
+        });
+
+        getServer().getModalHandler().addListener("message_copy", (event, reply) -> {
+            reply.hide();
+            reply.ok("");
         });
 
     }
