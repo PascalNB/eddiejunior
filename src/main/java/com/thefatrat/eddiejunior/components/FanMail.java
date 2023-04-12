@@ -92,11 +92,11 @@ public class FanMail extends DirectComponent {
                     throw new BotErrorException("Couldn't approve submission");
                 }
 
+                response.addReaction(Emoji.fromUnicode("❤️")).queue();
+
                 MessageEmbed embed = event.getMessage().getEmbeds().get(0);
 
-                event.getMessage().editMessage(MessageEditData.fromCreateData(data)).queue(
-                    message -> message.addReaction(Emoji.fromUnicode("❤️")).queue()
-                );
+                event.getMessage().editMessage(MessageEditData.fromCreateData(data)).queue();
                 reply.hide();
                 reply.ok("Submission approved\n%s", response.getJumpUrl());
                 getServer().log(event.getUser().getUser(), "Approved fanart submission by %s (`%`)\n%s",
