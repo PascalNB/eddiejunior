@@ -102,7 +102,7 @@ public class FanMail extends DirectComponent {
 
             } else if (event.getButtonId().equals("fanart_deny")) {
                 Message message = event.getMessage();
-                message.delete().queue();
+                message.editMessageComponents().queue();
 
                 MessageEmbed embed = message.getEmbeds().get(0);
 
