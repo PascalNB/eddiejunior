@@ -3,7 +3,7 @@ package com.thefatrat.eddiejunior.sources;
 import com.thefatrat.eddiejunior.Bot;
 import com.thefatrat.eddiejunior.HandlerCollection;
 import com.thefatrat.eddiejunior.events.ButtonEvent;
-import com.thefatrat.eddiejunior.events.StringSelectEvent;
+import com.thefatrat.eddiejunior.events.SelectEvent;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotWarningException;
 import com.thefatrat.eddiejunior.handlers.MapHandler;
@@ -65,7 +65,7 @@ public class Direct {
         });
     }
 
-    public <T extends Reply & EphemeralReply & EditReply> MapHandler<StringSelectEvent, T> getStringSelectHandler() {
+    public <T extends Reply & EphemeralReply & EditReply> MapHandler<SelectEvent<String>, T> getStringSelectHandler() {
         return handlerCollection.getStringSelectHandler();
     }
 

@@ -29,7 +29,7 @@ public class FanMail extends DirectComponent {
     private long timeout;
 
     public FanMail(Server server) {
-        super(server, "Fanmail", "Fan Mail (Art)", true);
+        super(server, "Fanart", "Fan art", true);
 
         timeout = Long.parseLong(getDatabaseManager().getSettingOrDefault("timeout", "0"));
 

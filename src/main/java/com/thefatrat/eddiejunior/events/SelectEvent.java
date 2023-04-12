@@ -3,14 +3,14 @@ package com.thefatrat.eddiejunior.events;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
 
-public class StringSelectEvent {
+public class SelectEvent<T> {
 
     private final User user;
     private final Message message;
     private final String menuId;
-    private final String option;
+    private final T option;
 
-    public StringSelectEvent(User user, Message message, String menuId, String option) {
+    public SelectEvent(User user, Message message, String menuId, T option) {
         this.user = user;
         this.message = message;
         this.menuId = menuId;
@@ -29,7 +29,7 @@ public class StringSelectEvent {
         return menuId;
     }
 
-    public String getOption() {
+    public T getOption() {
         return option;
     }
 

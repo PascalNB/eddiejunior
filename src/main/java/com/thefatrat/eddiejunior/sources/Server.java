@@ -16,10 +16,7 @@ import com.thefatrat.eddiejunior.reply.ModalReply;
 import com.thefatrat.eddiejunior.reply.Reply;
 import com.thefatrat.eddiejunior.util.Colors;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
@@ -239,6 +236,10 @@ public class Server {
 
     public SetHandler<EventEvent, Void> getEventHandler() {
         return handlerCollection.getEventHandler();
+    }
+
+    public <T extends Reply & EphemeralReply & ModalReply & EditReply> MapHandler<SelectEvent<IMentionable>, T> getEntitySelectHandler() {
+        return handlerCollection.getEntitySelectHandler();
     }
 
 }

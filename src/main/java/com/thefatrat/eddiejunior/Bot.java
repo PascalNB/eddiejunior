@@ -21,6 +21,7 @@ import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionE
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.UserContextInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
+import net.dv8tion.jda.api.events.interaction.component.EntitySelectInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.session.ReadyEvent;
@@ -222,9 +223,31 @@ public class Bot extends ListenerAdapter {
             ComponentReply<StringSelectInteractionEvent> reply = new ComponentReply<>(event);
 
             try {
-                StringSelectEvent selectEvent = new StringSelectEvent(event.getUser(), event.getMessage(),
+                SelectEvent<String> selectEvent = new SelectEvent<>(event.getUser(), event.getMessage(),
                     event.getComponentId(), event.getInteraction().getValues().get(0));
                 direct.getStringSelectHandler().handle(event.getComponentId(), selectEvent, reply);
+
+            } catch (BotException e) {
+                reply.edit(e);
+            }
+        }
+    }
+
+    @Override
+    public void onEntitySelectInteraction(@NotNull EntitySelectInteractionEvent event) {
+        if (event.getUser().isBot() || event.getUser().isSystem()) {
+            return;
+        }
+        if (event.isFromGuild()) {
+            Guild guild = Objects.requireNonNull(event.getGuild());
+
+            ComponentReply<EntitySelectInteractionEvent> reply = new ComponentReply<>(event);
+
+            try {
+                SelectEvent<IMentionable> selectEvent = new SelectEvent<>(event.getUser(), event.getMessage(),
+                    event.getComponentId(), event.getInteraction().getValues().get(0));
+                servers.get(guild.getId()).getEntitySelectHandler()
+                    .handle(event.getComponentId(), selectEvent, reply);
 
             } catch (BotException e) {
                 reply.edit(e);

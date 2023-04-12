@@ -7,6 +7,7 @@ import com.thefatrat.eddiejunior.reply.EditReply;
 import com.thefatrat.eddiejunior.reply.EphemeralReply;
 import com.thefatrat.eddiejunior.reply.ModalReply;
 import com.thefatrat.eddiejunior.reply.Reply;
+import net.dv8tion.jda.api.entities.IMentionable;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 
@@ -21,7 +22,8 @@ public class HandlerCollection<V> {
     private MapHandler<ButtonEvent<V>, ?> buttonMapHandler;
     private MapHandler<ModalEvent, ?> modalHandler;
     private SetHandler<EventEvent, Void> eventHandler;
-    private MapHandler<StringSelectEvent, ?> stringSelectHandler;
+    private MapHandler<SelectEvent<String>, ?> stringSelectHandler;
+    private MapHandler<SelectEvent<IMentionable>, ?> entitySelectHandler;
 
     public <T extends Reply & EphemeralReply & ModalReply> MapHandler<CommandEvent, T> getCommandHandler() {
         if (commandHandler == null) {
@@ -80,11 +82,18 @@ public class HandlerCollection<V> {
         return eventHandler;
     }
 
-    public <T extends Reply & EphemeralReply & EditReply> MapHandler<StringSelectEvent, T> getStringSelectHandler() {
+    public <T extends Reply & EphemeralReply & EditReply> MapHandler<SelectEvent<String>, T> getStringSelectHandler() {
         if (stringSelectHandler == null) {
             stringSelectHandler = new MapHandler<>();
         }
-        return (MapHandler<StringSelectEvent, T>) stringSelectHandler;
+        return (MapHandler<SelectEvent<String>, T>) stringSelectHandler;
+    }
+
+    public <T extends Reply & EphemeralReply & EditReply & ModalReply> MapHandler<SelectEvent<IMentionable>, T> getEntitySelectHandler() {
+        if (entitySelectHandler == null) {
+            entitySelectHandler = new MapHandler<>();
+        }
+        return (MapHandler<SelectEvent<IMentionable>, T>) entitySelectHandler;
     }
 
 }
