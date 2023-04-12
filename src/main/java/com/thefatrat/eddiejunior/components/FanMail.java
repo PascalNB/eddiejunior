@@ -94,7 +94,9 @@ public class FanMail extends DirectComponent {
 
                 MessageEmbed embed = event.getMessage().getEmbeds().get(0);
 
-                event.getMessage().editMessage(MessageEditData.fromCreateData(data)).queue();
+                event.getMessage().editMessage(MessageEditData.fromCreateData(data)).queue(
+                    message -> message.addReaction(Emoji.fromUnicode("❤️")).queue()
+                );
                 reply.hide();
                 reply.ok("Submission approved\n%s", response.getJumpUrl());
                 getServer().log(event.getUser().getUser(), "Approved fanart submission by %s (`%`)\n%s",
