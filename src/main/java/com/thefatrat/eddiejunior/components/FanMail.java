@@ -16,6 +16,7 @@ import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
+import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
@@ -92,7 +93,10 @@ public class FanMail extends DirectComponent {
                     throw new BotErrorException("Couldn't approve submission");
                 }
 
-                response.addReaction(Emoji.fromUnicode("❤️")).queue();
+                try {
+                    response.addReaction(Emoji.fromUnicode("❤️")).queue();
+                } catch (InsufficientPermissionException ignore) {
+                }
 
                 MessageEmbed embed = event.getMessage().getEmbeds().get(0);
 
