@@ -37,7 +37,7 @@ public class FanMail extends DirectComponent {
     private long timeout;
 
     public FanMail(Server server) {
-        super(server, "Fanart", "Fan art", true);
+        super(server, "Fanart", "Fanart Submissions", true);
 
         timeout = Long.parseLong(getDatabaseManager().getSettingOrDefault("timeout", "0"));
         submissionChannelId = getDatabaseManager().getSetting("submissionchannel");
@@ -52,6 +52,7 @@ public class FanMail extends DirectComponent {
                     this.timeout = timeout;
                     reply.ok("Timout set to %d seconds", timeout);
                     getDatabaseManager().setSetting("timeout", String.valueOf(timeout));
+                    getServer().log(command.getMember().getUser(), "Set fanart timeout to `%d` seconds", timeout);
                 }),
 
             new Command("submissionchannel", "sets the channel were submissions will be posted to for review")
@@ -66,7 +67,7 @@ public class FanMail extends DirectComponent {
 
                     reply.ok("Set submission review channel to %s", channel.getAsMention());
                     getDatabaseManager().setSetting("submissionchannel", channel.getId());
-                    getServer().log(command.getMember().getUser(), "Set fan art submission review channel to %s " +
+                    getServer().log(command.getMember().getUser(), "Set fanart submission review channel to %s " +
                         "(`%s`)", channel.getAsMention(), channel.getId());
                 })
         );
@@ -96,7 +97,7 @@ public class FanMail extends DirectComponent {
                 event.getMessage().editMessage(MessageEditData.fromCreateData(data)).queue();
                 reply.hide();
                 reply.ok("Submission approved\n%s", response.getJumpUrl());
-                getServer().log(event.getUser().getUser(), "Approved fan art submission by %s (`%`)\n%s",
+                getServer().log(event.getUser().getUser(), "Approved fanart submission by %s (`%`)\n%s",
                     embed.getDescription(), Objects.requireNonNull(embed.getFooter()).getText(), response.getJumpUrl());
 
             } else if (event.getButtonId().equals("fanart_deny")) {
@@ -106,8 +107,8 @@ public class FanMail extends DirectComponent {
                 MessageEmbed embed = message.getEmbeds().get(0);
 
                 reply.hide();
-                reply.send(Icon.STOP, "Denied fan art submission");
-                getServer().log(event.getUser().getUser(), "Denied fan art submission by %s (`%s`)",
+                reply.send(Icon.STOP, "Denied fanart submission");
+                getServer().log(event.getUser().getUser(), "Denied fanart submission by %s (`%s`)",
                     embed.getDescription(), Objects.requireNonNull(embed.getFooter()).getText());
             }
         });
@@ -115,14 +116,11 @@ public class FanMail extends DirectComponent {
 
     @Override
     protected <T extends Reply & EditReply> void handleDirect(Message message, T reply) {
-        if (!isRunning()) {
-            throw new BotWarningException("The server does not accept submissions at the moment");
-        }
-        if (submissionChannelId == null) {
-            throw new BotErrorException("Fan mail service not accessible");
+        if (!isRunning() || submissionChannelId == null) {
+            throw new BotErrorException("Fanart service not accessible");
         }
         if (getBlacklist().contains(message.getAuthor().getId())) {
-            throw new BotWarningException("Cannot submit fan mail at the moment");
+            throw new BotWarningException("Cannot submit fanart at the moment");
         }
         if (System.currentTimeMillis() - timeouts.getOrDefault(message.getAuthor().getId(), 0L) < timeout * 1000L) {
             throw new BotWarningException("You can only send a submission every %d seconds", timeout);
@@ -154,8 +152,10 @@ public class FanMail extends DirectComponent {
                 .setImage(attachment.getProxyUrl())
                 .setFooter(message.getAuthor().getId())
                 .build())
-            .addActionRow(Button.success("fanart_approve", "Approve").withEmoji(Emoji.fromUnicode("✔️")))
-            .addActionRow(Button.danger("fanart_deny", "Deny").withEmoji(Emoji.fromUnicode("✖️")))
+            .addActionRow(
+                Button.success("fanart_approve", "Approve").withEmoji(Emoji.fromUnicode("✔️")),
+                Button.danger("fanart_deny", "Deny").withEmoji(Emoji.fromUnicode("✖️"))
+            )
             .build();
 
         TextChannel output = getServer().getGuild().getTextChannelById(submissionChannelId);
@@ -181,13 +181,13 @@ public class FanMail extends DirectComponent {
     @Override
     public void start(Reply reply) {
         super.start(reply);
-        reply.ok("Fan mail service started");
+        reply.ok("Fanart service started");
     }
 
     @Override
     public void stop(Reply reply) {
         super.stop(reply);
-        reply.send(Icon.STOP, "Fan mail service stopped");
+        reply.send(Icon.STOP, "Fanart service stopped");
     }
 
     @Override
@@ -196,12 +196,14 @@ public class FanMail extends DirectComponent {
                 Enabled: %b
                 Destination: %s
                 Review channel: %s
+                Timeout: %d seconds
                 """,
             isEnabled(),
             Optional.ofNullable(getDestination()).map(IMentionable::getAsMention).orElse(null),
             Optional.ofNullable(submissionChannelId)
                 .map(s -> getServer().getGuild().getTextChannelById(s))
-                .orElse(null)
+                .orElse(null),
+            timeout
         );
     }
 
