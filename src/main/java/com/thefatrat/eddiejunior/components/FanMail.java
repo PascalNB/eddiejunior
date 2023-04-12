@@ -10,6 +10,7 @@ import com.thefatrat.eddiejunior.util.Colors;
 import com.thefatrat.eddiejunior.util.Icon;
 import com.thefatrat.eddiejunior.util.PermissionChecker;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.IMentionable;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
@@ -22,10 +23,7 @@ import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import net.dv8tion.jda.api.utils.messages.MessageEditData;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class FanMail extends DirectComponent {
@@ -93,10 +91,13 @@ public class FanMail extends DirectComponent {
                     throw new BotErrorException("Couldn't approve submission");
                 }
 
+                MessageEmbed embed = event.getMessage().getEmbeds().get(0);
+
                 event.getMessage().editMessage(MessageEditData.fromCreateData(data)).queue();
                 reply.hide();
                 reply.ok("Submission approved\n%s", response.getJumpUrl());
-                getServer().log(event.getUser().getUser(), "Approved fan art submission\n%s", response.getJumpUrl());
+                getServer().log(event.getUser().getUser(), "Approved fan art submission by %s (`%`)\n%s",
+                    embed.getDescription(), Objects.requireNonNull(embed.getFooter()).getText(), response.getJumpUrl());
 
             } else if (event.getButtonId().equals("fanart_deny")) {
                 Message message = event.getMessage();
@@ -187,6 +188,21 @@ public class FanMail extends DirectComponent {
     public void stop(Reply reply) {
         super.stop(reply);
         reply.send(Icon.STOP, "Fan mail service stopped");
+    }
+
+    @Override
+    public String getStatus() {
+        return String.format("""
+                Enabled: %b
+                Destination: %s
+                Review channel: %s
+                """,
+            isEnabled(),
+            Optional.ofNullable(getDestination()).map(IMentionable::getAsMention).orElse(null),
+            Optional.ofNullable(submissionChannelId)
+                .map(s -> getServer().getGuild().getTextChannelById(s))
+                .orElse(null)
+        );
     }
 
 }
