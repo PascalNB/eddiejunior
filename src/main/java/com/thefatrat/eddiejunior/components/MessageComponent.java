@@ -135,7 +135,7 @@ public class MessageComponent extends Component {
                         )
                         .addActionRow(
                             TextInput.create("input2", "Displayed text", TextInputStyle.PARAGRAPH)
-                                .setValue(message.getContentDisplay())
+                                .setValue(message.getContentStripped())
                                 .build()
                         )
                         .build());
