@@ -5,22 +5,17 @@ import com.thefatrat.eddiejunior.entities.Interaction;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotWarningException;
 import com.thefatrat.eddiejunior.sources.Server;
-import com.thefatrat.eddiejunior.util.Colors;
 import com.thefatrat.eddiejunior.util.PermissionChecker;
 import com.thefatrat.eddiejunior.util.URLUtil;
-import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
-import net.dv8tion.jda.api.entities.IMentionable;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
-import net.dv8tion.jda.api.interactions.components.selections.EntitySelectMenu;
 import net.dv8tion.jda.api.interactions.components.text.TextInput;
 import net.dv8tion.jda.api.interactions.components.text.TextInputStyle;
 import net.dv8tion.jda.api.interactions.modals.Modal;
-import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 
 public class MessageComponent extends Component {
 
@@ -84,19 +79,24 @@ public class MessageComponent extends Component {
                 }),
 
             new Command("send", "send a message in a given channel")
+                .addOption(new OptionData(OptionType.CHANNEL, "channel", "channel", true)
+                    .setChannelTypes(ChannelType.TEXT)
+                )
                 .setAction((command, reply) -> {
-                    EntitySelectMenu menu = EntitySelectMenu.create("message_send_channel",
-                            EntitySelectMenu.SelectTarget.CHANNEL)
-                        .setChannelTypes(ChannelType.TEXT)
+                    TextChannel channel = command.getArgs().get("channel").getAsChannel().asTextChannel();
+
+                    if (!channel.canTalk()) {
+                        throw new BotWarningException("Cannot talk in the given channel");
+                    }
+
+                    TextInput input = TextInput.create("message_send_input_" + channel.getId(), "Text",
+                            TextInputStyle.PARAGRAPH)
+                        .setMinLength(1)
                         .build();
 
-                    reply.hide();
-                    reply.send(new MessageCreateBuilder()
-                        .addEmbeds(new EmbedBuilder()
-                            .setColor(Colors.TRANSPARENT)
-                            .setDescription("Select the channel to send the message in")
-                            .build())
-                        .addActionRow(menu)
+                    reply.sendModal(Modal.create("message_send", "Send message")
+                        .addActionRow(input)
+
                         .build());
                 })
         );
@@ -154,28 +154,6 @@ public class MessageComponent extends Component {
                 })
         );
 
-        getServer().getEntitySelectHandler().addListener("message_send_channel", (event, reply) -> {
-            IMentionable option = event.getOption();
-            TextChannel channel = getServer().getGuild().getTextChannelById(option.getId());
-
-            if (channel == null) {
-                throw new BotErrorException("Channel not found");
-            }
-            if (!channel.canTalk()) {
-                throw new BotWarningException("Cannot talk in the given channel");
-            }
-
-            TextInput input = TextInput.create("message_send_input_" + channel.getId(), "Text",
-                    TextInputStyle.PARAGRAPH)
-                .setMinLength(1)
-                .build();
-
-            reply.sendModal(Modal.create("message_send", "Send message")
-                .addActionRow(input)
-
-                .build());
-        });
-
         getServer().getModalHandler().addListener("message_send", (event, reply) -> {
             String key = event.getValues().keySet().iterator().next();
             String[] split = key.split("_", 4);
@@ -198,6 +176,8 @@ public class MessageComponent extends Component {
             }
             reply.hide();
             reply.ok("Message sent in %s\n%s", channel.getAsMention(), response.getJumpUrl());
+            getServer().log(event.getMember().getUser(), "Sent custom message in %s (`%s`)\n%s",
+                channel.getAsMention(), channel.getId(), response.getJumpUrl());
         });
 
         getServer().getModalHandler().addListener("message_edit", (event, reply) -> {
@@ -229,7 +209,8 @@ public class MessageComponent extends Component {
             }
             reply.hide();
             reply.ok("Message has been edited");
-            getServer().log(event.getMember().getUser(), "Edited message\n(%s)", message.getJumpUrl());
+            getServer().log(event.getMember().getUser(), "Edited message in %s (`%s`)\n(%s)",
+                channel.getAsMention(), channel.getId(), message.getJumpUrl());
         });
 
     }
