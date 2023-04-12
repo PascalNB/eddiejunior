@@ -22,7 +22,7 @@ public class MessageComponent extends Component {
     public MessageComponent(Server server) {
         super(server, "Message", false);
 
-        setComponentCommand(Permission.MESSAGE_MANAGE);
+        setComponentCommand();
 
         addSubcommands(
             new Command("edit", "edit a message sent by me")
@@ -62,22 +62,6 @@ public class MessageComponent extends Component {
                     );
                 }),
 
-            new Command("remove", "remove a message sent by me")
-                .addOptions(new OptionData(OptionType.STRING, "message", "message jump url", true))
-                .setAction((command, reply) -> {
-                    String url = command.getArgs().get("message").getAsString();
-                    Message message = URLUtil.messageFromURL(url, getServer().getGuild());
-
-                    if (!message.getAuthor().getId().equals(getServer().getGuild().getSelfMember().getId())) {
-                        throw new BotErrorException("Message was not sent by me");
-                    }
-                    reply.hide();
-                    message.delete().queue(success -> {
-                        reply.ok("Removed message");
-                        getServer().log(command.getMember().getUser(), "Deleted message\n(%s)", url);
-                    });
-                }),
-
             new Command("send", "send a message in a given channel")
                 .addOption(new OptionData(OptionType.CHANNEL, "channel", "channel", true)
                     .setChannelTypes(ChannelType.TEXT)
@@ -96,13 +80,13 @@ public class MessageComponent extends Component {
 
                     reply.sendModal(Modal.create("message_send", "Send message")
                         .addActionRow(input)
-
                         .build());
                 })
         );
 
         addMessageInteractions(
             new Interaction<Message>("edit")
+                .addPermissions(Permission.MESSAGE_MANAGE)
                 .setAction((event, reply) -> {
                     Message message = event.getEntity();
 

@@ -83,11 +83,15 @@ public class Server {
             }
 
             for (Interaction<Message> interaction : component.getMessageInteractions()) {
-                commandData.add(Commands.message(interaction.getName()).setGuildOnly(true));
+                commandData.add(Commands.message(interaction.getName())
+                    .setDefaultPermissions(DefaultMemberPermissions.enabledFor(interaction.getPermissions()))
+                    .setGuildOnly(true));
             }
 
             for (Interaction<Member> interaction : component.getMemberInteractions()) {
-                commandData.add(Commands.user(interaction.getName()).setGuildOnly(true));
+                commandData.add(Commands.user(interaction.getName())
+                    .setDefaultPermissions(DefaultMemberPermissions.enabledFor(interaction.getPermissions()))
+                    .setGuildOnly(true));
             }
 
             return register.registerServerCommands(id, commandData);
