@@ -213,8 +213,14 @@ public class FaqComponent extends Component {
 
             reply.sendModal(Modal.create("faq_edit", "Edit answer")
                 .addActionRow(
-                    TextInput.create(index + "-" + question.hashCode(), "Answer", TextInputStyle.PARAGRAPH)
-                        .setRequiredRange(1, 2000)
+                    TextInput.create("q-" + index + "-" + question.hashCode(), "Question", TextInputStyle.PARAGRAPH)
+                        .setRequiredRange(10, 150)
+                        .setValue(question)
+                        .build()
+                )
+                .addActionRow(
+                    TextInput.create("a-" + index + "-" + question.hashCode(), "Answer", TextInputStyle.PARAGRAPH)
+                        .setRequiredRange(1, 350)
                         .setValue(faqMap.get(question.toLowerCase()))
                         .build()
                 )
@@ -224,16 +230,17 @@ public class FaqComponent extends Component {
         getServer().getModalHandler().addListener("faq_edit", (event, reply) -> {
             Map<String, ModalMapping> values = event.getValues();
             String key = values.keySet().iterator().next();
-            String[] split = key.split("-", 2);
+            String[] split = key.split("-", 3);
 
-            int index = Integer.parseInt(split[0]);
-            int hash = Integer.parseInt(split[1]);
-            String value = values.get(key).getAsString();
+            int index = Integer.parseInt(split[1]);
+            int hash = Integer.parseInt(split[2]);
+            String newQuestion = values.get("q-" + index + "-" + hash).getAsString();
+            String newValue = values.get("a-" + index + "-" + hash).getAsString();
 
             if (index >= faqList.size()) {
                 throw new BotErrorException("Something went wrong, try again");
             }
-            if (value.isBlank()) {
+            if (newQuestion.isBlank() || newValue.isBlank()) {
                 throw new BotWarningException("Answer cannot be blank");
             }
 
@@ -243,11 +250,17 @@ public class FaqComponent extends Component {
                 throw new BotErrorException("Something went wrong, try again");
             }
 
-            faqMap.put(question.toLowerCase(), value);
+            faqList.set(index, newQuestion);
+            faqMap.put(newQuestion.toLowerCase(), newValue);
 
             reply.hide();
-            reply.ok("Answer edited for `%s`", question);
-            getServer().log(event.getMember().getUser(), "Edited answer for question `%s`", question);
+            if (newQuestion.equals(question)) {
+                reply.ok("Edited question `%s`", question);
+                getServer().log(event.getMember().getUser(), "Edited question `%s`", question);
+            } else {
+                reply.ok("Edited question `%s` -> `%s`", question, newQuestion);
+                getServer().log(event.getMember().getUser(), "Edited question `%s` -> `%s`", question, newQuestion);
+            }
             updateMessage(storageMessage).queue();
         });
 
