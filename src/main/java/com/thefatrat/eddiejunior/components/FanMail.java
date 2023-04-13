@@ -29,8 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class FanMail extends DirectComponent {
 
-    private static final Set<String> contentTypes = Set.of(
-        "image/jpeg", "image/png", "image/jpg", "image/gif", "video/mp4", "video/quicktime");
+    private static final Set<String> contentTypes = Set.of("image/jpeg", "image/png", "image/jpg", "image/gif");
 
     private final Map<String, Long> timeouts = new ConcurrentHashMap<>();
 
@@ -98,22 +97,41 @@ public class FanMail extends DirectComponent {
                 } catch (InsufficientPermissionException ignore) {
                 }
 
-                MessageEmbed embed = event.getMessage().getEmbeds().get(0);
+                MessageCreateData newData = MessageCreateBuilder.from(data)
+                    .addEmbeds(new EmbedBuilder()
+                        .setDescription("Approved")
+                        .setColor(Colors.GREEN)
+                        .build()
+                    )
+                    .build();
 
-                event.getMessage().editMessage(MessageEditData.fromCreateData(data)).queue();
+                event.getMessage().editMessage(MessageEditData.fromCreateData(newData)).queue();
+
                 reply.hide();
                 reply.ok("Submission approved\n%s", response.getJumpUrl());
+
+                MessageEmbed embed = event.getMessage().getEmbeds().get(0);
                 getServer().log(event.getUser().getUser(), "Approved fanart submission by %s (`%`)\n%s",
                     embed.getDescription(), Objects.requireNonNull(embed.getFooter()).getText(), response.getJumpUrl());
 
             } else if (event.getButtonId().equals("fanart_deny")) {
                 Message message = event.getMessage();
-                message.editMessageComponents().queue();
 
-                MessageEmbed embed = message.getEmbeds().get(0);
+                MessageCreateData newData = MessageCreateBuilder.fromMessage(message)
+                    .addEmbeds(new EmbedBuilder()
+                        .setDescription("Denied")
+                        .setColor(Colors.RED)
+                        .build()
+                    )
+                    .setComponents()
+                    .build();
+
+                message.editMessage(MessageEditData.fromCreateData(newData)).queue();
 
                 reply.hide();
                 reply.send(Icon.STOP, "Denied fanart submission");
+
+                MessageEmbed embed = message.getEmbeds().get(0);
                 getServer().log(event.getUser().getUser(), "Denied fanart submission by %s (`%s`)",
                     embed.getDescription(), Objects.requireNonNull(embed.getFooter()).getText());
             }
@@ -167,7 +185,7 @@ public class FanMail extends DirectComponent {
         TextChannel output = getServer().getGuild().getTextChannelById(submissionChannelId);
 
         if (output == null) {
-            throw new BotErrorException("Fan mail service not accessible");
+            throw new BotErrorException("Fanart service not accessible");
         }
 
         output.sendMessage(data)
