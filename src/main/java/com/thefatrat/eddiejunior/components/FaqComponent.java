@@ -157,7 +157,11 @@ public class FaqComponent extends Component {
 
                     command.getChannel().sendMessage(
                             new MessageCreateBuilder()
-                                .setContent(text)
+                                .addEmbeds(new EmbedBuilder()
+                                    .setColor(Colors.TRANSPARENT)
+                                    .setTitle("FAQ")
+                                    .setDescription(text)
+                                    .build())
                                 .addActionRow(StringSelectMenu.create("faq_query")
                                     .addOptions(getOptions(faqList))
                                     .setPlaceholder("Select a question")
