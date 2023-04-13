@@ -157,12 +157,10 @@ public class FaqComponent extends Component {
 
                     command.getChannel().sendMessage(
                             new MessageCreateBuilder()
-                                .addEmbeds(new EmbedBuilder()
-                                    .setColor(Colors.TRANSPARENT)
-                                    .setTitle(text)
-                                    .build())
+                                .setContent(text)
                                 .addActionRow(StringSelectMenu.create("faq_query")
                                     .addOptions(getOptions(faqList))
+                                    .setPlaceholder("Select a question")
                                     .setMaxValues(1)
                                     .build())
                                 .build())
@@ -198,7 +196,7 @@ public class FaqComponent extends Component {
             faqMap.put(questionLowercase, answer);
 
             reply.hide();
-            reply.ok("Added question and answer for `%s`\nMake sure to resend the faq message", question);
+            reply.ok("Added question and answer for `%s`", question);
             getServer().log(event.getMember().getUser(), "Added question and answer for `%s`", question);
             updateMessage(faqMessage).queue();
             updateStorage(storageMessage).queue();
@@ -215,7 +213,7 @@ public class FaqComponent extends Component {
             faqList.remove(index);
             faqMap.remove(question.toLowerCase());
 
-            reply.edit(Icon.STOP, "Removed question `%s`\nMake sure to resend the faq message", question);
+            reply.edit(Icon.STOP, "Removed question `%s`", question);
             getServer().log(event.getUser(), "Removed question `%s`", question);
             updateMessage(faqMessage).queue();
             updateStorage(storageMessage).queue();
@@ -339,6 +337,7 @@ public class FaqComponent extends Component {
             return message.editMessageComponents(
                     ActionRow.of(StringSelectMenu.create("faq_query")
                         .addOptions(getOptions(faqList))
+                        .setPlaceholder("Select a question")
                         .setMaxValues(1)
                         .build()
                     )
