@@ -30,6 +30,7 @@ import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
+import net.dv8tion.jda.api.interactions.components.selections.SelectOption;
 import net.dv8tion.jda.api.interactions.modals.ModalMapping;
 import net.dv8tion.jda.api.requests.RestAction;
 import net.dv8tion.jda.api.utils.Result;
@@ -219,18 +220,27 @@ public class Bot extends ListenerAdapter {
         if (event.getUser().isBot() || event.getUser().isSystem()) {
             return;
         }
+
+        ComponentReply<StringSelectInteractionEvent> reply = new ComponentReply<>(event);
+        SelectEvent<SelectOption> selectEvent = new SelectEvent<>(event.getUser(), event.getMessage(),
+            event.getComponentId(), event.getInteraction().getSelectedOptions().get(0));
+
         if (!event.isFromGuild()) {
-            ComponentReply<StringSelectInteractionEvent> reply = new ComponentReply<>(event);
-
             try {
-                SelectEvent<String> selectEvent = new SelectEvent<>(event.getUser(), event.getMessage(),
-                    event.getComponentId(), event.getInteraction().getValues().get(0));
                 direct.getStringSelectHandler().handle(event.getComponentId(), selectEvent, reply);
-
             } catch (BotException e) {
                 reply.edit(e);
             }
+        } else {
+            try {
+                getServer(Objects.requireNonNull(event.getGuild()).getId()).getStringSelectHandler()
+                    .handle(event.getComponentId(), selectEvent, reply);
+            } catch (BotException e) {
+                reply.hide();
+                reply.send(e);
+            }
         }
+
     }
 
     @Override

@@ -21,6 +21,7 @@ import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
+import net.dv8tion.jda.api.interactions.components.selections.SelectOption;
 import net.dv8tion.jda.api.requests.RestAction;
 import net.dv8tion.jda.internal.requests.CompletedRestAction;
 import org.jetbrains.annotations.Contract;
@@ -240,6 +241,10 @@ public class Server {
 
     public SetHandler<EventEvent, Void> getEventHandler() {
         return handlerCollection.getEventHandler();
+    }
+
+    public <T extends Reply & EphemeralReply & ModalReply & EditReply> MapHandler<SelectEvent<SelectOption>, T> getStringSelectHandler() {
+        return handlerCollection.getStringSelectHandler();
     }
 
     public <T extends Reply & EphemeralReply & ModalReply & EditReply> MapHandler<SelectEvent<IMentionable>, T> getEntitySelectHandler() {

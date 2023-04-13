@@ -55,6 +55,7 @@ public class Initializer {
             Feedback.class,
             FanMail.class,
 
+            FaqComponent.class,
             PollComponent.class,
             Session.class,
             Event.class,

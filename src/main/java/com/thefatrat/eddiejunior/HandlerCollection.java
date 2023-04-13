@@ -10,6 +10,7 @@ import com.thefatrat.eddiejunior.reply.Reply;
 import net.dv8tion.jda.api.entities.IMentionable;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.interactions.components.selections.SelectOption;
 
 @SuppressWarnings("unchecked")
 public class HandlerCollection<V> {
@@ -22,7 +23,7 @@ public class HandlerCollection<V> {
     private MapHandler<ButtonEvent<V>, ?> buttonMapHandler;
     private MapHandler<ModalEvent, ?> modalHandler;
     private SetHandler<EventEvent, Void> eventHandler;
-    private MapHandler<SelectEvent<String>, ?> stringSelectHandler;
+    private MapHandler<SelectEvent<SelectOption>, ?> stringSelectHandler;
     private MapHandler<SelectEvent<IMentionable>, ?> entitySelectHandler;
 
     public <T extends Reply & EphemeralReply & ModalReply> MapHandler<CommandEvent, T> getCommandHandler() {
@@ -82,11 +83,11 @@ public class HandlerCollection<V> {
         return eventHandler;
     }
 
-    public <T extends Reply & EphemeralReply & EditReply> MapHandler<SelectEvent<String>, T> getStringSelectHandler() {
+    public <T extends Reply & EphemeralReply & EditReply> MapHandler<SelectEvent<SelectOption>, T> getStringSelectHandler() {
         if (stringSelectHandler == null) {
             stringSelectHandler = new MapHandler<>();
         }
-        return (MapHandler<SelectEvent<String>, T>) stringSelectHandler;
+        return (MapHandler<SelectEvent<SelectOption>, T>) stringSelectHandler;
     }
 
     public <T extends Reply & EphemeralReply & EditReply & ModalReply> MapHandler<SelectEvent<IMentionable>, T> getEntitySelectHandler() {

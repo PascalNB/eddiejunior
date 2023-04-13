@@ -19,6 +19,7 @@ import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.interactions.components.ActionRow;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import net.dv8tion.jda.api.interactions.components.selections.SelectOption;
 import net.dv8tion.jda.api.interactions.components.selections.StringSelectMenu;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
@@ -38,7 +39,7 @@ public class Direct {
 
     public Direct() {
         getStringSelectHandler().addListener("component", (event, reply) -> {
-            String[] split = event.getOption().split("-");
+            String[] split = event.getOption().getValue().split("-");
             String serverId = split[0];
             String component = split[1];
 
@@ -56,7 +57,9 @@ public class Direct {
             server.getDirectMessageHandler().handle(component, userMessage, reply);
         });
         getStringSelectHandler().addListener("server", (event, reply) ->
-            reply.edit(MessageEditData.fromCreateData(getComponentMenu(event.getUser().getId(), event.getOption())))
+            reply.edit(MessageEditData.fromCreateData(
+                getComponentMenu(event.getUser().getId(), event.getOption().getValue())
+            ))
         );
 
         getButtonHandler().addListener("x", (event, reply) -> {
@@ -65,7 +68,7 @@ public class Direct {
         });
     }
 
-    public <T extends Reply & EphemeralReply & EditReply> MapHandler<SelectEvent<String>, T> getStringSelectHandler() {
+    public <T extends Reply & EphemeralReply & EditReply> MapHandler<SelectEvent<SelectOption>, T> getStringSelectHandler() {
         return handlerCollection.getStringSelectHandler();
     }
 
