@@ -155,11 +155,15 @@ public class FaqComponent extends Component {
                         .map(OptionMapping::getAsString)
                         .orElse("Select a question");
 
+                    if (text.isBlank()) {
+                        throw new BotWarningException("Text cannot be empty");
+                    }
+
                     command.getChannel().sendMessage(
                             new MessageCreateBuilder()
                                 .addEmbeds(new EmbedBuilder()
                                     .setColor(Colors.TRANSPARENT)
-                                    .setTitle("FAQ")
+                                    .setTitle("Frequently Asked Questions")
                                     .setDescription(text)
                                     .build())
                                 .addActionRow(StringSelectMenu.create("faq_query")
