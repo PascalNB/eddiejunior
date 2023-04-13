@@ -16,6 +16,7 @@ import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import net.dv8tion.jda.api.interactions.components.ActionRow;
 import net.dv8tion.jda.api.interactions.components.selections.SelectOption;
 import net.dv8tion.jda.api.interactions.components.selections.StringSelectMenu;
 import net.dv8tion.jda.api.interactions.components.text.TextInput;
@@ -36,6 +37,7 @@ public class FaqComponent extends Component {
     private final List<String> faqList = new ArrayList<>();
     private final Map<String, String> faqMap = new HashMap<>();
     private Message storageMessage;
+    private Message faqMessage;
 
     public FaqComponent(Server server) {
         super(server, "Faq", false);
@@ -47,9 +49,20 @@ public class FaqComponent extends Component {
                 TextChannel channel = getServer().getGuild().getTextChannelById(split[0]);
                 if (channel != null) {
                     try {
-                        storageMessage = channel.retrieveMessageById(split[1]).complete();
+                        storageMessage = channel.retrieveMessageById(split[1]).onErrorMap(e -> null).complete();
                         String data = storageMessage.getEmbeds().get(0).getDescription();
                         parseJSON(data, faqList, faqMap);
+                    } catch (InsufficientPermissionException ignore) {
+                    }
+                }
+            }
+            String faqMessageId = getDatabaseManager().getSetting("faqmessage");
+            if (faqMessageId != null) {
+                String[] split = faqMessageId.split("_", 2);
+                TextChannel channel = getServer().getGuild().getTextChannelById(split[0]);
+                if (channel != null) {
+                    try {
+                        faqMessage = channel.retrieveMessageById(split[1]).onErrorMap(e -> null).complete();
                     } catch (InsufficientPermissionException ignore) {
                     }
                 }
@@ -72,7 +85,7 @@ public class FaqComponent extends Component {
                         new EmbedBuilder().setDescription("tmp").build()
                     ).complete();
                     reply.ok("Storage message sent\n%s", storageMessage.getJumpUrl());
-                    updateMessage(storageMessage).queue();
+                    updateStorage(storageMessage).queue();
                     getDatabaseManager().setSetting("storagemessage",
                         channel.getId() + "_" + storageMessage.getId());
                     getServer().log(command.getMember().getUser(), "Created a new storage message in %s (`%s`)\n%s",
@@ -153,7 +166,10 @@ public class FaqComponent extends Component {
                                     .setMaxValues(1)
                                     .build())
                                 .build())
-                        .queue();
+                        .queue(m -> {
+                            faqMessage = m;
+                            getDatabaseManager().setSetting("faqmessage", m.getChannel().getId() + "_" + m.getId());
+                        });
 
                     reply.hide();
                     reply.ok("Faq message sent");
@@ -184,7 +200,8 @@ public class FaqComponent extends Component {
             reply.hide();
             reply.ok("Added question and answer for `%s`\nMake sure to resend the faq message", question);
             getServer().log(event.getMember().getUser(), "Added question and answer for `%s`", question);
-            updateMessage(storageMessage).queue();
+            updateMessage(faqMessage).queue();
+            updateStorage(storageMessage).queue();
         });
 
         getServer().getStringSelectHandler().addListener("faq_remove", (event, reply) -> {
@@ -200,7 +217,8 @@ public class FaqComponent extends Component {
 
             reply.edit(Icon.STOP, "Removed question `%s`\nMake sure to resend the faq message", question);
             getServer().log(event.getUser(), "Removed question `%s`", question);
-            updateMessage(storageMessage).queue();
+            updateMessage(faqMessage).queue();
+            updateStorage(storageMessage).queue();
         });
 
         getServer().getStringSelectHandler().addListener("faq_edit", (event, reply) -> {
@@ -260,8 +278,9 @@ public class FaqComponent extends Component {
             } else {
                 reply.ok("Edited question `%s` -> `%s`", question, newQuestion);
                 getServer().log(event.getMember().getUser(), "Edited question `%s` -> `%s`", question, newQuestion);
+                updateMessage(faqMessage).queue();
             }
-            updateMessage(storageMessage).queue();
+            updateStorage(storageMessage).queue();
         });
 
         getServer().getStringSelectHandler().addListener("faq_query", (event, reply) -> {
@@ -287,7 +306,7 @@ public class FaqComponent extends Component {
             .toArray(SelectOption[]::new);
     }
 
-    private RestAction<Message> updateMessage(Message message) {
+    private RestAction<Message> updateStorage(Message message) {
         if (message == null || !message.getChannel().canTalk()) {
             return new CompletedRestAction<>(Bot.getInstance().getJDA(), null);
         }
@@ -302,12 +321,31 @@ public class FaqComponent extends Component {
         }
         try {
             return message.editMessageEmbeds(new EmbedBuilder()
-                .setColor(Colors.TRANSPARENT)
-                .setDescription(array.toString())
-                .build());
+                    .setColor(Colors.TRANSPARENT)
+                    .setDescription(array.toString())
+                    .build())
+                .onErrorMap(e -> null);
         } catch (IllegalArgumentException e) {
             throw new BotErrorException("Max faq limit reached");
         }
+    }
+
+    private RestAction<Message> updateMessage(Message message) {
+        if (message == null || !message.getChannel().canTalk()) {
+            return new CompletedRestAction<>(Bot.getInstance().getJDA(), null);
+        }
+
+        if (!faqList.isEmpty()) {
+            return message.editMessageComponents(
+                    ActionRow.of(StringSelectMenu.create("faq_query")
+                        .addOptions(getOptions(faqList))
+                        .setMaxValues(1)
+                        .build()
+                    )
+                )
+                .onErrorMap(e -> null);
+        }
+        return message.editMessageComponents().onErrorMap(e -> null);
     }
 
     private void parseJSON(String data, List<String> list, Map<String, String> map) {
@@ -321,6 +359,19 @@ public class FaqComponent extends Component {
                 map.put(q.toLowerCase(), a);
             }
         }
+    }
+
+    @Override
+    public String getStatus() {
+        return String.format("""
+                Enabled: %b
+                Questions: %d
+                Message: %s
+                Storage: %s
+                """,
+            isEnabled(), faqList.size(),
+            Optional.ofNullable(faqMessage).map(Message::getJumpUrl).orElse("null"),
+            Optional.ofNullable(storageMessage).map(Message::getJumpUrl).orElse("null"));
     }
 
 }
