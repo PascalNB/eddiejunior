@@ -282,13 +282,13 @@ public class FaqComponent extends Component {
             int index = Integer.parseInt(split[1]);
             int hash = Integer.parseInt(split[2]);
             String newQuestion = values.get("q-" + index + "-" + hash).getAsString();
-            String newValue = values.get("a-" + index + "-" + hash).getAsString();
+            String newAnswer = values.get("a-" + index + "-" + hash).getAsString();
             String emoji = values.get("e-" + index + "-" + hash).getAsString();
 
             if (index >= faqList.size()) {
                 throw new BotErrorException("Something went wrong, try again");
             }
-            if (newQuestion.isBlank() || newValue.isBlank()) {
+            if (newQuestion.isBlank() || newAnswer.isBlank()) {
                 throw new BotWarningException("Answer cannot be blank");
             }
             String newEmoji;
@@ -300,10 +300,11 @@ public class FaqComponent extends Component {
                 throw new BotErrorException("%s is not a valid emoji", emoji);
             }
 
-            String question = faqList.get(index);
-            String[] old = faqMap.get(question.toLowerCase());
+            String oldQuestion = faqList.get(index);
+            String oldKey = oldQuestion.toLowerCase();
+            String oldEmoji = faqMap.get(oldKey)[1];
 
-            if (question.hashCode() != hash) {
+            if (oldQuestion.hashCode() != hash) {
                 throw new BotErrorException("Something went wrong, try again");
             }
 
@@ -311,29 +312,28 @@ public class FaqComponent extends Component {
             String newKey = newQuestion.toLowerCase();
 
             if (faqMap.containsKey(newKey)) {
-                faqMap.compute(newKey, (k, v) -> {
-                    //noinspection DataFlowIssue
-                    v[0] = newValue;
+                faqMap.computeIfPresent(newKey, (k, v) -> {
+                    v[0] = newAnswer;
                     v[1] = newEmoji;
                     return v;
                 });
             } else {
-                String[] oldData = faqMap.remove(question);
-                oldData[0] = newValue;
+                String[] oldData = faqMap.remove(oldKey);
+                oldData[0] = newAnswer;
                 oldData[1] = newEmoji;
                 faqMap.put(newKey, oldData);
             }
 
             reply.hide();
-            if (newQuestion.equals(question)) {
-                reply.ok("Edited question `%s`", question);
-                getServer().log(event.getMember().getUser(), "Edited question `%s`", question);
-                if (!Objects.equals(old[1], newEmoji)) {
+            if (newQuestion.equals(oldQuestion)) {
+                reply.ok("Edited question `%s`", oldQuestion);
+                getServer().log(event.getMember().getUser(), "Edited question `%s`", oldQuestion);
+                if (!Objects.equals(oldEmoji, newEmoji)) {
                     updateMessage(faqMessage).queue();
                 }
             } else {
-                reply.ok("Edited question `%s` -> `%s`", question, newQuestion);
-                getServer().log(event.getMember().getUser(), "Edited question `%s` -> `%s`", question, newQuestion);
+                reply.ok("Edited question `%s` -> `%s`", oldQuestion, newQuestion);
+                getServer().log(event.getMember().getUser(), "Edited question `%s` -> `%s`", oldQuestion, newQuestion);
                 updateMessage(faqMessage).queue();
             }
             updateStorage(storageMessage).queue();
