@@ -301,39 +301,49 @@ public class FaqComponent extends Component {
             }
 
             String oldQuestion = faqList.get(index);
-            String oldKey = oldQuestion.toLowerCase();
-            String oldEmoji = faqMap.get(oldKey)[1];
 
             if (oldQuestion.hashCode() != hash) {
                 throw new BotErrorException("Something went wrong, try again");
             }
 
-            faqList.set(index, newQuestion);
+            String oldKey = oldQuestion.toLowerCase();
             String newKey = newQuestion.toLowerCase();
+            String[] data = faqMap.get(oldKey);
+            String oldAnswer = data[0];
+            String oldEmoji = data[1];
 
-            if (faqMap.containsKey(newKey)) {
-                faqMap.computeIfPresent(newKey, (k, v) -> {
-                    v[0] = newAnswer;
-                    v[1] = newEmoji;
-                    return v;
-                });
-            } else {
-                String[] oldData = faqMap.remove(oldKey);
-                oldData[0] = newAnswer;
-                oldData[1] = newEmoji;
-                faqMap.put(newKey, oldData);
+            boolean changeQ = !newQuestion.equals(oldQuestion);
+            boolean changeA = !oldAnswer.equals(newAnswer);
+            boolean changeE = !oldEmoji.equals(newEmoji);
+
+            if (!(changeQ || changeA || changeE)) {
+                throw new BotWarningException("No changes have been made");
             }
 
+            faqList.set(index, newQuestion);
+            if (!oldQuestion.equals(newQuestion)) {
+                faqMap.put(newKey, faqMap.remove(oldKey));
+            }
+            data[0] = newAnswer;
+            data[1] = newEmoji;
+
             reply.hide();
-            if (newQuestion.equals(oldQuestion)) {
-                reply.ok("Edited question `%s`", oldQuestion);
-                getServer().log(event.getMember().getUser(), "Edited question `%s`", oldQuestion);
-                if (!Objects.equals(oldEmoji, newEmoji)) {
-                    updateMessage(faqMessage).queue();
-                }
-            } else {
-                reply.ok("Edited question `%s` -> `%s`", oldQuestion, newQuestion);
-                getServer().log(event.getMember().getUser(), "Edited question `%s` -> `%s`", oldQuestion, newQuestion);
+            reply.ok("Edited question `%s`", oldQuestion);
+
+            List<String> changes = new ArrayList<>();
+            if (changeQ) {
+                changes.add(String.format("- `%s` → `%s`", oldQuestion, newQuestion));
+            }
+            if (changeE) {
+                changes.add(String.format("- %s → %s", oldEmoji, newEmoji));
+            }
+            if (changeA) {
+                changes.add("- Answer modified");
+            }
+            String changeString = String.join("\n", changes);
+
+            getServer().log(event.getMember().getUser(), "Edited question `%s`:\n%s", oldQuestion, changeString);
+            if (changeA || changeE) {
                 updateMessage(faqMessage).queue();
             }
             updateStorage(storageMessage).queue();
