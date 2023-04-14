@@ -301,24 +301,31 @@ public class FaqComponent extends Component {
             }
 
             String question = faqList.get(index);
-            String oldEmoji = faqMap.get(question.toLowerCase())[1];
+            String[] old = faqMap.get(question.toLowerCase());
 
             if (question.hashCode() != hash) {
                 throw new BotErrorException("Something went wrong, try again");
             }
 
             faqList.set(index, newQuestion);
-            faqMap.computeIfPresent(newQuestion.toLowerCase(), (k, v) -> {
-                v[0] = newValue;
-                v[1] = newEmoji;
-                return v;
-            });
+            String newKey = newQuestion.toLowerCase();
+
+            if (faqMap.containsKey(newKey)) {
+                faqMap.compute(newKey, (k, v) -> {
+                    //noinspection DataFlowIssue
+                    v[0] = newValue;
+                    v[1] = newEmoji;
+                    return v;
+                });
+            } else {
+                faqMap.put(newKey, faqMap.remove(question));
+            }
 
             reply.hide();
             if (newQuestion.equals(question)) {
                 reply.ok("Edited question `%s`", question);
                 getServer().log(event.getMember().getUser(), "Edited question `%s`", question);
-                if (!Objects.equals(oldEmoji, newEmoji)) {
+                if (!Objects.equals(old[1], newEmoji)) {
                     updateMessage(faqMessage).queue();
                 }
             } else {
