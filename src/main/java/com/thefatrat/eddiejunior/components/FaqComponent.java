@@ -318,7 +318,10 @@ public class FaqComponent extends Component {
                     return v;
                 });
             } else {
-                faqMap.put(newKey, faqMap.remove(question));
+                String[] oldData = faqMap.remove(question);
+                oldData[0] = newValue;
+                oldData[1] = newEmoji;
+                faqMap.put(newKey, oldData);
             }
 
             reply.hide();
