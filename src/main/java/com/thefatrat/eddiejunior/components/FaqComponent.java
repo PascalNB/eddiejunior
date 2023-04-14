@@ -301,6 +301,7 @@ public class FaqComponent extends Component {
             }
 
             String question = faqList.get(index);
+            String oldEmoji = faqMap.get(question.toLowerCase())[1];
 
             if (question.hashCode() != hash) {
                 throw new BotErrorException("Something went wrong, try again");
@@ -317,6 +318,9 @@ public class FaqComponent extends Component {
             if (newQuestion.equals(question)) {
                 reply.ok("Edited question `%s`", question);
                 getServer().log(event.getMember().getUser(), "Edited question `%s`", question);
+                if (!Objects.equals(oldEmoji, newEmoji)) {
+                    updateMessage(faqMessage).queue();
+                }
             } else {
                 reply.ok("Edited question `%s` -> `%s`", question, newQuestion);
                 getServer().log(event.getMember().getUser(), "Edited question `%s` -> `%s`", question, newQuestion);
