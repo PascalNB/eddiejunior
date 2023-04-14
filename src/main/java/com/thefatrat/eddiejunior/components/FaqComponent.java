@@ -6,12 +6,14 @@ import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotWarningException;
 import com.thefatrat.eddiejunior.sources.Server;
 import com.thefatrat.eddiejunior.util.Colors;
+import com.thefatrat.eddiejunior.util.EmojiUtil;
 import com.thefatrat.eddiejunior.util.Icon;
 import com.thefatrat.eddiejunior.util.PermissionChecker;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
@@ -35,7 +37,7 @@ import java.util.stream.IntStream;
 public class FaqComponent extends Component {
 
     private final List<String> faqList = new ArrayList<>();
-    private final Map<String, String> faqMap = new HashMap<>();
+    private final Map<String, String[]> faqMap = new HashMap<>();
     private Message storageMessage;
     private Message faqMessage;
 
@@ -104,6 +106,10 @@ public class FaqComponent extends Component {
                             TextInput.create("answer", "Answer", TextInputStyle.PARAGRAPH)
                                 .setRequiredRange(1, 300)
                                 .build()
+                        )
+                        .addActionRow(TextInput.create("emoji", "Emoji", TextInputStyle.SHORT)
+                            .setRequired(false)
+                            .build()
                         )
                         .build())
                 ),
@@ -190,6 +196,7 @@ public class FaqComponent extends Component {
             Map<String, ModalMapping> map = event.getValues();
             String question = map.get("question").getAsString();
             String answer = map.get("answer").getAsString();
+            String emoji = map.get("emoji").getAsString();
             String questionLowercase = question.toLowerCase();
 
             if (question.isBlank() || answer.isBlank()) {
@@ -200,8 +207,14 @@ public class FaqComponent extends Component {
                 throw new BotWarningException("That question has already been added");
             }
 
+            if (emoji.isEmpty()) {
+                emoji = null;
+            } else if (!EmojiUtil.isEmoji(emoji)) {
+                throw new BotErrorException("%s is not a valid emoji", emoji);
+            }
+
             faqList.add(question);
-            faqMap.put(questionLowercase, answer);
+            faqMap.put(questionLowercase, new String[]{answer, emoji});
 
             reply.hide();
             reply.ok("Added question and answer for `%s`", question);
@@ -235,17 +248,27 @@ public class FaqComponent extends Component {
                 throw new BotErrorException("Something went wrong, try again");
             }
 
+            int hash = question.hashCode();
+
+            String[] answer = faqMap.get(question.toLowerCase());
+
             reply.sendModal(Modal.create("faq_edit", "Edit answer")
                 .addActionRow(
-                    TextInput.create("q-" + index + "-" + question.hashCode(), "Question", TextInputStyle.PARAGRAPH)
+                    TextInput.create("q-" + index + "-" + hash, "Question", TextInputStyle.PARAGRAPH)
                         .setRequiredRange(10, 150)
                         .setValue(question)
                         .build()
                 )
                 .addActionRow(
-                    TextInput.create("a-" + index + "-" + question.hashCode(), "Answer", TextInputStyle.PARAGRAPH)
+                    TextInput.create("a-" + index + "-" + hash, "Answer", TextInputStyle.PARAGRAPH)
                         .setRequiredRange(1, 350)
-                        .setValue(faqMap.get(question.toLowerCase()))
+                        .setValue(answer[0])
+                        .build()
+                )
+                .addActionRow(
+                    TextInput.create("e-" + index + "-" + hash, "Emoji", TextInputStyle.SHORT)
+                        .setRequired(false)
+                        .setValue(answer[1])
                         .build()
                 )
                 .build());
@@ -260,12 +283,21 @@ public class FaqComponent extends Component {
             int hash = Integer.parseInt(split[2]);
             String newQuestion = values.get("q-" + index + "-" + hash).getAsString();
             String newValue = values.get("a-" + index + "-" + hash).getAsString();
+            String emoji = values.get("e-" + index + "-" + hash).getAsString();
 
             if (index >= faqList.size()) {
                 throw new BotErrorException("Something went wrong, try again");
             }
             if (newQuestion.isBlank() || newValue.isBlank()) {
                 throw new BotWarningException("Answer cannot be blank");
+            }
+            String newEmoji;
+            if (emoji.isEmpty()) {
+                newEmoji = null;
+            } else if (EmojiUtil.isEmoji(emoji)) {
+                newEmoji = emoji;
+            } else {
+                throw new BotErrorException("%s is not a valid emoji", emoji);
             }
 
             String question = faqList.get(index);
@@ -275,7 +307,11 @@ public class FaqComponent extends Component {
             }
 
             faqList.set(index, newQuestion);
-            faqMap.put(newQuestion.toLowerCase(), newValue);
+            faqMap.computeIfPresent(newQuestion.toLowerCase(), (k, v) -> {
+                v[0] = newValue;
+                v[1] = newEmoji;
+                return v;
+            });
 
             reply.hide();
             if (newQuestion.equals(question)) {
@@ -291,7 +327,7 @@ public class FaqComponent extends Component {
 
         getServer().getStringSelectHandler().addListener("faq_query", (event, reply) -> {
             String question = event.getOption().getLabel();
-            String answer = faqMap.get(question.toLowerCase());
+            String answer = faqMap.get(question.toLowerCase())[0];
             if (answer == null) {
                 throw new BotErrorException("Something went wrong, contact the moderators");
             }
@@ -307,7 +343,15 @@ public class FaqComponent extends Component {
 
     private SelectOption[] getOptions(List<String> list) {
         return IntStream.range(0, list.size())
-            .mapToObj(i -> SelectOption.of(list.get(i), String.valueOf(i)))
+            .mapToObj(i -> {
+                String q = list.get(i);
+                SelectOption option = SelectOption.of(q, String.valueOf(i));
+                String emoji = faqMap.get(q.toLowerCase())[1];
+                if (emoji != null) {
+                    option = option.withEmoji(Emoji.fromUnicode(emoji));
+                }
+                return option;
+            })
             .sorted(Comparator.comparing(SelectOption::getLabel))
             .toArray(SelectOption[]::new);
     }
@@ -319,11 +363,18 @@ public class FaqComponent extends Component {
 
         JSONArray array = new JSONArray();
         for (String question : faqList) {
-            String answer = faqMap.get(question.toLowerCase());
+            String[] answer = faqMap.get(question.toLowerCase());
+            String emoji = answer[1];
 
-            array.put(new JSONObject()
+            JSONObject object = new JSONObject()
                 .put("q", question)
-                .put("a", answer));
+                .put("a", answer[0]);
+
+            if (emoji != null) {
+                object.put("e", emoji);
+            }
+
+            array.put(object);
         }
         try {
             return message.editMessageEmbeds(new EmbedBuilder()
@@ -355,15 +406,16 @@ public class FaqComponent extends Component {
         return message.editMessageComponents().onErrorMap(e -> null);
     }
 
-    private void parseJSON(String data, List<String> list, Map<String, String> map) {
+    private void parseJSON(String data, List<String> list, Map<String, String[]> map) {
         if (data != null) {
             JSONArray array = new JSONArray(data);
             for (int i = 0; i < array.length(); i++) {
                 JSONObject element = array.getJSONObject(i);
                 String q = element.getString("q");
                 String a = element.getString("a");
+                String e = element.optString("e", null);
                 list.add(q);
-                map.put(q.toLowerCase(), a);
+                map.put(q.toLowerCase(), new String[]{a, e});
             }
         }
     }
