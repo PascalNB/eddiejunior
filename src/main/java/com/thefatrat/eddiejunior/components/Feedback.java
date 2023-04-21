@@ -15,11 +15,16 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.Channel;
+import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
+import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import net.dv8tion.jda.api.interactions.components.text.TextInput;
+import net.dv8tion.jda.api.interactions.components.text.TextInputStyle;
+import net.dv8tion.jda.api.interactions.modals.Modal;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import net.dv8tion.jda.api.utils.messages.MessageEditBuilder;
@@ -40,6 +45,8 @@ public class Feedback extends DirectComponent {
     private final Set<String> users = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final List<Submission> submissions = new CopyOnWriteArrayList<>();
     private String winChannel;
+    private String buttonChannelId;
+    private Message buttonMessage = null;
     private int submissionCount = 0;
 
     public Feedback(Server server) {
@@ -48,6 +55,7 @@ public class Feedback extends DirectComponent {
         domains.addAll(getDatabaseManager().getSettings("domains"));
         filetypes.addAll(getDatabaseManager().getSettings("filetypes"));
         winChannel = getDatabaseManager().getSetting("winchannel");
+        buttonChannelId = getDatabaseManager().getSetting("buttonchannel");
 
         addSubcommands(
             new Command("winchannel", "set the channel where win messages will be sent to")
@@ -268,6 +276,21 @@ public class Feedback extends DirectComponent {
                         String.join(", ", changed), msg);
                     getServer().log(Colors.GRAY, command.getMember().getUser(), "Filetype%s %s %s the `%s` " +
                         "filetype list", changed.size() == 1 ? "" : "s", String.join(", ", changed), msg, getName());
+                }),
+
+            new Command("button", "set the channel where the submission button will be sent")
+                .addOption(new OptionData(OptionType.CHANNEL, "channel", "channel", true)
+                    .setChannelTypes(ChannelType.TEXT)
+                )
+                .setAction((command, reply) -> {
+                    TextChannel channel = command.getArgs().get("channel").getAsChannel().asTextChannel();
+                    PermissionChecker.requireSend(channel);
+
+                    buttonChannelId = channel.getId();
+                    reply.ok("Set button channel to %s", channel.getAsMention());
+                    getDatabaseManager().setSetting("buttonchannel", buttonChannelId);
+                    getServer().log(command.getMember().getUser(), "Set feedback button channel to %s (`%s`)",
+                        channel.getAsMention(), channel.getId());
                 })
         );
 
@@ -320,49 +343,35 @@ public class Feedback extends DirectComponent {
                 MessageEditBuilder builder = MessageEditBuilder.fromMessage(event.getMessage());
                 builder.setComponents();
                 reply.edit(builder.build());
+            } else if ("submit".equals(action)) {
+                if (!isRunning()) {
+                    throw new BotWarningException("There is no feedback session at the moment");
+                }
+
+                String value = "One of the following: " + String.join(", ", domains);
+
+                reply.sendModal(Modal.create("feedback-submit", "Submit song")
+                    .addActionRow(TextInput.create("url", "Url", TextInputStyle.PARAGRAPH)
+                        .setPlaceholder(value)
+                        .setRequiredRange(10, 300)
+                        .build())
+                    .build());
             }
+        });
+
+        getServer().getModalHandler().addListener("feedback-submit", (event, reply) -> {
+            String url = event.getValues().get("url").getAsString().trim();
+            Matcher matcher = URLUtil.matchUrl(url);
+            newSubmission(event.getMember().getUser(), url, matcher);
+            reply.hide();
+            reply.ok("Successfully submitted");
         });
     }
 
-    @Override
-    public String getStatus() {
-        String dest = Optional.ofNullable(getDestination())
-            .map(Channel::getAsMention)
-            .orElse(null);
-        return String.format("""
-                Enabled: %b
-                Running: %b
-                Submissions: %d
-                Destination: %s
-                """,
-            isEnabled(), isRunning(), submissionCount, dest);
-    }
-
-    @Override
-    protected synchronized <T extends Reply & EditReply> void handleDirect(@NotNull Message message, T reply) {
-        List<Message.Attachment> attachments = message.getAttachments();
-
-        String url = null;
-        Matcher matcher = null;
-        if (!attachments.isEmpty()) {
-            url = attachments.get(0).getUrl();
-            matcher = URLUtil.matchUrl(url);
-        } else {
-            String[] content = message.getContentRaw().split("\\s+");
-
-            for (String part : content) {
-                matcher = URLUtil.matchUrl(part);
-                if (matcher != null) {
-                    url = part;
-                    break;
-                }
-            }
-        }
+    private void newSubmission(User author, String url, Matcher matcher) {
         if (url == null || matcher == null) {
             throw new BotWarningException("Please send a valid file or link");
         }
-
-        User author = message.getAuthor();
 
         if (users.contains(author.getId())) {
             throw new BotWarningException("You can only submit once");
@@ -409,15 +418,37 @@ public class Feedback extends DirectComponent {
             Button.primary("feedback-next", "Get next song").withEmoji(Emoji.fromUnicode("🎵"))
         );
 
-        getServer().log(Colors.GRAY, author, "Submitted song <%s>", url);
         submissions.add(new Submission(author, builder.build()));
         submissionCount++;
+        getServer().log(Colors.GRAY, author, "Submitted song <%s>", url);
+    }
+
+    @Override
+    protected synchronized <T extends Reply & EditReply> void handleDirect(@NotNull Message message, T reply) {
+        List<Message.Attachment> attachments = message.getAttachments();
+
+        String url = null;
+        Matcher matcher = null;
+        if (!attachments.isEmpty()) {
+            url = attachments.get(0).getUrl();
+            matcher = URLUtil.matchUrl(url);
+        } else {
+            String[] content = message.getContentRaw().split("\\s+");
+
+            for (String part : content) {
+                matcher = URLUtil.matchUrl(part);
+                if (matcher != null) {
+                    url = part;
+                    break;
+                }
+            }
+        }
+
+        newSubmission(message.getAuthor(), url, matcher);
         reply.edit(new EmbedBuilder()
             .setDescription(Icon.OK + " Successfully submitted")
             .setColor(Icon.OK.getColor())
-            .build()
-        );
-
+            .build());
     }
 
     public void start(Reply reply) {
@@ -426,14 +457,14 @@ public class Feedback extends DirectComponent {
         submissions.clear();
         submissionCount = 0;
 
-        TextChannel channel = getDestination();
-        if (channel == null) {
+        TextChannel destination = getDestination();
+        if (destination == null) {
             reply.send(new BotErrorException("Could not start feedback session: destination channel not set"));
             stop(Reply.EMPTY);
             return;
         }
 
-        channel.sendMessage(
+        destination.sendMessage(
                 new MessageCreateBuilder()
                     .setEmbeds(
                         new EmbedBuilder()
@@ -448,6 +479,23 @@ public class Feedback extends DirectComponent {
             )
             .queue();
 
+        if (buttonChannelId != null) {
+            TextChannel buttonChannel = getServer().getGuild().getTextChannelById(buttonChannelId);
+            if (buttonChannel != null && buttonChannel.canTalk()) {
+                buttonChannel.sendMessage(new MessageCreateBuilder()
+                        .addActionRow(Button.success("feedback-submit", "Submit song")
+                            .withEmoji(Emoji.fromUnicode("🎵")))
+                        .build())
+                    .queue(message -> {
+                        buttonMessage = message;
+                        try {
+                            message.pin().onErrorMap(e -> null).queue();
+                        } catch (InsufficientPermissionException ignore) {
+                        }
+                    });
+            }
+        }
+
         reply.ok("Feedback session started");
     }
 
@@ -455,7 +503,36 @@ public class Feedback extends DirectComponent {
         super.stop(reply);
         submissions.clear();
         submissionCount = 0;
+
+        if (buttonMessage != null) {
+            buttonMessage.delete().onErrorMap(e -> null).queue();
+        }
+
         reply.send(Icon.STOP, "Feedback session stopped");
+    }
+
+    @Override
+    public String getStatus() {
+        String dest = Optional.ofNullable(getDestination())
+            .map(Channel::getAsMention)
+            .orElse(null);
+        String win = Optional.ofNullable(winChannel)
+            .map(getServer().getGuild()::getTextChannelById)
+            .map(Channel::getAsMention)
+            .orElse(null);
+        String butt = Optional.ofNullable(buttonChannelId)
+            .map(getServer().getGuild()::getTextChannelById)
+            .map(Channel::getAsMention)
+            .orElse(null);
+        return String.format("""
+                Enabled: %b
+                Running: %b
+                Submissions: %d
+                Destination: %s
+                Win channel: %s
+                Button channel: %s
+                """,
+            isEnabled(), isRunning(), submissionCount, dest, win, butt);
     }
 
     private record Submission(User user, MessageCreateData submission) {
