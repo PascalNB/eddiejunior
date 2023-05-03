@@ -11,6 +11,7 @@ import com.thefatrat.eddiejunior.util.Icon;
 import com.thefatrat.eddiejunior.util.PermissionChecker;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.IMentionable;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
@@ -55,6 +56,22 @@ public class FanMail extends DirectComponent {
                     getServer().log(command.getMember().getUser(), "Set fanart timeout to `%d` seconds", timeout);
                 }),
 
+            new Command("reset", "allow submissions for users again")
+                .addOption(new OptionData(OptionType.USER, "user", "user", true))
+                .setAction((command, reply) -> {
+                    Member member = command.getArgs().get("user").getAsMember();
+
+                    if (member == null) {
+                        throw new BotErrorException("The given member was not found");
+                    }
+
+                    if (timeouts.remove(member.getId()) == null) {
+                        throw new BotWarningException("The given user was not on a cooldown");
+                    }
+                    reply.send(Icon.RESET, "Cooldown reset for %s, they can submit again",
+                        member.getAsMention());
+                }),
+
             new Command("submissionchannel", "sets the channel were submissions will be posted to for review")
                 .addOption(new OptionData(OptionType.CHANNEL, "channel", "channel", true)
                     .setChannelTypes(ChannelType.TEXT)
@@ -97,12 +114,12 @@ public class FanMail extends DirectComponent {
                 } catch (InsufficientPermissionException ignore) {
                 }
 
+                MessageEmbed embed = event.getMessage().getEmbeds().get(0);
+
                 MessageCreateData newData = MessageCreateBuilder.from(data)
-                    .addEmbeds(new EmbedBuilder()
-                        .setDescription("Approved")
+                    .setEmbeds(new EmbedBuilder(embed)
                         .setColor(Colors.GREEN)
-                        .build()
-                    )
+                        .build())
                     .build();
 
                 event.getMessage().editMessage(MessageEditData.fromCreateData(newData)).queue();
@@ -110,20 +127,19 @@ public class FanMail extends DirectComponent {
                 reply.hide();
                 reply.ok("Submission approved\n%s", response.getJumpUrl());
 
-                MessageEmbed embed = event.getMessage().getEmbeds().get(0);
-                getServer().log(event.getUser().getUser(), "Approved fanart submission by %s (`%`)\n%s",
-                    embed.getDescription(), Objects.requireNonNull(embed.getFooter()).getText(), response.getJumpUrl());
+                String userId = Objects.requireNonNull(embed.getFooter()).getText();
+                getServer().log(event.getUser().getUser(), "Approved fanart submission by <@%s> (`%s`)",
+                    userId, userId);
 
             } else if (event.getButtonId().equals("fanart_deny")) {
                 Message message = event.getMessage();
+                MessageEmbed embed = message.getEmbeds().get(0);
 
                 MessageCreateData newData = MessageCreateBuilder.fromMessage(message)
-                    .addEmbeds(new EmbedBuilder()
-                        .setDescription("Denied")
-                        .setColor(Colors.RED)
-                        .build()
-                    )
                     .setComponents()
+                    .setEmbeds(new EmbedBuilder(embed)
+                        .setColor(Colors.RED)
+                        .build())
                     .build();
 
                 message.editMessage(MessageEditData.fromCreateData(newData)).queue();
@@ -131,9 +147,9 @@ public class FanMail extends DirectComponent {
                 reply.hide();
                 reply.send(Icon.STOP, "Denied fanart submission");
 
-                MessageEmbed embed = message.getEmbeds().get(0);
-                getServer().log(event.getUser().getUser(), "Denied fanart submission by %s (`%s`)",
-                    embed.getDescription(), Objects.requireNonNull(embed.getFooter()).getText());
+                String userId = Objects.requireNonNull(embed.getFooter()).getText();
+                getServer().log(event.getUser().getUser(), "Denied fanart submission by <@%s> (`%s`)",
+                    userId, userId);
             }
         });
     }
@@ -168,14 +184,26 @@ public class FanMail extends DirectComponent {
 
         timeouts.put(message.getAuthor().getId(), System.currentTimeMillis());
 
+        EmbedBuilder embedBuilder = new EmbedBuilder()
+            .setAuthor(message.getAuthor().getAsTag(), null, message.getAuthor().getEffectiveAvatarUrl())
+            .setColor(Colors.TRANSPARENT)
+            .setImage(attachment.getProxyUrl())
+            .setFooter(message.getAuthor().getId());
+
+        String description = message.getContentRaw();
+        if (!description.isBlank()) {
+            if (description.length() > 200) {
+                throw new BotWarningException("Submission description cannot be longer than 200 characters");
+            }
+
+            embedBuilder.setDescription(String.format("%s:\n%s",
+                message.getAuthor().getAsMention(), description));
+        } else {
+            embedBuilder.setDescription(message.getAuthor().getAsMention());
+        }
+
         MessageCreateData data = new MessageCreateBuilder()
-            .addEmbeds(new EmbedBuilder()
-                .setAuthor(message.getAuthor().getAsTag(), null, message.getAuthor().getEffectiveAvatarUrl())
-                .setDescription(message.getAuthor().getAsMention())
-                .setColor(Colors.TRANSPARENT)
-                .setImage(attachment.getProxyUrl())
-                .setFooter(message.getAuthor().getId())
-                .build())
+            .addEmbeds(embedBuilder.build())
             .addActionRow(
                 Button.success("fanart_approve", "Approve").withEmoji(Emoji.fromUnicode("✔️")),
                 Button.danger("fanart_deny", "Deny").withEmoji(Emoji.fromUnicode("✖️"))
@@ -218,11 +246,12 @@ public class FanMail extends DirectComponent {
     public String getStatus() {
         return String.format("""
                 Enabled: %b
+                Running: %b
                 Destination: %s
                 Review channel: %s
                 Timeout: %d seconds
                 """,
-            isEnabled(),
+            isEnabled(), isRunning(),
             Optional.ofNullable(getDestination()).map(IMentionable::getAsMention).orElse(null),
             Optional.ofNullable(submissionChannelId)
                 .map(s -> getServer().getGuild().getTextChannelById(s))

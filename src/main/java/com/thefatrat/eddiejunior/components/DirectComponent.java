@@ -10,7 +10,10 @@ import com.thefatrat.eddiejunior.util.Colors;
 import com.thefatrat.eddiejunior.util.Icon;
 import com.thefatrat.eddiejunior.util.PermissionChecker;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.entities.IMentionable;
+import net.dv8tion.jda.api.entities.ISnowflake;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
@@ -191,40 +194,34 @@ public abstract class DirectComponent extends Component implements RunnableCompo
                         msg = "removed from";
                     }
 
-                    Member member = command.getArgs().get("user").getAsMember();
-
-                    if (member != null) {
-                        blacklist(member, add, msg, reply);
-                        if (add) {
-                            getServer().log(Colors.RED, command.getMember().getUser(),
-                                "Added %s (`%s`) to blacklist of `%s`", member.getAsMention(), member.getId(),
-                                getName());
-                        } else {
-                            getServer().log(Colors.GREEN, command.getMember().getUser(),
-                                "Removed %s (`%s`) from blacklist of `%s`", member.getAsMention(), member.getId(),
-                                getName());
-                        }
-                        return;
+                    User user = command.getArgs().get("user").getAsUser();
+                    blacklist(user, add, msg, reply);
+                    if (add) {
+                        getServer().log(Colors.RED, command.getMember().getUser(),
+                            "Added %s (`%s`) to blacklist of `%s`", user.getAsMention(), user.getId(),
+                            getName());
+                    } else {
+                        getServer().log(Colors.GREEN, command.getMember().getUser(),
+                            "Removed %s (`%s`) from blacklist of `%s`", user.getAsMention(), user.getId(),
+                            getName());
                     }
-                    throw new BotErrorException("The given member was not found");
                 })
         );
     }
 
-    private void blacklist(@NotNull Member member, boolean add, String msg, Reply reply) {
-        User user = member.getUser();
-        String userId = member.getId();
+    private void blacklist(@NotNull User user, boolean add, String msg, Reply reply) {
+        String userId = user.getId();
 
         if (add) {
             if (blacklist.contains(userId)) {
-                throw new BotWarningException("%s is already on the blacklist", member.getAsMention());
+                throw new BotWarningException("%s is already on the blacklist", user.getAsMention());
             }
 
             blacklist.add(userId);
             getDatabaseManager().addSetting("blacklist", userId);
         } else {
             if (!blacklist.contains(userId)) {
-                throw new BotWarningException("%s is not on the blacklist", member.getAsMention());
+                throw new BotWarningException("%s is not on the blacklist", user.getAsMention());
             }
 
             blacklist.remove(userId);
