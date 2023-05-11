@@ -49,7 +49,7 @@ public class Direct {
                 throw new BotErrorException("Something went wrong");
             }
 
-            if (!server.getDirectMessageHandler().getKeys().contains(component)) {
+            if (!server.getDirectMessageHandler().getComponents().contains(component)) {
                 throw new BotErrorException("Could not send to the given service, try again");
             }
 
@@ -75,7 +75,7 @@ public class Direct {
         return handlerCollection.getButtonMapHandler();
     }
 
-    public <T extends Reply> void receiveMessage(@NotNull Message message, T reply) {
+    public void receiveMessage(@NotNull Message message, Reply reply) {
         String userId = message.getAuthor().getId();
         message.getChannel().sendTyping().queue();
         List<Guild> mutualGuilds = Bot.getInstance().retrieveMutualGuilds(message.getAuthor()).complete();

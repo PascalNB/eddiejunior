@@ -3,7 +3,7 @@ package com.thefatrat.eddiejunior.components;
 import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotWarningException;
-import com.thefatrat.eddiejunior.reply.EditReply;
+import com.thefatrat.eddiejunior.reply.MenuReply;
 import com.thefatrat.eddiejunior.reply.Reply;
 import com.thefatrat.eddiejunior.sources.Server;
 import com.thefatrat.eddiejunior.util.Colors;
@@ -155,7 +155,7 @@ public class FanMailComponent extends DirectMessageComponent {
     }
 
     @Override
-    protected <T extends Reply & EditReply> void handleDirect(Message message, T reply) {
+    protected void handleDirect(Message message, MenuReply reply) {
         if (!isRunning() || submissionChannelId == null) {
             throw new BotErrorException("Fanart service not accessible");
         }

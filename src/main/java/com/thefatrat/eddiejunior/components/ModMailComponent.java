@@ -4,7 +4,7 @@ import com.pascalnb.dbwrapper.StringMapper;
 import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotWarningException;
-import com.thefatrat.eddiejunior.reply.EditReply;
+import com.thefatrat.eddiejunior.reply.MenuReply;
 import com.thefatrat.eddiejunior.reply.Reply;
 import com.thefatrat.eddiejunior.sources.Server;
 import com.thefatrat.eddiejunior.util.Colors;
@@ -476,7 +476,7 @@ public class ModMailComponent extends DirectMessageComponent {
     }
 
     @Override
-    protected synchronized <T extends Reply & EditReply> void handleDirect(@NotNull Message message, T reply) {
+    protected void handleDirect(@NotNull Message message, MenuReply reply) {
         String content = message.getContentRaw();
         synchronized (userCount) {
             synchronized (timeouts) {

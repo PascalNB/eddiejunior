@@ -3,7 +3,7 @@ package com.thefatrat.eddiejunior.components;
 import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotWarningException;
-import com.thefatrat.eddiejunior.reply.EditReply;
+import com.thefatrat.eddiejunior.reply.MenuReply;
 import com.thefatrat.eddiejunior.reply.Reply;
 import com.thefatrat.eddiejunior.sources.Server;
 import com.thefatrat.eddiejunior.util.Colors;
@@ -424,7 +424,7 @@ public class FeedbackComponent extends DirectMessageComponent {
     }
 
     @Override
-    protected synchronized <T extends Reply & EditReply> void handleDirect(@NotNull Message message, T reply) {
+    protected synchronized void handleDirect(@NotNull Message message, MenuReply reply) {
         List<Message.Attachment> attachments = message.getAttachments();
 
         String url = null;

@@ -1,5 +1,6 @@
 package com.thefatrat.eddiejunior.handlers;
 
+import com.thefatrat.eddiejunior.components.Component;
 import com.thefatrat.eddiejunior.reply.MenuReply;
 import net.dv8tion.jda.api.entities.Message;
 
@@ -8,28 +9,31 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
-public class ComponentHandler extends MapHandler<Message, MenuReply> {
+public class ComponentHandler {
 
     private final Map<String, String> names = new HashMap<>();
+    private final MapHandler<Message, MenuReply> handler = new MapHandler<>();
 
     public Set<Map.Entry<String, String>> getNames() {
         return names.entrySet();
     }
 
-    @Override
-    public void addListener(String key, BiConsumer<Message, MenuReply> listener) {
-        this.addListener(key, key, listener);
+    public Set<String> getComponents() {
+        return handler.getKeys();
     }
 
-    public void addListener(String key, String name, BiConsumer<Message, MenuReply> listener) {
-        super.addListener(key, listener);
-        names.put(key, name);
+    public void handle(String component, Message message, MenuReply reply) {
+        handler.handle(component, message, reply);
     }
 
-    @Override
-    public void removeListener(String key) {
-        super.removeListener(key);
-        names.remove(key);
+    public void addListener(Component component, String alt, BiConsumer<Message, MenuReply> listener) {
+        handler.addListener(component.getName(), listener);
+        names.put(component.getName(), alt);
+    }
+
+    public void removeListener(Component component) {
+        handler.removeListener(component.getName());
+        names.remove(component.getName());
     }
 
 }
