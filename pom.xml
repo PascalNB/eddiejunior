@@ -99,7 +99,7 @@
         <dependency>
             <groupId>com.github.PascalNB</groupId>
             <artifactId>dbwrapper</artifactId>
-            <version>85b5d4f0de</version>
+            <version>30f4d04</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/com.github.oshi/oshi-core -->

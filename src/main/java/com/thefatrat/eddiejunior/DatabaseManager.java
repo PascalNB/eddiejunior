@@ -3,11 +3,11 @@ package com.thefatrat.eddiejunior;
 import com.pascalnb.dbwrapper.Mapper;
 import com.pascalnb.dbwrapper.Query;
 import com.pascalnb.dbwrapper.StringMapper;
+import com.pascalnb.dbwrapper.action.CompletedAction;
 import com.pascalnb.dbwrapper.action.DatabaseAction;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 
 public class DatabaseManager {
 
@@ -47,7 +47,7 @@ public class DatabaseManager {
                         if (table.isEmpty()) {
                             return new Object[]{setting, new StringMapper(null)};
                         }
-                        return new Object[]{setting, new StringMapper(table.getRow(0).get(0))};
+                        return new Object[]{setting, new StringMapper(table.get(0).get(0))};
                     })
             );
         }
@@ -59,39 +59,39 @@ public class DatabaseManager {
                 }
                 return map;
             })
-            .join();
+            .complete();
     }
 
-    public CompletableFuture<Void> removeSetting(String setting) {
+    public CompletedAction<Void> removeSetting(String setting) {
         return DatabaseAction.of(REMOVE_SETTING.withArgs(server, component, setting)).execute();
     }
 
-    public CompletableFuture<Void> removeSetting(String setting, @NotNull String value) {
+    public CompletedAction<Void> removeSetting(String setting, @NotNull String value) {
         return DatabaseAction.of(REMOVE_SETTING_VALUE.withArgs(server, component, setting, value)).execute();
     }
 
-    public CompletableFuture<Void> setSetting(String setting, @NotNull Object value) {
+    public CompletedAction<Void> setSetting(String setting, @NotNull Object value) {
         return DatabaseAction.allOf(
             DatabaseAction.of(REMOVE_SETTING.withArgs(server, component, setting)),
             DatabaseAction.of(ADD_SETTING.withArgs(server, component, setting, value))
         ).execute();
     }
 
-    public CompletableFuture<Void> addSetting(String setting, String value) {
+    public CompletedAction<Void> addSetting(String setting, String value) {
         return DatabaseAction.of(ADD_SETTING.withArgs(server, component, setting, value)).execute();
     }
 
     public String getSetting(String setting) {
         return DatabaseAction.of(GET_SETTINGS.withArgs(server, component, setting))
             .query(Mapper.stringValue())
-            .join();
+            .complete();
     }
 
     @SuppressWarnings("unchecked")
     public <T> T getSettingOrDefault(String setting, T defaultValue) {
         return (T) DatabaseAction.of(GET_SETTINGS.withArgs(server, component, setting))
             .query(Mapper.toPrimitive(defaultValue.getClass()).orDefault(defaultValue))
-            .join();
+            .complete();
     }
 
     public List<String> getSettings(String setting) {
@@ -100,16 +100,16 @@ public class DatabaseManager {
                 Mapper.stringList()
             )
             .query()
-            .join();
+            .complete();
     }
 
     public boolean isComponentEnabled() {
         return DatabaseAction.of(GET_COMPONENT_ENABLED.withArgs(server, component))
-            .query(table -> !table.isEmpty() && "1".equals(table.getRow(0).get(0)))
-            .join();
+            .query(table -> !table.isEmpty() && "1".equals(table.get(0).get(0)))
+            .complete();
     }
 
-    public CompletableFuture<Void> toggleComponent(boolean enable) {
+    public CompletedAction<Void> toggleComponent(boolean enable) {
         return DatabaseAction.of(TOGGLE_COMPONENT.withArgs(server, component, enable, enable)).execute();
     }
 

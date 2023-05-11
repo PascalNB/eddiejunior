@@ -181,7 +181,7 @@ public abstract class DirectMessageComponent extends Component implements Runnab
 
             blacklist.clear();
             getDatabaseManager().removeSetting("blacklist")
-                .thenRun(() ->
+                .queue(c ->
                     reply.ok("Blacklist cleared")
                 );
             return;
