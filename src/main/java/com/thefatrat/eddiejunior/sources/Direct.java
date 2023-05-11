@@ -7,8 +7,7 @@ import com.thefatrat.eddiejunior.events.SelectEvent;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotWarningException;
 import com.thefatrat.eddiejunior.handlers.MapHandler;
-import com.thefatrat.eddiejunior.reply.EditReply;
-import com.thefatrat.eddiejunior.reply.EphemeralReply;
+import com.thefatrat.eddiejunior.reply.MenuReply;
 import com.thefatrat.eddiejunior.reply.Reply;
 import com.thefatrat.eddiejunior.util.Colors;
 import com.thefatrat.eddiejunior.util.Icon;
@@ -63,18 +62,17 @@ public class Direct {
         );
 
         getButtonHandler().addListener("x", (event, reply) -> {
-            cache.remove(event.getUser().getId());
+            cache.remove(event.getActor().getId());
             reply.edit(Icon.STOP, "Successfully cancelled");
         });
     }
 
-    public <T extends Reply & EphemeralReply & EditReply> MapHandler<SelectEvent<SelectOption>, T> getStringSelectHandler() {
+    public MapHandler<SelectEvent<SelectOption>, MenuReply> getStringSelectHandler() {
         return handlerCollection.getStringSelectHandler();
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends Reply & EphemeralReply & EditReply> MapHandler<ButtonEvent<User>, T> getButtonHandler() {
-        return (MapHandler<ButtonEvent<User>, T>) handlerCollection.getButtonMapHandler();
+    public MapHandler<ButtonEvent<User>, MenuReply> getButtonHandler() {
+        return handlerCollection.getButtonMapHandler();
     }
 
     public <T extends Reply> void receiveMessage(@NotNull Message message, T reply) {

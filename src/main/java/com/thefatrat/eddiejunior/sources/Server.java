@@ -10,10 +10,9 @@ import com.thefatrat.eddiejunior.events.*;
 import com.thefatrat.eddiejunior.handlers.ComponentHandler;
 import com.thefatrat.eddiejunior.handlers.MapHandler;
 import com.thefatrat.eddiejunior.handlers.SetHandler;
-import com.thefatrat.eddiejunior.reply.EditReply;
-import com.thefatrat.eddiejunior.reply.EphemeralReply;
-import com.thefatrat.eddiejunior.reply.ModalReply;
-import com.thefatrat.eddiejunior.reply.Reply;
+import com.thefatrat.eddiejunior.reply.DefaultReply;
+import com.thefatrat.eddiejunior.reply.InteractionReply;
+import com.thefatrat.eddiejunior.reply.MenuReply;
 import com.thefatrat.eddiejunior.util.Colors;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.*;
@@ -37,18 +36,14 @@ public class Server {
 
     private final String id;
     private final HandlerCollection<Member> handlerCollection = new HandlerCollection<>();
-    private final ComponentHandler<?> directHandler = new ComponentHandler<>();
+    private final ComponentHandler directHandler = new ComponentHandler();
     private final Map<String, Component> components = new HashMap<>();
     private TextChannel log = null;
 
     @NotNull
     @Contract(" -> new")
     public static Server dummy() {
-        return new Server();
-    }
-
-    private Server() {
-        id = "";
+        return new Server("");
     }
 
     public Server(String id) {
@@ -209,20 +204,19 @@ public class Server {
         log(Colors.TRANSPARENT, message, args);
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends Reply & EditReply> ComponentHandler<T> getDirectMessageHandler() {
-        return (ComponentHandler<T>) directHandler;
+    public ComponentHandler getDirectMessageHandler() {
+        return directHandler;
     }
 
-    public <T extends Reply & EphemeralReply & ModalReply> MapHandler<CommandEvent, T> getCommandHandler() {
+    public MapHandler<CommandEvent, InteractionReply> getCommandHandler() {
         return handlerCollection.getCommandHandler();
     }
 
-    public <T extends Reply & EphemeralReply & ModalReply> MapHandler<InteractionEvent<Message>, T> getMessageInteractionHandler() {
+    public MapHandler<InteractionEvent<Message>, InteractionReply> getMessageInteractionHandler() {
         return handlerCollection.getMessageInteractionHandler();
     }
 
-    public <T extends Reply & EphemeralReply & ModalReply> MapHandler<InteractionEvent<Member>, T> getMemberInteractionHandler() {
+    public MapHandler<InteractionEvent<Member>, InteractionReply> getMemberInteractionHandler() {
         return handlerCollection.getMemberInteractionHandler();
     }
 
@@ -230,12 +224,11 @@ public class Server {
         return handlerCollection.getArchiveHandler();
     }
 
-    public <T extends Reply & EphemeralReply & EditReply & ModalReply>
-    SetHandler<ButtonEvent<Member>, T> getButtonHandler() {
+    public SetHandler<ButtonEvent<Member>, MenuReply> getButtonHandler() {
         return handlerCollection.getButtonHandler();
     }
 
-    public <T extends Reply & EphemeralReply> MapHandler<ModalEvent, T> getModalHandler() {
+    public MapHandler<ModalEvent, DefaultReply> getModalHandler() {
         return handlerCollection.getModalHandler();
     }
 
@@ -243,11 +236,11 @@ public class Server {
         return handlerCollection.getEventHandler();
     }
 
-    public <T extends Reply & EphemeralReply & ModalReply & EditReply> MapHandler<SelectEvent<SelectOption>, T> getStringSelectHandler() {
+    public MapHandler<SelectEvent<SelectOption>, MenuReply> getStringSelectHandler() {
         return handlerCollection.getStringSelectHandler();
     }
 
-    public <T extends Reply & EphemeralReply & ModalReply & EditReply> MapHandler<SelectEvent<IMentionable>, T> getEntitySelectHandler() {
+    public MapHandler<SelectEvent<IMentionable>, MenuReply> getEntitySelectHandler() {
         return handlerCollection.getEntitySelectHandler();
     }
 

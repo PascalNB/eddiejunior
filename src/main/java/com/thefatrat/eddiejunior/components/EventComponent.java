@@ -18,11 +18,11 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
-public class Event extends Component {
+public class EventComponent extends Component {
 
     private final Map<String, Link> links = new HashMap<>();
 
-    public Event(Server server) {
+    public EventComponent(Server server) {
         super(server, "Event", false);
 
         for (String linkString : getDatabaseManager().getSettings("link")) {
@@ -53,9 +53,9 @@ public class Event extends Component {
                 return;
             }
 
-            Session sessionComponent = null;
+            SessionComponent sessionComponent = null;
             if (link.session() != null) {
-                sessionComponent = getServer().getComponent(Session.NAME, Session.class);
+                sessionComponent = getServer().getComponent(SessionComponent.NAME, SessionComponent.class);
             }
             RunnableComponent component = null;
             if (link.component() != null) {
@@ -107,13 +107,13 @@ public class Event extends Component {
                     new OptionData(OptionType.STRING, "component", "runnable component", false)
                 )
                 .setAction((command, reply) -> {
-                    OptionMapping sessionObject = command.getArgs().get("session");
-                    OptionMapping componentObject = command.getArgs().get("component");
+                    OptionMapping sessionObject = command.get("session");
+                    OptionMapping componentObject = command.get("component");
                     if (sessionObject == null && componentObject == null) {
                         throw new BotErrorException("Please provide a session or runnable component");
                     }
 
-                    String keyword = command.getArgs().get("keyword").getAsString().toLowerCase(Locale.ROOT);
+                    String keyword = command.get("keyword").getAsString().toLowerCase(Locale.ROOT);
                     if (links.containsKey(keyword)) {
                         throw new BotWarningException("`%s` is already linked, unlink it first", keyword);
                     }
@@ -121,9 +121,10 @@ public class Event extends Component {
                     String session = null;
                     if (sessionObject != null) {
                         session = sessionObject.getAsString();
-                        Session sessionComponent = getServer().getComponent(Session.NAME, Session.class);
+                        SessionComponent sessionComponent = getServer().getComponent(SessionComponent.NAME,
+                            SessionComponent.class);
                         if (sessionComponent != null && !sessionComponent.isSession(session)) {
-                            throw new BotErrorException(Session.ERROR_SESSION_NONEXISTENT);
+                            throw new BotErrorException(SessionComponent.ERROR_SESSION_NONEXISTENT);
                         }
                     }
 
@@ -150,9 +151,9 @@ public class Event extends Component {
                 }),
 
             new Command("unlink", "unlink a keyword")
-                .addOption(new OptionData(OptionType.STRING, "keyword", "event name keyword", true))
+                .addOptions(new OptionData(OptionType.STRING, "keyword", "event name keyword", true))
                 .setAction((command, reply) -> {
-                    String keyword = command.getArgs().get("keyword").getAsString().toLowerCase(Locale.ROOT);
+                    String keyword = command.get("keyword").getAsString().toLowerCase(Locale.ROOT);
 
                     if (!links.containsKey(keyword)) {
                         throw new BotErrorException("`%s` is not a linked keyword", keyword);

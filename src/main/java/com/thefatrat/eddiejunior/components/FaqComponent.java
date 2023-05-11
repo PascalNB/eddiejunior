@@ -48,7 +48,7 @@ public class FaqComponent extends Component {
             String storageMessageId = getDatabaseManager().getSetting("storagemessage");
             if (storageMessageId != null) {
                 String[] split = storageMessageId.split("_", 2);
-                TextChannel channel = getServer().getGuild().getTextChannelById(split[0]);
+                TextChannel channel = getGuild().getTextChannelById(split[0]);
                 if (channel != null) {
                     try {
                         storageMessage = channel.retrieveMessageById(split[1]).onErrorMap(e -> null).complete();
@@ -61,7 +61,7 @@ public class FaqComponent extends Component {
             String faqMessageId = getDatabaseManager().getSetting("faqmessage");
             if (faqMessageId != null) {
                 String[] split = faqMessageId.split("_", 2);
-                TextChannel channel = getServer().getGuild().getTextChannelById(split[0]);
+                TextChannel channel = getGuild().getTextChannelById(split[0]);
                 if (channel != null) {
                     try {
                         faqMessage = channel.retrieveMessageById(split[1]).onErrorMap(e -> null).complete();
@@ -75,12 +75,12 @@ public class FaqComponent extends Component {
 
         addSubcommands(
             new Command("storage", "create a new storage message where the faq data will be kept")
-                .addOption(
+                .addOptions(
                     new OptionData(OptionType.CHANNEL, "channel", "channel", true)
                         .setChannelTypes(ChannelType.TEXT)
                 )
                 .setAction((command, reply) -> {
-                    TextChannel channel = command.getArgs().get("channel").getAsChannel().asTextChannel();
+                    TextChannel channel = command.get("channel").getAsChannel().asTextChannel();
                     PermissionChecker.requireSend(channel);
 
                     storageMessage = channel.sendMessageEmbeds(
@@ -154,13 +154,13 @@ public class FaqComponent extends Component {
                 }),
 
             new Command("message", "send the faq message")
-                .addOption(new OptionData(OptionType.STRING, "text", "text", false).setMinLength(1))
+                .addOptions(new OptionData(OptionType.STRING, "text", "text", false).setMinLength(1))
                 .setAction((command, reply) -> {
                     if (faqList.isEmpty()) {
                         throw new BotWarningException("The list of questions is empty");
                     }
 
-                    String text = Optional.ofNullable(command.getArgs().get("text"))
+                    String text = Optional.ofNullable(command.get("text"))
                         .map(OptionMapping::getAsString)
                         .orElse("Select a question");
 

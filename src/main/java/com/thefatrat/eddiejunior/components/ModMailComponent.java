@@ -44,7 +44,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class ModMail extends DirectComponent {
+public class ModMailComponent extends DirectMessageComponent {
 
     public static final String NAME = "Modmail";
 
@@ -60,7 +60,7 @@ public class ModMail extends DirectComponent {
     private boolean privateThreads;
     private IMentionable mention;
 
-    public ModMail(Server server) {
+    public ModMailComponent(Server server) {
         super(server, NAME, "Mod Mail (Reports/Questions)", true);
 
         {
@@ -109,8 +109,8 @@ public class ModMail extends DirectComponent {
                         .setChannelTypes(ChannelType.TEXT)
                 )
                 .setAction((command, reply) -> {
-                    String url = command.getArgs().get("message").getAsString();
-                    Message message = URLUtil.messageFromURL(url, getServer().getGuild());
+                    String url = command.get("message").getAsString();
+                    Message message = URLUtil.messageFromURL(url, getGuild());
 
                     MessageCreateBuilder builder = new MessageCreateBuilder();
 
@@ -130,7 +130,7 @@ public class ModMail extends DirectComponent {
                         throw new BotErrorException("Cannot reference a message without content");
                     }
 
-                    OptionMapping channelObject = command.getArgs().get("channel");
+                    OptionMapping channelObject = command.get("channel");
 
                     if (channelObject == null) {
                         reply.send(builder.build());
@@ -146,11 +146,11 @@ public class ModMail extends DirectComponent {
                 }),
 
             new Command("timeout", "sets the timeout")
-                .addOption(new OptionData(OptionType.INTEGER, "timeout", "timeout in seconds", true)
+                .addOptions(new OptionData(OptionType.INTEGER, "timeout", "timeout in seconds", true)
                     .setRequiredRange(0, Integer.MAX_VALUE)
                 )
                 .setAction((command, reply) -> {
-                    long timeout = command.getArgs().get("timeout").getAsInt();
+                    long timeout = command.get("timeout").getAsInt();
                     this.timeout = timeout;
                     reply.ok("Timout set to %d seconds", timeout);
                     getDatabaseManager().setSetting("timeout", String.valueOf(timeout));
@@ -172,31 +172,31 @@ public class ModMail extends DirectComponent {
                 }),
 
             new Command("maxperuser", "sets the maximum number of active tickets per user")
-                .addOption(new OptionData(OptionType.INTEGER, "max", "number of tickets", true)
+                .addOptions(new OptionData(OptionType.INTEGER, "max", "number of tickets", true)
                     .setRequiredRange(0, Integer.MAX_VALUE)
                 )
                 .setAction((command, reply) -> {
-                    int max = command.getArgs().get("max").getAsInt();
+                    int max = command.get("max").getAsInt();
                     this.maxTicketsPerUser = max;
                     reply.ok("Maximum set to %d tickets", max);
                     getDatabaseManager().setSetting("maxticketsperuser", String.valueOf(max));
                 }),
 
             new Command("maxtickets", "sets the maximum number of overall tickets")
-                .addOption(new OptionData(OptionType.INTEGER, "max", "number of tickets", true)
+                .addOptions(new OptionData(OptionType.INTEGER, "max", "number of tickets", true)
                     .setRequiredRange(0, Integer.MAX_VALUE)
                 )
                 .setAction((command, reply) -> {
-                    int max = command.getArgs().get("max").getAsInt();
+                    int max = command.get("max").getAsInt();
                     this.maxTickets = max;
                     reply.ok("Maximum set to %d tickets", max);
                     getDatabaseManager().setSetting("maxtickets", String.valueOf(max));
                 }),
 
             new Command("privatethreads", "determines if the created threads are private or public")
-                .addOption(new OptionData(OptionType.BOOLEAN, "value", "true or false", true))
+                .addOptions(new OptionData(OptionType.BOOLEAN, "value", "true or false", true))
                 .setAction((command, reply) -> {
-                    boolean value = command.getArgs().get("value").getAsBoolean();
+                    boolean value = command.get("value").getAsBoolean();
                     this.privateThreads = value;
                     reply.ok("Thread creation set to %s", value ? "private" : "public");
                     getDatabaseManager().setSetting("privatethreads", String.valueOf(value));
@@ -217,9 +217,9 @@ public class ModMail extends DirectComponent {
                 }),
 
             new Command("mention", "set which role the bot should mention upon a new ticket")
-                .addOption(new OptionData(OptionType.MENTIONABLE, "mention", "mention", false))
+                .addOptions(new OptionData(OptionType.MENTIONABLE, "mention", "mention", false))
                 .setAction(((command, reply) -> {
-                    if (!command.getArgs().containsKey("mention")) {
+                    if (!command.hasOption("mention")) {
                         if (mention == null) {
                             throw new BotErrorException("Please provide a mentionable target");
                         }
@@ -229,7 +229,7 @@ public class ModMail extends DirectComponent {
                         return;
                     }
 
-                    IMentionable newMention = command.getArgs().get("mention").getAsMentionable();
+                    IMentionable newMention = command.get("mention").getAsMentionable();
                     if (Message.MentionType.EVERYONE.getPattern().matcher(newMention.getAsMention()).matches()) {
                         throw new BotErrorException("Cannot mention %s", newMention.getAsMention());
                     }
@@ -240,7 +240,7 @@ public class ModMail extends DirectComponent {
         );
 
         getServer().getArchiveHandler().addListener((event, reply) -> {
-            String name = event.getThread().getName();
+            String name = event.getThreadChannel().getName();
 
             if (!name.matches("^t\\d+-.+$")) {
                 return;
@@ -250,7 +250,7 @@ public class ModMail extends DirectComponent {
 
             synchronized (userCount) {
                 synchronized (timeouts) {
-                    event.getThread().retrieveThreadMembers().queue(members -> {
+                    event.getThreadChannel().retrieveThreadMembers().queue(members -> {
                         for (ThreadMember member : members) {
                             String id = member.getId();
                             if (!userCount.containsKey(id)) {
@@ -280,7 +280,7 @@ public class ModMail extends DirectComponent {
 
             if ("archive".equals(action)) {
                 String threadId = split[2];
-                ThreadChannel thread = getServer().getGuild().getThreadChannelById(threadId);
+                ThreadChannel thread = getGuild().getThreadChannelById(threadId);
 
                 if (thread == null) {
                     throw new BotErrorException("Thread not found");
@@ -293,7 +293,7 @@ public class ModMail extends DirectComponent {
                             thread.getManager().setArchived(true).queue()
                         ),
                     "Current thread archived");
-                getServer().log(event.getUser().getUser(), "Archived thread %s (`%s`)%n%s", thread.getAsMention(),
+                getServer().log(event.getActor().getUser(), "Archived thread %s (`%s`)%n%s", thread.getAsMention(),
                     thread.getName(), thread.getJumpUrl());
             }
         });
@@ -315,7 +315,7 @@ public class ModMail extends DirectComponent {
                     .setRequired(true)
                     .setPlaceholder("Subject of this ticket")
                     .setRequiredRange(6, 90)
-                    .setValue(event.getUser().getUser().getAsTag())
+                    .setValue(event.getActor().getUser().getAsTag())
                     .build();
 
                 TextInput message = TextInput.create("message", "Message", TextInputStyle.PARAGRAPH)
@@ -401,7 +401,7 @@ public class ModMail extends DirectComponent {
         TextChannel destination = getDestination();
 
         if (destination == null || !PermissionUtil.checkPermission(destination.getPermissionContainer(),
-            getServer().getGuild().getSelfMember(), Permission.MESSAGE_EMBED_LINKS, Permission.MANAGE_THREADS,
+            getGuild().getSelfMember(), Permission.MESSAGE_EMBED_LINKS, Permission.MANAGE_THREADS,
             (privateThreads ? Permission.CREATE_PRIVATE_THREADS : Permission.CREATE_PUBLIC_THREADS))) {
             throw new BotErrorException("If you see this error, the server admins messed up");
         }

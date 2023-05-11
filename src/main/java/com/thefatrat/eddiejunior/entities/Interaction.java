@@ -1,9 +1,7 @@
 package com.thefatrat.eddiejunior.entities;
 
 import com.thefatrat.eddiejunior.events.InteractionEvent;
-import com.thefatrat.eddiejunior.reply.EphemeralReply;
-import com.thefatrat.eddiejunior.reply.ModalReply;
-import com.thefatrat.eddiejunior.reply.Reply;
+import com.thefatrat.eddiejunior.reply.InteractionReply;
 import net.dv8tion.jda.api.Permission;
 import org.jetbrains.annotations.Contract;
 
@@ -15,7 +13,7 @@ import java.util.function.BiConsumer;
 public class Interaction<E> {
 
     private String name;
-    private BiConsumer<InteractionEvent<E>, ?> action = (__, ___) -> {};
+    private BiConsumer<InteractionEvent<E>, InteractionReply> action = (e, r) -> {};
     private final List<Permission> permissions = new ArrayList<>();
 
     public Interaction(String name) {this.name = name;}
@@ -28,14 +26,12 @@ public class Interaction<E> {
         this.name = name;
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends Reply & EphemeralReply & ModalReply> BiConsumer<InteractionEvent<E>, T> getAction() {
-        return (BiConsumer<InteractionEvent<E>, T>) action;
+    public BiConsumer<InteractionEvent<E>, InteractionReply> getAction() {
+        return action;
     }
 
     @Contract("_ -> this")
-    public <T extends Reply & EphemeralReply & ModalReply> Interaction<E> setAction(
-        BiConsumer<InteractionEvent<E>, T> action) {
+    public Interaction<E> setAction(BiConsumer<InteractionEvent<E>, InteractionReply> action) {
         this.action = action;
         return this;
     }

@@ -21,16 +21,6 @@ public class MapHandler<T, R> {
         return map.keySet();
     }
 
-    public int size() {
-        return map.size();
-    }
-
-    public void handleAll(T t, R reply) {
-        for (BiConsumer<T, R> listener : map.values()) {
-            listener.accept(t, reply);
-        }
-    }
-
     public void handle(String key, T t, R reply) {
         BiConsumer<T, R> listener = map.get(key);
         if (listener != null) {

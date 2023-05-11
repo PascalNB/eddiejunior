@@ -30,11 +30,10 @@ public class MessageComponent extends Component {
                     new OptionData(OptionType.STRING, "message", "message jump url", true)
                 )
                 .setAction((command, reply) -> {
+                    String url = command.get("message").getAsString();
+                    Message message = URLUtil.messageFromURL(url, getGuild());
 
-                    String url = command.getArgs().get("message").getAsString();
-                    Message message = URLUtil.messageFromURL(url, getServer().getGuild());
-
-                    if (!message.getAuthor().getId().equals(getServer().getGuild().getSelfMember().getId())) {
+                    if (!message.getAuthor().getId().equals(getGuild().getSelfMember().getId())) {
                         throw new BotErrorException("Message was not sent by me");
                     }
 
@@ -63,11 +62,11 @@ public class MessageComponent extends Component {
                 }),
 
             new Command("send", "send a message in a given channel")
-                .addOption(new OptionData(OptionType.CHANNEL, "channel", "channel", true)
+                .addOptions(new OptionData(OptionType.CHANNEL, "channel", "channel", true)
                     .setChannelTypes(ChannelType.TEXT)
                 )
                 .setAction((command, reply) -> {
-                    TextChannel channel = command.getArgs().get("channel").getAsChannel().asTextChannel();
+                    TextChannel channel = command.get("channel").getAsChannel().asTextChannel();
 
                     if (!channel.canTalk()) {
                         throw new BotWarningException("Cannot talk in the given channel");
@@ -90,7 +89,7 @@ public class MessageComponent extends Component {
                 .setAction((event, reply) -> {
                     Message message = event.getEntity();
 
-                    if (!message.getAuthor().getId().equals(getServer().getGuild().getSelfMember().getId())) {
+                    if (!message.getAuthor().getId().equals(getGuild().getSelfMember().getId())) {
                         throw new BotErrorException("Message was not sent by me");
                     }
 
@@ -146,7 +145,7 @@ public class MessageComponent extends Component {
             String key = event.getValues().keySet().iterator().next();
             String[] split = key.split("_", 4);
 
-            TextChannel channel = getServer().getGuild().getTextChannelById(split[3]);
+            TextChannel channel = getGuild().getTextChannelById(split[3]);
             if (channel == null) {
                 throw new BotErrorException("Channel with id `%s` not found", split[3]);
             }
@@ -172,7 +171,7 @@ public class MessageComponent extends Component {
             String key = event.getValues().keySet().iterator().next();
             String[] split = key.split("_", 3);
 
-            TextChannel channel = getServer().getGuild().getTextChannelById(split[1]);
+            TextChannel channel = getGuild().getTextChannelById(split[1]);
             if (channel == null) {
                 throw new BotErrorException("Message could not be edited");
             }

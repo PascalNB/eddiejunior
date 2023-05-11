@@ -37,13 +37,13 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
-public class Grab extends Component {
+public class GrabComponent extends Component {
 
     public static final String NAME = "Grab";
 
     private static final Predicate<String> hexMatcher = Pattern.compile("^[\\da-f]{6}$").asMatchPredicate();
 
-    public Grab(Server server) {
+    public GrabComponent(Server server) {
         super(server, NAME, false);
 
         setComponentCommand();
@@ -51,7 +51,7 @@ public class Grab extends Component {
         addSubcommands(
             new Command("servericon", "Get the server icon")
                 .setAction((command, reply) -> {
-                    ImageProxy icon = getServer().getGuild().getIcon();
+                    ImageProxy icon = getGuild().getIcon();
                     if (icon == null) {
                         throw new BotWarningException("This server does not have an icon");
                     }
@@ -65,7 +65,7 @@ public class Grab extends Component {
                 }),
 
             new Command("usericon", "Get a user's icon")
-                .addOption(new OptionData(OptionType.USER, "user", "user", false))
+                .addOptions(new OptionData(OptionType.USER, "user", "user", false))
                 .setAction((command, reply) -> {
                     User user = getEffectiveUser(command);
                     String url = user.getEffectiveAvatar().getUrl(1024);
@@ -78,10 +78,10 @@ public class Grab extends Component {
                 }),
 
             new Command("membericon", "Get a member's guild icon")
-                .addOption(new OptionData(OptionType.USER, "user", "user", false))
+                .addOptions(new OptionData(OptionType.USER, "user", "user", false))
                 .setAction((command, reply) -> {
                     User user = getEffectiveUser(command);
-                    Member member = getServer().getGuild().retrieveMember(user)
+                    Member member = getGuild().retrieveMember(user)
                         .onErrorMap(e -> null)
                         .complete();
 
@@ -100,7 +100,7 @@ public class Grab extends Component {
 
             new Command("banner", "Get the server banner")
                 .setAction((command, reply) -> {
-                    ImageProxy banner = getServer().getGuild().getBanner();
+                    ImageProxy banner = getGuild().getBanner();
                     if (banner == null) {
                         throw new BotWarningException("This server does not have a banner");
                     }
@@ -115,7 +115,7 @@ public class Grab extends Component {
 
             new Command("splash", "Get the server splash image")
                 .setAction((command, reply) -> {
-                    ImageProxy splash = getServer().getGuild().getSplash();
+                    ImageProxy splash = getGuild().getSplash();
                     if (splash == null) {
                         throw new BotWarningException("This server does not have a splash image");
                     }
@@ -129,7 +129,7 @@ public class Grab extends Component {
                 }),
 
             new Command("profile", "Get a user's profile")
-                .addOption(new OptionData(OptionType.USER, "user", "user", false))
+                .addOptions(new OptionData(OptionType.USER, "user", "user", false))
                 .setAction((command, reply) -> {
                     User user = getEffectiveUser(command);
                     User.Profile profile = user.retrieveProfile().complete();
@@ -150,7 +150,7 @@ public class Grab extends Component {
                             false);
                     }
 
-                    Member member = getServer().getGuild().retrieveMemberById(user.getId())
+                    Member member = getGuild().retrieveMemberById(user.getId())
                         .onErrorMap(e -> null)
                         .complete();
 
@@ -195,9 +195,9 @@ public class Grab extends Component {
                 }),
 
             new Command("role", "Get a role's info")
-                .addOption(new OptionData(OptionType.ROLE, "role", "role", true))
+                .addOptions(new OptionData(OptionType.ROLE, "role", "role", true))
                 .setAction((command, reply) -> {
-                    net.dv8tion.jda.api.entities.Role role = command.getArgs().get("role").getAsRole();
+                    net.dv8tion.jda.api.entities.Role role = command.get("role").getAsRole();
 
                     EnumSet<Permission> permissions = role.getPermissions();
                     List<String> permissionNames = new ArrayList<>(permissions.size());
@@ -223,11 +223,11 @@ public class Grab extends Component {
                 }),
 
             new Command("permissions", "Get a user's permissions")
-                .addOption(new OptionData(OptionType.USER, "user", "user", false))
+                .addOptions(new OptionData(OptionType.USER, "user", "user", false))
                 .setAction((command, reply) -> {
                     User user = getEffectiveUser(command);
 
-                    Member member = getServer().getGuild().retrieveMemberById(user.getId())
+                    Member member = getGuild().retrieveMemberById(user.getId())
                         .onErrorMap(e -> null)
                         .complete();
 
@@ -252,9 +252,9 @@ public class Grab extends Component {
                 }),
 
             new Command("emoji", "Get an emoji")
-                .addOption(new OptionData(OptionType.STRING, "emoji", "emoji", true))
+                .addOptions(new OptionData(OptionType.STRING, "emoji", "emoji", true))
                 .setAction((command, reply) -> {
-                    String string = command.getArgs().get("emoji").getAsString().trim();
+                    String string = command.get("emoji").getAsString().trim();
 
                     if (!string.matches("^<a?:[a-z\\dA-Z_]+:\\d+>$")) {
                         throw new BotErrorException("Please select a proper emoji");
@@ -273,17 +273,17 @@ public class Grab extends Component {
                 }),
 
             new Command("id", "Get an id")
-                .addOption(new OptionData(OptionType.MENTIONABLE, "mention", "mention", true))
+                .addOptions(new OptionData(OptionType.MENTIONABLE, "mention", "mention", true))
                 .setAction((command, reply) -> {
-                    IMentionable mention = command.getArgs().get("mention").getAsMentionable();
+                    IMentionable mention = command.get("mention").getAsMentionable();
                     reply.hide();
                     reply.send(mention.getId());
                 }),
 
             new Command("channel", "Get a channel's info")
-                .addOption(new OptionData(OptionType.CHANNEL, "channel", "channel", true))
+                .addOptions(new OptionData(OptionType.CHANNEL, "channel", "channel", true))
                 .setAction((command, reply) -> {
-                    GuildChannelUnion channel = command.getArgs().get("channel").getAsChannel();
+                    GuildChannelUnion channel = command.get("channel").getAsChannel();
 
                     List<PermissionOverride> rolePermissionOverrides = channel.getPermissionContainer()
                         .getRolePermissionOverrides();
@@ -302,7 +302,7 @@ public class Grab extends Component {
                         List<RestAction<Result<Member>>> actions = new ArrayList<>();
                         for (PermissionOverride override : memberPermissionOverrides) {
                             String id = override.getId();
-                            actions.add(getServer().getGuild().retrieveMemberById(id).mapToResult());
+                            actions.add(getGuild().retrieveMemberById(id).mapToResult());
                         }
                         List<Result<Member>> results = RestAction.allOf(actions).complete();
                         for (int i = 0; i < results.size(); ++i) {
@@ -334,12 +334,12 @@ public class Grab extends Component {
                 }),
 
             new Command("color", "grab a hex color")
-                .addOption(
+                .addOptions(
                     new OptionData(OptionType.STRING, "hex", "hex", true)
                         .setRequiredLength(6, 7)
                 )
                 .setAction((command, reply) -> {
-                    String hexString = command.getArgs().get("hex").getAsString().toLowerCase(Locale.ROOT);
+                    String hexString = command.get("hex").getAsString().toLowerCase(Locale.ROOT);
 
                     if (hexString.charAt(0) == '#') {
                         hexString = hexString.substring(1);
@@ -395,8 +395,8 @@ public class Grab extends Component {
 
     private User getEffectiveUser(@NotNull CommandEvent event) {
         User user;
-        if (event.getArgs().containsKey("user")) {
-            user = event.getArgs().get("user").getAsUser();
+        if (event.hasOption("user")) {
+            user = event.get("user").getAsUser();
         } else {
             user = event.getMember().getUser();
         }

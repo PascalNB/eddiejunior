@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Matcher;
 
-public class Feedback extends DirectComponent {
+public class FeedbackComponent extends DirectMessageComponent {
 
     public static final String NAME = "Feedback";
 
@@ -49,7 +49,7 @@ public class Feedback extends DirectComponent {
     private Message buttonMessage = null;
     private int submissionCount = 0;
 
-    public Feedback(Server server) {
+    public FeedbackComponent(Server server) {
         super(server, NAME, "Song Review (Feedback)", false);
 
         domains.addAll(getDatabaseManager().getSettings("domains"));
@@ -59,9 +59,9 @@ public class Feedback extends DirectComponent {
 
         addSubcommands(
             new Command("winchannel", "set the channel where win messages will be sent to")
-                .addOption(new OptionData(OptionType.CHANNEL, "channel", "channel", true))
+                .addOptions(new OptionData(OptionType.CHANNEL, "channel", "channel", true))
                 .setAction((command, reply) -> {
-                    TextChannel channel = command.getArgs().get("channel").getAsChannel().asTextChannel();
+                    TextChannel channel = command.get("channel").getAsChannel().asTextChannel();
                     PermissionChecker.requireSend(channel);
 
                     winChannel = channel.getId();
@@ -70,15 +70,15 @@ public class Feedback extends DirectComponent {
                 }),
 
             new Command("reset", "allow submissions for users again")
-                .addOption(new OptionData(OptionType.USER, "user", "user", false))
+                .addOptions(new OptionData(OptionType.USER, "user", "user", false))
                 .setAction((command, reply) -> {
-                    if (!command.getArgs().containsKey("user")) {
+                    if (!command.hasOption("user")) {
                         users.clear();
                         reply.send(Icon.RESET, "Feedback session reset, users can submit again");
                         return;
                     }
 
-                    Member member = command.getArgs().get("user").getAsMember();
+                    Member member = command.get("user").getAsMember();
 
                     if (member == null) {
                         throw new BotErrorException("The given member was not found");
@@ -91,17 +91,17 @@ public class Feedback extends DirectComponent {
                 }),
 
             new Command("domains", "manage the domain whitelist for feedback submissions")
-                .addOption(new OptionData(OptionType.STRING, "action", "action", true)
+                .addOptions(new OptionData(OptionType.STRING, "action", "action", true)
                     .addChoice("show", "show")
                     .addChoice("add", "add")
                     .addChoice("remove", "remove")
                     .addChoice("clear", "clear")
                 )
-                .addOption(new OptionData(OptionType.STRING, "domains",
+                .addOptions(new OptionData(OptionType.STRING, "domains",
                     "domains seperated by comma", false))
                 .setAction((command, reply) -> {
-                    String action = command.getArgs().get("action").getAsString();
-                    if (!command.getArgs().containsKey("domains")
+                    String action = command.get("action").getAsString();
+                    if (!command.hasOption("domains")
                         && ("add".equals(action) || "remove".equals(action))) {
                         throw new BotErrorException("Please specify the domains");
                     }
@@ -142,7 +142,7 @@ public class Feedback extends DirectComponent {
 
                     boolean add = "add".equals(action);
 
-                    String[] domains = command.getArgs().get("domains").getAsString().toLowerCase().split(", ?");
+                    String[] domains = command.get("domains").getAsString().toLowerCase().split(", ?");
                     for (String domain : domains) {
                         if (!URLUtil.isDomain(domain)) {
                             throw new BotErrorException("`%s` is not a valid domain", domain);
@@ -187,17 +187,17 @@ public class Feedback extends DirectComponent {
 
             new Command("filetypes", "manage discordapp filetypes filter, " +
                 "filetypes only work if discordapp.com is whitelisted")
-                .addOption(new OptionData(OptionType.STRING, "action", "action", true)
-                    .addChoice("show", "show")
-                    .addChoice("add", "add")
-                    .addChoice("remove", "remove")
-                    .addChoice("clear", "clear")
+                .addOptions(
+                    new OptionData(OptionType.STRING, "action", "action", true)
+                        .addChoice("show", "show")
+                        .addChoice("add", "add")
+                        .addChoice("remove", "remove")
+                        .addChoice("clear", "clear"),
+                    new OptionData(OptionType.STRING, "filetypes", "filetypes seperated by comma", false)
                 )
-                .addOption(new OptionData(OptionType.STRING, "filetypes",
-                    "filetypes seperated by comma", false))
                 .setAction((command, reply) -> {
-                    String action = command.getArgs().get("action").getAsString();
-                    if (!command.getArgs().containsKey("filetypes")
+                    String action = command.get("action").getAsString();
+                    if (!command.hasOption("filetypes")
                         && ("add".equals(action) || "remove".equals(action))) {
                         throw new BotErrorException("Please specify the filetypes");
                     }
@@ -234,7 +234,7 @@ public class Feedback extends DirectComponent {
 
                     boolean add = "add".equals(action);
 
-                    String[] filetypes = command.getArgs().get("filetypes").getAsString()
+                    String[] filetypes = command.get("filetypes").getAsString()
                         .toLowerCase().split(", ?");
                     for (String filetype : filetypes) {
                         if (!filetype.matches("^[a-z\\d]+$")) {
@@ -279,11 +279,11 @@ public class Feedback extends DirectComponent {
                 }),
 
             new Command("button", "set the channel where the submission button will be sent")
-                .addOption(new OptionData(OptionType.CHANNEL, "channel", "channel", true)
+                .addOptions(new OptionData(OptionType.CHANNEL, "channel", "channel", true)
                     .setChannelTypes(ChannelType.TEXT)
                 )
                 .setAction((command, reply) -> {
-                    TextChannel channel = command.getArgs().get("channel").getAsChannel().asTextChannel();
+                    TextChannel channel = command.get("channel").getAsChannel().asTextChannel();
                     PermissionChecker.requireSend(channel);
 
                     buttonChannelId = channel.getId();
@@ -323,7 +323,7 @@ public class Feedback extends DirectComponent {
                 submissions.remove(0);
 
                 if (winChannel != null) {
-                    TextChannel output = getServer().getGuild().getTextChannelById(winChannel);
+                    TextChannel output = getGuild().getTextChannelById(winChannel);
                     if (output != null && output.canTalk()) {
                         output.sendMessageEmbeds(
                                 new EmbedBuilder()
@@ -480,7 +480,7 @@ public class Feedback extends DirectComponent {
             .queue();
 
         if (buttonChannelId != null) {
-            TextChannel buttonChannel = getServer().getGuild().getTextChannelById(buttonChannelId);
+            TextChannel buttonChannel = getGuild().getTextChannelById(buttonChannelId);
             if (buttonChannel != null && buttonChannel.canTalk()) {
                 buttonChannel.sendMessage(new MessageCreateBuilder()
                         .addActionRow(Button.success("feedback-submit", "Submit song")
@@ -517,11 +517,11 @@ public class Feedback extends DirectComponent {
             .map(Channel::getAsMention)
             .orElse(null);
         String win = Optional.ofNullable(winChannel)
-            .map(getServer().getGuild()::getTextChannelById)
+            .map(getGuild()::getTextChannelById)
             .map(Channel::getAsMention)
             .orElse(null);
         String butt = Optional.ofNullable(buttonChannelId)
-            .map(getServer().getGuild()::getTextChannelById)
+            .map(getGuild()::getTextChannelById)
             .map(Channel::getAsMention)
             .orElse(null);
         return String.format("""

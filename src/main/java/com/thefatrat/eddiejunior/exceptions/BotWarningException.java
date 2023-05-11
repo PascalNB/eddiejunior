@@ -5,10 +5,6 @@ import com.thefatrat.eddiejunior.util.Icon;
 
 public class BotWarningException extends BotException {
 
-    public BotWarningException(String message) {
-        super(message);
-    }
-
     public BotWarningException(String message, Object... values) {
         super(message, values);
     }

@@ -52,7 +52,7 @@ public class PollComponent extends Component {
                 .setAction((command, reply) -> {
                     MessageCreateBuilder builder = new MessageCreateBuilder();
 
-                    Optional.ofNullable(command.getArgs().get("text"))
+                    Optional.ofNullable(command.get("text"))
                         .ifPresent(text ->
                             builder.addEmbeds(
                                 new EmbedBuilder()
@@ -70,7 +70,7 @@ public class PollComponent extends Component {
                         int added = 0;
 
                         for (int i = 1; i <= 10; i++) {
-                            OptionMapping option = command.getArgs().get("option" + i);
+                            OptionMapping option = command.get("option" + i);
                             if (option == null) {
                                 continue;
                             }
@@ -106,7 +106,7 @@ public class PollComponent extends Component {
                         message.editMessage(edit.build()).queue();
                     };
 
-                    Optional.ofNullable(command.getArgs().get("channel"))
+                    Optional.ofNullable(command.get("channel"))
                         .ifPresentOrElse(
                             object -> {
                                 TextChannel channel = object.getAsChannel().asTextChannel();
@@ -119,12 +119,12 @@ public class PollComponent extends Component {
                 }),
 
             new Command("results", "close poll and show results")
-                .addOption(new OptionData(OptionType.STRING, "url", "message url", true))
+                .addOptions(new OptionData(OptionType.STRING, "url", "message url", true))
                 .setAction((command, reply) -> {
                     Message message = URLUtil.messageFromURL(
-                        command.getArgs().get("url").getAsString(), getServer().getGuild());
+                        command.get("url").getAsString(), getGuild());
 
-                    if (!message.getAuthor().getId().equals(getServer().getGuild().getSelfMember().getId())) {
+                    if (!message.getAuthor().getId().equals(getGuild().getSelfMember().getId())) {
                         throw new BotErrorException("Message was not sent by me");
                     }
 
@@ -172,7 +172,7 @@ public class PollComponent extends Component {
             }
 
             String vote = split[2];
-            if (polls.get(pollId).addVote(vote, event.getUser().getId())) {
+            if (polls.get(pollId).addVote(vote, event.getActor().getId())) {
                 reply.hide();
                 reply.ok("Successfully voted for `%s`", vote);
             } else {

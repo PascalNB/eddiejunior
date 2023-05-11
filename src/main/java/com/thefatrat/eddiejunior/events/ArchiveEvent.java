@@ -6,9 +6,11 @@ public class ArchiveEvent {
 
     private final ThreadChannel thread;
 
-    public ArchiveEvent(ThreadChannel thread) {this.thread = thread;}
+    public ArchiveEvent(ThreadChannel thread) {
+        this.thread = thread;
+    }
 
-    public ThreadChannel getThread() {
+    public ThreadChannel getThreadChannel() {
         return thread;
     }
 

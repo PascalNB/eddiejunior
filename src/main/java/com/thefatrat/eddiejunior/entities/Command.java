@@ -1,9 +1,7 @@
 package com.thefatrat.eddiejunior.entities;
 
 import com.thefatrat.eddiejunior.events.CommandEvent;
-import com.thefatrat.eddiejunior.reply.EphemeralReply;
-import com.thefatrat.eddiejunior.reply.ModalReply;
-import com.thefatrat.eddiejunior.reply.Reply;
+import com.thefatrat.eddiejunior.reply.InteractionReply;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
@@ -18,7 +16,7 @@ public class Command {
 
     private final String name;
     private final String description;
-    private BiConsumer<CommandEvent, ?> action = (__, ___) -> {};
+    private BiConsumer<CommandEvent, InteractionReply> action = (c, r) -> {};
     private final List<OptionData> options = new ArrayList<>();
     private final List<Command> subcommands = new ArrayList<>();
     private final List<Permission> permissions = new ArrayList<>();
@@ -36,7 +34,7 @@ public class Command {
     }
 
     @Contract("_ -> this")
-    public <T extends Reply & EphemeralReply & ModalReply> Command setAction(BiConsumer<CommandEvent, T> action) {
+    public Command setAction(BiConsumer<CommandEvent, InteractionReply> action) {
         this.action = action;
         return this;
     }
@@ -52,12 +50,6 @@ public class Command {
     @Contract("_ -> this")
     public Command addOptions(OptionData... options) {
         Collections.addAll(this.options, options);
-        return this;
-    }
-
-    @Contract("_ -> this")
-    public Command addOption(OptionData option) {
-        options.add(option);
         return this;
     }
 
@@ -87,9 +79,8 @@ public class Command {
         return result;
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends Reply & EphemeralReply & ModalReply> BiConsumer<CommandEvent, T> getAction() {
-        return (BiConsumer<CommandEvent, T>) action;
+    public BiConsumer<CommandEvent, InteractionReply> getAction() {
+        return action;
     }
 
     public List<Permission> getPermissions() {

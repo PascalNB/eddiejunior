@@ -28,7 +28,7 @@ import net.dv8tion.jda.api.utils.messages.MessageEditData;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class FanMail extends DirectComponent {
+public class FanMailComponent extends DirectMessageComponent {
 
     private static final Set<String> contentTypes = Set.of("image/jpeg", "image/png", "image/jpg", "image/gif");
 
@@ -37,7 +37,7 @@ public class FanMail extends DirectComponent {
     private String submissionChannelId;
     private long timeout;
 
-    public FanMail(Server server) {
+    public FanMailComponent(Server server) {
         super(server, "Fanart", "Fanart Submissions", true);
 
         timeout = Long.parseLong(getDatabaseManager().getSettingOrDefault("timeout", "0"));
@@ -45,11 +45,11 @@ public class FanMail extends DirectComponent {
 
         addSubcommands(
             new Command("timeout", "sets the timeout")
-                .addOption(new OptionData(OptionType.INTEGER, "timeout", "timeout in seconds", true)
+                .addOptions(new OptionData(OptionType.INTEGER, "timeout", "timeout in seconds", true)
                     .setRequiredRange(0, Integer.MAX_VALUE)
                 )
                 .setAction((command, reply) -> {
-                    long timeout = command.getArgs().get("timeout").getAsInt();
+                    long timeout = command.get("timeout").getAsInt();
                     this.timeout = timeout;
                     reply.ok("Timout set to %d seconds", timeout);
                     getDatabaseManager().setSetting("timeout", String.valueOf(timeout));
@@ -57,9 +57,9 @@ public class FanMail extends DirectComponent {
                 }),
 
             new Command("reset", "allow submissions for users again")
-                .addOption(new OptionData(OptionType.USER, "user", "user", true))
+                .addOptions(new OptionData(OptionType.USER, "user", "user", true))
                 .setAction((command, reply) -> {
-                    Member member = command.getArgs().get("user").getAsMember();
+                    Member member = command.get("user").getAsMember();
 
                     if (member == null) {
                         throw new BotErrorException("The given member was not found");
@@ -73,11 +73,11 @@ public class FanMail extends DirectComponent {
                 }),
 
             new Command("submissionchannel", "sets the channel were submissions will be posted to for review")
-                .addOption(new OptionData(OptionType.CHANNEL, "channel", "channel", true)
+                .addOptions(new OptionData(OptionType.CHANNEL, "channel", "channel", true)
                     .setChannelTypes(ChannelType.TEXT)
                 )
                 .setAction((command, reply) -> {
-                    TextChannel channel = command.getArgs().get("channel").getAsChannel().asTextChannel();
+                    TextChannel channel = command.get("channel").getAsChannel().asTextChannel();
                     submissionChannelId = channel.getId();
 
                     PermissionChecker.requireSend(channel);
@@ -128,7 +128,7 @@ public class FanMail extends DirectComponent {
                 reply.ok("Submission approved\n%s", response.getJumpUrl());
 
                 String userId = Objects.requireNonNull(embed.getFooter()).getText();
-                getServer().log(event.getUser().getUser(), "Approved fanart submission by <@%s> (`%s`)",
+                getServer().log(event.getActor().getUser(), "Approved fanart submission by <@%s> (`%s`)",
                     userId, userId);
 
             } else if (event.getButtonId().equals("fanart_deny")) {
@@ -148,7 +148,7 @@ public class FanMail extends DirectComponent {
                 reply.send(Icon.STOP, "Denied fanart submission");
 
                 String userId = Objects.requireNonNull(embed.getFooter()).getText();
-                getServer().log(event.getUser().getUser(), "Denied fanart submission by <@%s> (`%s`)",
+                getServer().log(event.getActor().getUser(), "Denied fanart submission by <@%s> (`%s`)",
                     userId, userId);
             }
         });
@@ -210,7 +210,7 @@ public class FanMail extends DirectComponent {
             )
             .build();
 
-        TextChannel output = getServer().getGuild().getTextChannelById(submissionChannelId);
+        TextChannel output = getGuild().getTextChannelById(submissionChannelId);
 
         if (output == null) {
             throw new BotErrorException("Fanart service not accessible");
@@ -254,7 +254,7 @@ public class FanMail extends DirectComponent {
             isEnabled(), isRunning(),
             Optional.ofNullable(getDestination()).map(IMentionable::getAsMention).orElse(null),
             Optional.ofNullable(submissionChannelId)
-                .map(s -> getServer().getGuild().getTextChannelById(s))
+                .map(s -> getGuild().getTextChannelById(s))
                 .orElse(null),
             timeout
         );

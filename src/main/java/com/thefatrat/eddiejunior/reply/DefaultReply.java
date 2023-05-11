@@ -7,13 +7,13 @@ import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 
 import java.util.function.Consumer;
 
-public class GenericReply implements Reply, EphemeralReply {
+public class DefaultReply implements Reply, EphemeralReply {
 
     private final IReplyCallback event;
     private InteractionHook action = null;
     private boolean ephemeral = false;
 
-    public GenericReply(IReplyCallback event) {
+    public DefaultReply(IReplyCallback event) {
         this.event = event;
     }
 

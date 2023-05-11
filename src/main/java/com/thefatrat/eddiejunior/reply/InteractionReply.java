@@ -8,14 +8,14 @@ import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 
 import java.util.function.Consumer;
 
-public class InteractionReply<T extends IReplyCallback & IModalCallback> implements Reply, ModalReply, EphemeralReply {
+public class InteractionReply implements Reply, ModalReply, EphemeralReply {
 
-    private final T event;
-    private final GenericReply reply;
+    private final IModalCallback modalCallback;
+    private final DefaultReply reply;
 
-    public InteractionReply(T event) {
-        this.event = event;
-        this.reply = new GenericReply(event);
+    public <T extends IReplyCallback & IModalCallback> InteractionReply(T callback) {
+        this.modalCallback = callback;
+        this.reply = new DefaultReply(callback);
     }
 
     @Override
@@ -30,10 +30,10 @@ public class InteractionReply<T extends IReplyCallback & IModalCallback> impleme
 
     @Override
     public void sendModal(Modal modal) {
-        if (event.isAcknowledged()) {
+        if (modalCallback.isAcknowledged()) {
             throw new UnsupportedOperationException("Can only reply with a modal once");
         }
-        event.replyModal(modal).queue();
+        modalCallback.replyModal(modal).queue();
     }
 
     @Override

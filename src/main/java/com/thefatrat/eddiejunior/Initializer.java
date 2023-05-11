@@ -23,16 +23,15 @@ public class Initializer {
 
     private Initializer() {
         try {
-            File jarPath = new File(Initializer.class.getProtectionDomain()
-                .getCodeSource().getLocation().getPath());
+            File jarPath = new File(Initializer.class.getProtectionDomain().getCodeSource().getLocation().getPath());
             String propertiesPath = jarPath.getParentFile().getAbsolutePath();
             properties.load(new FileInputStream(propertiesPath + "/config.cfg"));
 
-        } catch (FileNotFoundException e) {
+        } catch (FileNotFoundException __) {
             try (InputStream config = Initializer.class.getClassLoader().getResourceAsStream("config.cfg")) {
                 properties.load(config);
-            } catch (IOException e2) {
-                throw new UncheckedIOException(e2);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -49,22 +48,18 @@ public class Initializer {
         final JDA jda;
 
         Bot.getInstance().setComponents(
-            Manager.class,
-
-            ModMail.class,
-            Feedback.class,
-            FanMail.class,
-
+            ManagerComponent.class,
+            ModMailComponent.class,
+            FeedbackComponent.class,
+            FanMailComponent.class,
             FaqComponent.class,
             PollComponent.class,
-            Session.class,
-            Event.class,
-            ChannelManager.class,
-
-            Grab.class,
-            Roles.class,
-            Hoist.class,
-
+            SessionComponent.class,
+            EventComponent.class,
+            ChannelComponent.class,
+            GrabComponent.class,
+            RoleComponent.class,
+            HoistComponent.class,
             MessageComponent.class
         );
 

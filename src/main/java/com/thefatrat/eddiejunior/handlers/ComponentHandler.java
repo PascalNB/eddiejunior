@@ -1,7 +1,6 @@
 package com.thefatrat.eddiejunior.handlers;
 
-import com.thefatrat.eddiejunior.reply.EditReply;
-import com.thefatrat.eddiejunior.reply.Reply;
+import com.thefatrat.eddiejunior.reply.MenuReply;
 import net.dv8tion.jda.api.entities.Message;
 
 import java.util.HashMap;
@@ -9,7 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
-public class ComponentHandler<R extends Reply & EditReply> extends MapHandler<Message, R> {
+public class ComponentHandler extends MapHandler<Message, MenuReply> {
 
     private final Map<String, String> names = new HashMap<>();
 
@@ -18,11 +17,11 @@ public class ComponentHandler<R extends Reply & EditReply> extends MapHandler<Me
     }
 
     @Override
-    public void addListener(String key, BiConsumer<Message, R> listener) {
+    public void addListener(String key, BiConsumer<Message, MenuReply> listener) {
         this.addListener(key, key, listener);
     }
 
-    public void addListener(String key, String name, BiConsumer<Message, R> listener) {
+    public void addListener(String key, String name, BiConsumer<Message, MenuReply> listener) {
         super.addListener(key, listener);
         names.put(key, name);
     }

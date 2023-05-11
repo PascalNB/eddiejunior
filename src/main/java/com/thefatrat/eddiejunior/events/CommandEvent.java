@@ -35,8 +35,12 @@ public class CommandEvent {
         return channel;
     }
 
-    public Map<String, OptionMapping> getArgs() {
-        return args;
+    public OptionMapping get(String option) {
+        return args.get(option);
+    }
+
+    public boolean hasOption(String option) {
+        return args.containsKey(option);
     }
 
     public Member getMember() {

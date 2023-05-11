@@ -10,20 +10,19 @@ import net.dv8tion.jda.api.utils.messages.MessageEditData;
 
 import java.util.function.Consumer;
 
-public class ComponentReply<T extends IModalCallback & IReplyCallback & IMessageEditCallback>
-    implements Reply, EditReply, ModalReply, EphemeralReply {
+public class MenuReply implements Reply, EditReply, ModalReply, EphemeralReply {
 
-    private final T event;
-    private final InteractionReply<T> reply;
+    private final IMessageEditCallback messageEditCallback;
+    private final InteractionReply reply;
 
-    public ComponentReply(T event) {
-        this.event = event;
-        this.reply = new InteractionReply<>(event);
+    public <T extends IModalCallback & IReplyCallback & IMessageEditCallback> MenuReply(T callback) {
+        this.messageEditCallback = callback;
+        this.reply = new InteractionReply(callback);
     }
 
     @Override
     public void edit(MessageEditData data, Consumer<Message> callback) {
-        event.editMessage(data).queue(hook -> hook.retrieveOriginal().queue(callback));
+        messageEditCallback.editMessage(data).queue(hook -> hook.retrieveOriginal().queue(callback));
     }
 
     @Override

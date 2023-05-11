@@ -27,11 +27,11 @@ import net.dv8tion.jda.internal.utils.PermissionUtil;
 
 import java.util.Optional;
 
-public class Roles extends Component {
+public class RoleComponent extends Component {
 
     public static final String NAME = "Role";
 
-    public Roles(Server server) {
+    public RoleComponent(Server server) {
         super(server, NAME, false);
 
         setComponentCommand(Permission.MANAGE_ROLES);
@@ -48,27 +48,27 @@ public class Roles extends Component {
 
             String[] split = buttonId.split("-");
             String roleId = split[2];
-            Role role = getServer().getGuild().getRoleById(roleId);
+            Role role = getGuild().getRoleById(roleId);
 
             if (role == null || role.isManaged() || role.isPublicRole()) {
                 throw new BotErrorException("Role could not be assigned/removed");
             }
 
-            if (!PermissionUtil.checkPermission(getServer().getGuild().getSelfMember(), Permission.MANAGE_ROLES)) {
+            if (!PermissionUtil.checkPermission(getGuild().getSelfMember(), Permission.MANAGE_ROLES)) {
                 throw new BotErrorException("Permission `%s` required", Permission.MANAGE_ROLES.getName());
             }
-            if (!PermissionUtil.canInteract(getServer().getGuild().getSelfMember(), role)) {
+            if (!PermissionUtil.canInteract(getGuild().getSelfMember(), role)) {
                 throw new BotErrorException("No permission to interact with role %s", role.getAsMention());
             }
 
-            Member member = event.getUser();
+            Member member = event.getActor();
 
             reply.hide();
             if ("1".equals(split[1])) {
                 if (member.getRoles().stream().map(Role::getId).anyMatch(role.getId()::equals)) {
                     throw new BotWarningException("You already have the " + role.getAsMention() + " role");
                 }
-                getServer().getGuild().addRoleToMember(member, role).queue(success -> {
+                getGuild().addRoleToMember(member, role).queue(success -> {
                     reply.ok("You received role " + role.getAsMention());
                     getServer().log("Gave role %s (`%s`) to %s (`%s`) (`%s`)", role.getAsMention(), role.getId(),
                         member.getAsMention(), member.getUser().getAsTag(), member.getId());
@@ -77,7 +77,7 @@ public class Roles extends Component {
                 if (member.getRoles().stream().map(Role::getId).noneMatch(role.getId()::equals)) {
                     throw new BotWarningException("You already do not have the " + role.getAsMention() + " role");
                 }
-                getServer().getGuild().removeRoleFromMember(member, role).queue(success -> {
+                getGuild().removeRoleFromMember(member, role).queue(success -> {
                     reply.ok("Role " + role.getAsMention() + " has been removed");
                     getServer().log("Removed role %s (`%s`) from %s (`%s`) (`%s`)", role.getAsMention(), role.getId(),
                         member.getAsMention(), member.getUser().getAsTag(), member.getId());
@@ -114,39 +114,39 @@ public class Roles extends Component {
                         throw new BotErrorException("You need permission `%s`", Permission.MANAGE_ROLES.getName());
                     }
 
-                    Role role = command.getArgs().get("role").getAsRole();
+                    Role role = command.get("role").getAsRole();
 
-                    if (role.equals(getServer().getGuild().getPublicRole())) {
+                    if (role.equals(getGuild().getPublicRole())) {
                         throw new BotErrorException("Cannot use %s as a role", role.getAsMention());
                     }
                     if (role.isManaged()) {
                         throw new BotErrorException("%s is managed by an integration", role.getAsMention());
                     }
 
-                    OptionMapping labelAddObject = command.getArgs().get("label_add");
+                    OptionMapping labelAddObject = command.get("label_add");
                     String labelAdd = labelAddObject == null
                         ? "Add @" + role.getName()
                         : labelAddObject.getAsString();
-                    OptionMapping labelRemoveObject = command.getArgs().get("label_remove");
+                    OptionMapping labelRemoveObject = command.get("label_remove");
                     String labelRemove = labelRemoveObject == null
                         ? "Remove @" + role.getName()
                         : labelRemoveObject.getAsString();
 
                     MessageCreateBuilder builder = new MessageCreateBuilder();
 
-                    OptionMapping messageOption = command.getArgs().get("message");
+                    OptionMapping messageOption = command.get("message");
 
                     if (messageOption == null) {
                         boolean embedEmpty = true;
                         EmbedBuilder embed = new EmbedBuilder()
                             .setColor(Colors.TRANSPARENT);
 
-                        OptionMapping contentOption = command.getArgs().get("content");
+                        OptionMapping contentOption = command.get("content");
                         if (contentOption != null) {
                             embedEmpty = false;
                             embed.setDescription(contentOption.getAsString().replaceAll("\\\\n", "\n"));
                         }
-                        OptionMapping titleOption = command.getArgs().get("title");
+                        OptionMapping titleOption = command.get("title");
                         if (titleOption != null) {
                             embedEmpty = false;
                             embed.setTitle(titleOption.getAsString());
@@ -157,7 +157,7 @@ public class Roles extends Component {
                         }
                     } else {
                         String embedUrl = messageOption.getAsString();
-                        Message message = URLUtil.messageFromURL(embedUrl, getServer().getGuild());
+                        Message message = URLUtil.messageFromURL(embedUrl, getGuild());
 
                         try (MessageCreateData data = MessageCreateData.fromMessage(message)) {
                             builder.applyData(data);
@@ -180,7 +180,7 @@ public class Roles extends Component {
                         throw new BotErrorException("Cannot reference a message without content");
                     }
 
-                    Optional.ofNullable(command.getArgs().get("channel"))
+                    Optional.ofNullable(command.get("channel"))
                         .ifPresentOrElse(
                             object -> {
                                 TextChannel channel = object.getAsChannel().asTextChannel();

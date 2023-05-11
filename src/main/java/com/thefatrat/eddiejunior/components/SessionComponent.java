@@ -24,7 +24,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
-public class Session extends Component {
+public class SessionComponent extends Component {
 
     public static final String NAME = "Session";
 
@@ -36,7 +36,7 @@ public class Session extends Component {
 
     private final Map<String, Map<String, Message>> sessions = new HashMap<>();
 
-    public Session(Server server) {
+    public SessionComponent(Server server) {
         super(server, NAME, false);
 
         {
@@ -77,17 +77,18 @@ public class Session extends Component {
                 }),
             new Command("add",
                 "add a channel to a session, creates a new session if it does not exist")
-                .addOption(new OptionData(OptionType.STRING, "session", "session name", true)
-                    .setRequiredLength(3, 20)
+                .addOptions(
+                    new OptionData(OptionType.STRING, "session", "session name", true)
+                        .setRequiredLength(3, 20),
+                    new OptionData(OptionType.CHANNEL, "channel", "channel", true)
                 )
-                .addOption(new OptionData(OptionType.CHANNEL, "channel", "channel", true))
                 .setAction((command, reply) -> {
-                    String session = command.getArgs().get("session").getAsString();
+                    String session = command.get("session").getAsString();
                     if (!sessions.containsKey(session)) {
                         sessions.put(session, new HashMap<>());
                         getDatabaseManager().addSetting("session", session);
                     }
-                    IMentionable channel = command.getArgs().get("channel").getAsChannel();
+                    IMentionable channel = command.get("channel").getAsChannel();
                     sessions.get(session).put(channel.getId(), null);
                     getDatabaseManager().addSetting("session_" + session, channel.getId());
 
@@ -103,11 +104,11 @@ public class Session extends Component {
                     new OptionData(OptionType.STRING, "message", "message url", true)
                 )
                 .setAction((command, reply) -> {
-                    String session = command.getArgs().get("session").getAsString();
+                    String session = command.get("session").getAsString();
                     if (!isSession(session)) {
                         throw new BotErrorException(ERROR_SESSION_NONEXISTENT);
                     }
-                    TextChannel channel = command.getArgs().get("channel").getAsChannel().asTextChannel();
+                    TextChannel channel = command.get("channel").getAsChannel().asTextChannel();
                     String channelId = channel.getId();
                     Map<String, Message> map = sessions.get(session);
                     if (!map.containsKey(channelId)) {
@@ -115,8 +116,8 @@ public class Session extends Component {
                             channel.getAsMention(), session);
                     }
 
-                    String url = command.getArgs().get("message").getAsString();
-                    Message message = URLUtil.messageFromURL(url, getServer().getGuild());
+                    String url = command.get("message").getAsString();
+                    Message message = URLUtil.messageFromURL(url, getGuild());
                     String messageString = message.getChannel().getId() + "_" + message.getId();
                     map.put(channelId, message);
                     getDatabaseManager().setSetting("message_" + session + "_" + channelId, messageString);
@@ -130,11 +131,11 @@ public class Session extends Component {
                         .setChannelTypes(ChannelType.TEXT)
                 )
                 .setAction((command, reply) -> {
-                    String session = command.getArgs().get("session").getAsString();
+                    String session = command.get("session").getAsString();
                     if (!isSession(session)) {
                         throw new BotErrorException(ERROR_SESSION_NONEXISTENT);
                     }
-                    TextChannel channel = command.getArgs().get("channel").getAsChannel().asTextChannel();
+                    TextChannel channel = command.get("channel").getAsChannel().asTextChannel();
 
                     Map<String, Message> map = sessions.get(session);
                     if (!map.containsKey(channel.getId())) {
@@ -159,12 +160,12 @@ public class Session extends Component {
                     new OptionData(OptionType.CHANNEL, "channel", "channel", false)
                 )
                 .setAction((command, reply) -> {
-                    String string = command.getArgs().get("session").getAsString();
+                    String string = command.get("session").getAsString();
                     if (!isSession(string)) {
                         throw new BotErrorException(ERROR_SESSION_NONEXISTENT);
                     }
-                    if (command.getArgs().containsKey("channel")) {
-                        IMentionable channel = command.getArgs().get("channel").getAsChannel();
+                    if (command.hasOption("channel")) {
+                        IMentionable channel = command.get("channel").getAsChannel();
                         Map<String, Message> session = sessions.get(string);
                         if (!session.containsKey(channel.getId())) {
                             throw new BotErrorException("The given channel is a not part of the session");
@@ -185,17 +186,17 @@ public class Session extends Component {
                     }
                 }),
             new Command("show", "shows the channels of the given session")
-                .addOption(new OptionData(OptionType.STRING, "session", "session name", true)
+                .addOptions(new OptionData(OptionType.STRING, "session", "session name", true)
                     .setRequiredLength(3, 20)
                 )
                 .setAction((command, reply) -> {
-                    String string = command.getArgs().get("session").getAsString();
+                    String string = command.get("session").getAsString();
                     if (!isSession(string)) {
                         throw new BotErrorException(ERROR_SESSION_NONEXISTENT);
                     }
 
                     Map<String, Message> session = sessions.get(string);
-                    Guild guild = getServer().getGuild();
+                    Guild guild = getGuild();
                     List<String> channels = new ArrayList<>();
                     for (Map.Entry<String, Message> entry : session.entrySet()) {
                         IMentionable channel = guild.getGuildChannelById(entry.getKey());
@@ -230,11 +231,11 @@ public class Session extends Component {
                     );
                 }),
             new Command("open", "opens channels of a session")
-                .addOption(new OptionData(OptionType.STRING, "session", "session name", true)
+                .addOptions(new OptionData(OptionType.STRING, "session", "session name", true)
                     .setRequiredLength(3, 20)
                 )
                 .setAction((command, reply) -> {
-                    String session = command.getArgs().get("session").getAsString();
+                    String session = command.get("session").getAsString();
                     if (!isSession(session)) {
                         throw new BotErrorException(ERROR_SESSION_NONEXISTENT);
                     }
@@ -242,11 +243,11 @@ public class Session extends Component {
                     openSession(session, reply);
                 }),
             new Command("close", "closes channels of a session")
-                .addOption(new OptionData(OptionType.STRING, "session", "session name", true)
+                .addOptions(new OptionData(OptionType.STRING, "session", "session name", true)
                     .setRequiredLength(3, 20)
                 )
                 .setAction((command, reply) -> {
-                    String session = command.getArgs().get("session").getAsString();
+                    String session = command.get("session").getAsString();
                     if (!isSession(session)) {
                         throw new BotErrorException("The given session does not exist");
                     }
@@ -259,7 +260,7 @@ public class Session extends Component {
 
     public void openSession(String session, Reply reply) {
         Map<String, Message> sessionChannels = sessions.get(session);
-        Guild guild = getServer().getGuild();
+        Guild guild = getGuild();
         List<RestAction<PermissionOverride>> actions = new ArrayList<>();
         for (String id : sessionChannels.keySet()) {
             GuildChannel channel = guild.getGuildChannelById(id);
@@ -268,7 +269,7 @@ public class Session extends Component {
             } else {
                 checkPermissions(channel);
                 actions.add(channel.getPermissionContainer()
-                    .upsertPermissionOverride(getServer().getGuild().getPublicRole())
+                    .upsertPermissionOverride(getGuild().getPublicRole())
                     .grant(Permission.VIEW_CHANNEL));
             }
         }
@@ -294,7 +295,7 @@ public class Session extends Component {
 
     public void closeSession(String session, Reply reply) {
         Set<String> sessionChannels = sessions.get(session).keySet();
-        Guild guild = getServer().getGuild();
+        Guild guild = getGuild();
         List<RestAction<PermissionOverride>> actions = new ArrayList<>();
         for (String id : sessionChannels) {
             GuildChannel channel = guild.getGuildChannelById(id);
@@ -303,7 +304,7 @@ public class Session extends Component {
             } else {
                 checkPermissions(channel);
                 actions.add(channel.getPermissionContainer()
-                    .upsertPermissionOverride(getServer().getGuild().getPublicRole())
+                    .upsertPermissionOverride(getGuild().getPublicRole())
                     .deny(Permission.VIEW_CHANNEL));
             }
         }
@@ -339,7 +340,7 @@ public class Session extends Component {
     }
 
     private void checkPermissions(GuildChannel channel) {
-        Member member = getServer().getGuild().getSelfMember();
+        Member member = getGuild().getSelfMember();
         for (Permission permission : PERMISSIONS) {
             if (!PermissionUtil.checkPermission(channel.getPermissionContainer(), member, permission)) {
                 throw new BotErrorException("Insufficient permissions, requires `%s` in %s",
@@ -362,7 +363,7 @@ public class Session extends Component {
             return null;
         }
         String[] split = messageString.split("_", 2);
-        TextChannel channel = getServer().getGuild().getTextChannelById(split[0]);
+        TextChannel channel = getGuild().getTextChannelById(split[0]);
         if (channel == null) {
             return null;
         }

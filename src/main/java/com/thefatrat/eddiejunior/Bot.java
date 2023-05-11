@@ -188,7 +188,7 @@ public class Bot extends ListenerAdapter {
             return;
         }
         if (!event.isFromGuild()) {
-            ComponentReply<ButtonInteractionEvent> reply = new ComponentReply<>(event);
+            MenuReply reply = new MenuReply(event);
 
             try {
                 ButtonEvent<User> bE = new ButtonEvent<>(event.getUser(), event.getComponentId(), event.getMessage());
@@ -198,7 +198,7 @@ public class Bot extends ListenerAdapter {
                 reply.edit(e);
             }
         } else {
-            ComponentReply<ButtonInteractionEvent> reply = new ComponentReply<>(event);
+            MenuReply reply = new MenuReply(event);
 
             try {
                 Server server = getServer(Objects.requireNonNull(event.getGuild()).getId());
@@ -221,9 +221,9 @@ public class Bot extends ListenerAdapter {
             return;
         }
 
-        ComponentReply<StringSelectInteractionEvent> reply = new ComponentReply<>(event);
+        MenuReply reply = new MenuReply(event);
         SelectEvent<SelectOption> selectEvent = new SelectEvent<>(event.getUser(), event.getMessage(),
-            event.getComponentId(), event.getInteraction().getSelectedOptions().get(0));
+            event.getInteraction().getSelectedOptions().get(0));
 
         if (!event.isFromGuild()) {
             try {
@@ -251,11 +251,11 @@ public class Bot extends ListenerAdapter {
         if (event.isFromGuild()) {
             Guild guild = Objects.requireNonNull(event.getGuild());
 
-            ComponentReply<EntitySelectInteractionEvent> reply = new ComponentReply<>(event);
+            MenuReply reply = new MenuReply(event);
 
             try {
                 SelectEvent<IMentionable> selectEvent = new SelectEvent<>(event.getUser(), event.getMessage(),
-                    event.getComponentId(), event.getInteraction().getValues().get(0));
+                    event.getInteraction().getValues().get(0));
                 servers.get(guild.getId()).getEntitySelectHandler()
                     .handle(event.getComponentId(), selectEvent, reply);
 
@@ -274,7 +274,7 @@ public class Bot extends ListenerAdapter {
 
         Message message = event.getInteraction().getTarget();
         Guild guild = Objects.requireNonNull(event.getGuild());
-        InteractionReply<MessageContextInteractionEvent> reply = new InteractionReply<>(event);
+        InteractionReply reply = new InteractionReply(event);
 
         try {
             String interaction = event.getName();
@@ -295,7 +295,7 @@ public class Bot extends ListenerAdapter {
 
         Member member = event.getInteraction().getTargetMember();
         Guild guild = Objects.requireNonNull(event.getGuild());
-        InteractionReply<UserContextInteractionEvent> reply = new InteractionReply<>(event);
+        InteractionReply reply = new InteractionReply(event);
 
         try {
             String interaction = event.getName();
@@ -321,7 +321,7 @@ public class Bot extends ListenerAdapter {
             options.put(option.getName(), option);
         }
 
-        InteractionReply<SlashCommandInteractionEvent> reply = new InteractionReply<>(event);
+        InteractionReply reply = new InteractionReply(event);
 
         CommandEvent commandEvent = new CommandEvent(event.getName(), event.getSubcommandName(),
             options, event.getGuildChannel(), Objects.requireNonNull(event.getMember()));
@@ -347,8 +347,8 @@ public class Bot extends ListenerAdapter {
             map.put(value.getId(), value);
         }
 
-        ModalEvent modalEvent = new ModalEvent(event.getMember(), event.getModalId(), map);
-        GenericReply reply = new GenericReply(event);
+        ModalEvent modalEvent = new ModalEvent(event.getMember(), map);
+        DefaultReply reply = new DefaultReply(event);
 
         try {
             servers.get(guild.getId()).getModalHandler().handle(event.getModalId(), modalEvent, reply);

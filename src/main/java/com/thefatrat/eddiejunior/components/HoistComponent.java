@@ -18,35 +18,35 @@ import net.dv8tion.jda.internal.utils.PermissionUtil;
 import java.util.HashSet;
 import java.util.Set;
 
-public class Hoist extends Component {
+public class HoistComponent extends Component {
 
     private final Set<String> set = new HashSet<>();
 
-    public Hoist(Server server) {
+    public HoistComponent(Server server) {
         super(server, "Hoist", false);
 
         set.addAll(getDatabaseManager().getSettings("roles"));
 
         addCommands(
             new Command("hoist", "hoist or unhoist a role")
-                .addOption(new OptionData(OptionType.ROLE, "role", "role", true))
+                .addOptions(new OptionData(OptionType.ROLE, "role", "role", true))
                 .setAction((command, reply) -> {
-                    Role role = command.getArgs().get("role").getAsRole();
+                    Role role = command.get("role").getAsRole();
 
                     hoist(role, command.getMember().getUser(), reply);
                 }),
 
             new Command("hoistable", "toggle a role to be hoisted or unhoisted by the hoist command")
                 .addPermissions(Permission.MANAGE_ROLES)
-                .addOption(new OptionData(OptionType.ROLE, "role", "role", true))
+                .addOptions(new OptionData(OptionType.ROLE, "role", "role", true))
                 .setAction((command, reply) -> {
-                    Role role = command.getArgs().get("role").getAsRole();
+                    Role role = command.get("role").getAsRole();
 
-                    if (!PermissionUtil.checkPermission(getServer().getGuild().getSelfMember(),
+                    if (!PermissionUtil.checkPermission(getGuild().getSelfMember(),
                         Permission.MANAGE_ROLES)) {
                         throw new BotErrorException("Permission `%s` required", Permission.MANAGE_ROLES.getName());
                     }
-                    if (!PermissionUtil.canInteract(getServer().getGuild().getSelfMember(), role)) {
+                    if (!PermissionUtil.canInteract(getGuild().getSelfMember(), role)) {
                         throw new BotErrorException("Cannot interact with role %s", role.getAsMention());
                     }
 
@@ -73,7 +73,7 @@ public class Hoist extends Component {
                     throw new BotErrorException("The selected member is not a bot");
                 }
 
-                Role role = getServer().getGuild().getRoleByBot(target.getId());
+                Role role = getGuild().getRoleByBot(target.getId());
 
                 if (role == null) {
                     throw new BotErrorException("The selected bot does not have a dedicated role");
@@ -87,11 +87,11 @@ public class Hoist extends Component {
     }
 
     private <T extends Reply> void hoist(Role role, User user, T reply) {
-        if (!PermissionUtil.checkPermission(getServer().getGuild().getSelfMember(),
+        if (!PermissionUtil.checkPermission(getGuild().getSelfMember(),
             Permission.MANAGE_ROLES)) {
             throw new BotErrorException("Permission `%s` required", Permission.MANAGE_ROLES.getName());
         }
-        if (!PermissionUtil.canInteract(getServer().getGuild().getSelfMember(), role)) {
+        if (!PermissionUtil.canInteract(getGuild().getSelfMember(), role)) {
             throw new BotErrorException("Cannot interact with role %s", role.getAsMention());
         }
 

@@ -7,12 +7,11 @@ import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.entities.Interaction;
 import com.thefatrat.eddiejunior.events.CommandEvent;
 import com.thefatrat.eddiejunior.handlers.MapHandler;
-import com.thefatrat.eddiejunior.reply.EphemeralReply;
-import com.thefatrat.eddiejunior.reply.ModalReply;
-import com.thefatrat.eddiejunior.reply.Reply;
+import com.thefatrat.eddiejunior.reply.InteractionReply;
 import com.thefatrat.eddiejunior.sources.Server;
 import com.thefatrat.eddiejunior.util.Colors;
 import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
@@ -22,7 +21,7 @@ import java.util.*;
 
 public abstract class Component {
 
-    private final Server source;
+    private final Server server;
     private final String title;
     private final String name;
     private final boolean globalComponent;
@@ -31,7 +30,7 @@ public abstract class Component {
     private final List<Command> commands = new ArrayList<>();
     private final List<Interaction<Message>> messageInteractions = new ArrayList<>();
     private final List<Interaction<Member>> memberInteractions = new ArrayList<>();
-    private final MapHandler<CommandEvent, ?> subHandler = new MapHandler<>();
+    private final MapHandler<CommandEvent, InteractionReply> subHandler = new MapHandler<>();
     private MessageEmbed help = null;
     private boolean isComponentCommand = false;
 
@@ -43,7 +42,7 @@ public abstract class Component {
      * @param globalComponent whether the component should always be enabled
      */
     public Component(@NotNull Server server, @NotNull String title, boolean globalComponent) {
-        this.source = server;
+        this.server = server;
         this.title = title;
         this.name = title.toLowerCase(Locale.ROOT);
         this.globalComponent = globalComponent;
@@ -84,7 +83,11 @@ public abstract class Component {
      * @return the server which the component belongs to
      */
     public Server getServer() {
-        return source;
+        return server;
+    }
+
+    public Guild getGuild() {
+        return server.getGuild();
     }
 
     /**
@@ -156,9 +159,8 @@ public abstract class Component {
     /**
      * @return the component's subcommand handler
      */
-    @SuppressWarnings("unchecked")
-    protected <T extends Reply & EphemeralReply & ModalReply> MapHandler<CommandEvent, T> getSubCommandHandler() {
-        return (MapHandler<CommandEvent, T>) subHandler;
+    protected MapHandler<CommandEvent, InteractionReply> getSubCommandHandler() {
+        return subHandler;
     }
 
     /**

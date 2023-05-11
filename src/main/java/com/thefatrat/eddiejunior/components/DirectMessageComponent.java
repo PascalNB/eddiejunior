@@ -4,6 +4,7 @@ import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotWarningException;
 import com.thefatrat.eddiejunior.reply.EditReply;
+import com.thefatrat.eddiejunior.reply.MenuReply;
 import com.thefatrat.eddiejunior.reply.Reply;
 import com.thefatrat.eddiejunior.sources.Server;
 import com.thefatrat.eddiejunior.util.Colors;
@@ -23,10 +24,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-public abstract class DirectComponent extends Component implements RunnableComponent {
+public abstract class DirectMessageComponent extends Component implements RunnableComponent {
 
     private final String alt;
     private final boolean autoRun;
@@ -34,19 +34,7 @@ public abstract class DirectComponent extends Component implements RunnableCompo
     private boolean running = false;
     private String destination;
 
-    private <T extends Reply & EditReply> BiConsumer<Message, T> getReceiver() {
-        return (message, reply) -> {
-            if (getDestination() == null) {
-                throw new BotErrorException("Something went wrong");
-            }
-            if (getBlacklist().contains(message.getAuthor().getId())) {
-                throw new BotWarningException("You are not allowed to send messages at the moment");
-            }
-            handleDirect(message, reply);
-        };
-    }
-
-    public DirectComponent(Server server, String name, String alt, boolean autoRun) {
+    public DirectMessageComponent(Server server, String name, String alt, boolean autoRun) {
         super(server, name, false);
         this.alt = alt;
         this.autoRun = autoRun;
@@ -60,11 +48,11 @@ public abstract class DirectComponent extends Component implements RunnableCompo
 
         addSubcommands(
             new Command("start", "starts the component")
-                .addOption(new OptionData(OptionType.CHANNEL, "channel", "channel destination")
+                .addOptions(new OptionData(OptionType.CHANNEL, "channel", "channel destination")
                     .setChannelTypes(ChannelType.TEXT)
                 )
                 .setAction((command, reply) -> {
-                    OptionMapping option = command.getArgs().get("channel");
+                    OptionMapping option = command.get("channel");
                     TextChannel parsedDestination = option == null ? null : option.getAsChannel().asTextChannel();
                     TextChannel newDestination;
                     TextChannel currentDestination = getDestination();
@@ -108,13 +96,13 @@ public abstract class DirectComponent extends Component implements RunnableCompo
                         "Component `%s` stopped running", getName());
                 }),
             new Command("destination", "sets the destination channel")
-                .addOption(new OptionData(OptionType.CHANNEL, "channel", "destination channel", false)
+                .addOptions(new OptionData(OptionType.CHANNEL, "channel", "destination channel", false)
                     .setChannelTypes(ChannelType.TEXT)
                 )
                 .setAction((command, reply) -> {
                     TextChannel newDestination;
-                    if (command.getArgs().containsKey("channel")) {
-                        newDestination = command.getArgs().get("channel").getAsChannel().asTextChannel();
+                    if (command.hasOption("channel")) {
+                        newDestination = command.get("channel").getAsChannel().asTextChannel();
                     } else {
                         try {
                             newDestination = command.getChannel().asTextChannel();
@@ -133,16 +121,16 @@ public abstract class DirectComponent extends Component implements RunnableCompo
                         newDestination.getAsMention(), newDestination.getId());
                 }),
             new Command("blacklist", "manages the blacklist")
-                .addOption(new OptionData(OptionType.STRING, "action", "action", true)
+                .addOptions(new OptionData(OptionType.STRING, "action", "action", true)
                     .addChoice("add", "add")
                     .addChoice("remove", "remove")
                     .addChoice("show", "show")
                     .addChoice("clear", "clear")
                 )
-                .addOption(new OptionData(OptionType.USER, "user", "user", false))
+                .addOptions(new OptionData(OptionType.USER, "user", "user", false))
                 .setAction((command, reply) -> {
-                    String action = command.getArgs().get("action").getAsString();
-                    if (!command.getArgs().containsKey("user")
+                    String action = command.get("action").getAsString();
+                    if (!command.hasOption("user")
                         && ("add".equals(action) || "remove".equals(action))) {
                         throw new BotErrorException("Please specify the user");
                     }
@@ -158,7 +146,7 @@ public abstract class DirectComponent extends Component implements RunnableCompo
                             blacklistIds[i] = Long.parseLong(s);
                             ++i;
                         }
-                        getServer().getGuild()
+                        getGuild()
                             .retrieveMembersByIds(blacklistIds)
                             .onSuccess(list -> {
                                 String[] strings = fillAbsent(blacklist, list, ISnowflake::getId,
@@ -194,7 +182,7 @@ public abstract class DirectComponent extends Component implements RunnableCompo
                         msg = "removed from";
                     }
 
-                    User user = command.getArgs().get("user").getAsUser();
+                    User user = command.get("user").getAsUser();
                     blacklist(user, add, msg, reply);
                     if (add) {
                         getServer().log(Colors.RED, command.getMember().getUser(),
@@ -207,6 +195,16 @@ public abstract class DirectComponent extends Component implements RunnableCompo
                     }
                 })
         );
+    }
+
+    private void receive(Message message, MenuReply reply) {
+        if (getDestination() == null) {
+            throw new BotErrorException("Something went wrong");
+        }
+        if (getBlacklist().contains(message.getAuthor().getId())) {
+            throw new BotWarningException("You are not allowed to send messages at the moment");
+        }
+        handleDirect(message, reply);
     }
 
     private void blacklist(@NotNull User user, boolean add, String msg, Reply reply) {
@@ -261,7 +259,7 @@ public abstract class DirectComponent extends Component implements RunnableCompo
 
     public void start(Reply reply) {
         this.running = true;
-        getServer().getDirectMessageHandler().addListener(getName(), alt, getReceiver());
+        getServer().getDirectMessageHandler().addListener(getName(), alt, this::receive);
         if (autoRun) {
             getDatabaseManager().setSetting("running", "true");
         }
@@ -277,7 +275,7 @@ public abstract class DirectComponent extends Component implements RunnableCompo
         if (destination == null) {
             return null;
         }
-        return getServer().getGuild().getTextChannelById(destination);
+        return getGuild().getTextChannelById(destination);
     }
 
     @Override

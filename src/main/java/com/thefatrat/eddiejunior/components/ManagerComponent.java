@@ -31,24 +31,24 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class Manager extends Component {
+public class ManagerComponent extends Component {
 
     public static final String NAME = "Main";
 
-    public Manager(Server server) {
+    public ManagerComponent(Server server) {
         super(server, NAME, true);
 
         String logChannelId = getDatabaseManager().getSetting("log");
         if (logChannelId != null) {
-            getServer().setLog(getServer().getGuild().getTextChannelById(logChannelId));
+            getServer().setLog(getGuild().getTextChannelById(logChannelId));
         }
 
         addCommands(
             new Command("help", "show the available commands")
-                .addOption(new OptionData(OptionType.STRING, "component", "component name", false))
+                .addOptions(new OptionData(OptionType.STRING, "component", "component name", false))
                 .setAction((command, reply) -> {
-                    if (command.getArgs().containsKey("component")) {
-                        String componentString = command.getArgs().get("component").getAsString();
+                    if (command.hasOption("component")) {
+                        String componentString = command.get("component").getAsString();
                         Component component = getComponentSafe(componentString);
 
                         reply.send(component.getHelp());
@@ -86,9 +86,9 @@ public class Manager extends Component {
                 }),
 
             new Command("enable", "enable a specific component by name")
-                .addOption(new OptionData(OptionType.STRING, "component", "component name", true))
+                .addOptions(new OptionData(OptionType.STRING, "component", "component name", true))
                 .setAction((command, reply) -> {
-                    String componentString = command.getArgs().get("component").getAsString();
+                    String componentString = command.get("component").getAsString();
                     Component component = getComponentSafe(componentString);
 
                     if (component.isGlobalComponent()) {
@@ -104,9 +104,9 @@ public class Manager extends Component {
                 }),
 
             new Command("disable", "disable a specific component by name")
-                .addOption(new OptionData(OptionType.STRING, "component", "component name", true))
+                .addOptions(new OptionData(OptionType.STRING, "component", "component name", true))
                 .setAction((command, reply) -> {
-                    String componentString = command.getArgs().get("component").getAsString();
+                    String componentString = command.get("component").getAsString();
 
                     Component component = getComponentSafe(componentString);
 
@@ -114,7 +114,7 @@ public class Manager extends Component {
                         throw new BotWarningException("This component is always enabled");
                     }
 
-                    if (component instanceof DirectComponent direct && direct.isRunning()) {
+                    if (component instanceof DirectMessageComponent direct && direct.isRunning()) {
                         direct.stop(reply);
                     }
 
@@ -146,7 +146,7 @@ public class Manager extends Component {
                                 builder.append("Running: ").append(runComp.isRunning() ? Icon.OK : Icon.ERROR)
                                     .append("\n");
                             }
-                            if (component instanceof DirectComponent direct && direct.isRunning()) {
+                            if (component instanceof DirectMessageComponent direct && direct.isRunning()) {
                                 builder.append("Listens to DMs\n");
                             }
                         }
@@ -164,12 +164,12 @@ public class Manager extends Component {
                 }),
 
             new Command("status", "shows the current status of the bot")
-                .addOption(new OptionData(OptionType.STRING, "component", "component name", false))
+                .addOptions(new OptionData(OptionType.STRING, "component", "component name", false))
                 .setAction((command, reply) -> {
                     Component component;
 
-                    if (command.getArgs().containsKey("component")) {
-                        String componentString = command.getArgs().get("component").getAsString();
+                    if (command.hasOption("component")) {
+                        String componentString = command.get("component").getAsString();
                         component = getComponentSafe(componentString);
 
                     } else {
@@ -186,20 +186,20 @@ public class Manager extends Component {
                 }),
 
             new Command("reload", "reload a component's commands")
-                .addOption(new OptionData(OptionType.STRING, "component", "component name", true))
+                .addOptions(new OptionData(OptionType.STRING, "component", "component name", true))
                 .setAction((command, reply) -> {
-                    Component component = getComponentSafe(command.getArgs().get("component").getAsString());
+                    Component component = getComponentSafe(command.get("component").getAsString());
                     getServer().toggleComponent(component, false).queue(__ ->
                         getServer().toggleComponent(component, true).queue());
                     reply.ok("Reloaded component `%s`", component.getName());
                 }),
 
             new Command("log", "set the logging channel")
-                .addOption(new OptionData(OptionType.CHANNEL, "channel", "log channel", true)
+                .addOptions(new OptionData(OptionType.CHANNEL, "channel", "log channel", true)
                     .setChannelTypes(ChannelType.TEXT)
                 )
                 .setAction((command, reply) -> {
-                    TextChannel channel = command.getArgs().get("channel").getAsChannel().asTextChannel();
+                    TextChannel channel = command.get("channel").getAsChannel().asTextChannel();
                     PermissionChecker.requireSend(channel);
                     getServer().setLog(channel);
                     getDatabaseManager().setSetting("log", channel.getId());
