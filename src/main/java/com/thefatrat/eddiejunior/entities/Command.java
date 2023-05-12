@@ -87,4 +87,8 @@ public class Command {
         return permissions;
     }
 
+    public boolean hasSubCommands() {
+        return !subcommands.isEmpty();
+    }
+
 }

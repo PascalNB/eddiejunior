@@ -1,4 +1,4 @@
-package com.thefatrat.eddiejunior.components;
+package com.thefatrat.eddiejunior.components.impl;
 
 import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
@@ -121,7 +121,7 @@ public class FeedbackComponent extends DirectMessageComponent {
 
                         reply.send(new EmbedBuilder()
                             .setColor(Colors.TRANSPARENT)
-                            .setTitle(getTitle() + " whitelist")
+                            .setTitle("Feedback whitelist")
                             .setDescription(String.join("\n", sorted))
                             .build());
                         return;
@@ -182,7 +182,7 @@ public class FeedbackComponent extends DirectMessageComponent {
                     reply.ok("Domain%s %s %s the whitelist", changed.size() == 1 ? "" : "s",
                         String.join(", ", changed), msg);
                     getServer().log(Colors.GRAY, command.getMember().getUser(), "Domain%s %s %s the whitelist of `%s`",
-                        changed.size() == 1 ? "" : "s", String.join(", ", changed), msg, getName());
+                        changed.size() == 1 ? "" : "s", String.join(", ", changed), msg, getId());
                 }),
 
             new Command("filetypes", "manage discordapp filetypes filter, " +
@@ -214,7 +214,7 @@ public class FeedbackComponent extends DirectMessageComponent {
 
                         reply.send(new EmbedBuilder()
                             .setColor(Colors.TRANSPARENT)
-                            .setTitle(getTitle() + " filetypes")
+                            .setTitle("Feedback filetypes")
                             .setDescription(builder.toString())
                             .build()
                         );
@@ -275,7 +275,7 @@ public class FeedbackComponent extends DirectMessageComponent {
                     reply.ok("Filetype%s %s %s the filetype list", changed.size() == 1 ? "" : "s",
                         String.join(", ", changed), msg);
                     getServer().log(Colors.GRAY, command.getMember().getUser(), "Filetype%s %s %s the `%s` " +
-                        "filetype list", changed.size() == 1 ? "" : "s", String.join(", ", changed), msg, getName());
+                        "filetype list", changed.size() == 1 ? "" : "s", String.join(", ", changed), msg, getId());
                 }),
 
             new Command("button", "set the channel where the submission button will be sent")
@@ -404,7 +404,7 @@ public class FeedbackComponent extends DirectMessageComponent {
             .setAuthor(author.getAsTag(), null, author.getEffectiveAvatarUrl())
             .addField("User", String.format("%s `(%s)`", author.getAsMention(), author.getId()), true)
             .addField("Submission", String.format("<%s>", url), true)
-            .setFooter(getName());
+            .setFooter(getId());
         if (!URLUtil.isSafe(url)) {
             embed.addField(Icon.WARNING.toString(),
                 "The source is not HTTPS and might not be safe",

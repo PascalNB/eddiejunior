@@ -1,6 +1,7 @@
-package com.thefatrat.eddiejunior.components;
+package com.thefatrat.eddiejunior.components.impl;
 
 import com.thefatrat.eddiejunior.Bot;
+import com.thefatrat.eddiejunior.components.AbstractComponent;
 import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotWarningException;
@@ -28,13 +29,15 @@ import net.dv8tion.jda.api.interactions.modals.ModalMapping;
 import net.dv8tion.jda.api.requests.RestAction;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.internal.requests.CompletedRestAction;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.*;
 import java.util.stream.IntStream;
 
-public class FaqComponent extends Component {
+public class FaqComponent extends AbstractComponent {
 
     private final List<String> faqList = new ArrayList<>();
     private final Map<String, String[]> faqMap = new HashMap<>();
@@ -42,7 +45,7 @@ public class FaqComponent extends Component {
     private Message faqMessage;
 
     public FaqComponent(Server server) {
-        super(server, "Faq", false);
+        super(server, "Faq");
 
         {
             String storageMessageId = getDatabaseManager().getSetting("storagemessage");
@@ -388,7 +391,7 @@ public class FaqComponent extends Component {
         });
     }
 
-    private SelectOption[] getOptions(List<String> list) {
+    private SelectOption @NotNull [] getOptions(@NotNull List<String> list) {
         return IntStream.range(0, list.size())
             .mapToObj(i -> {
                 String q = list.get(i);
@@ -408,7 +411,8 @@ public class FaqComponent extends Component {
             .toArray(SelectOption[]::new);
     }
 
-    private RestAction<Message> updateStorage(Message message) {
+    @Contract("null -> new")
+    private @NotNull RestAction<Message> updateStorage(Message message) {
         if (message == null || !message.getChannel().canTalk()) {
             return new CompletedRestAction<>(Bot.getInstance().getJDA(), null);
         }
@@ -443,7 +447,8 @@ public class FaqComponent extends Component {
         }
     }
 
-    private RestAction<Message> updateMessage(Message message) {
+    @Contract("null -> new")
+    private @NotNull RestAction<Message> updateMessage(Message message) {
         if (message == null || !message.getChannel().canTalk()) {
             return new CompletedRestAction<>(Bot.getInstance().getJDA(), null);
         }

@@ -1,8 +1,14 @@
-package com.thefatrat.eddiejunior.components;
+package com.thefatrat.eddiejunior.components.impl;
 
 import com.pascalnb.dbwrapper.Database;
 import com.pascalnb.dbwrapper.DatabaseException;
 import com.thefatrat.eddiejunior.Bot;
+import com.thefatrat.eddiejunior.DatabaseManager;
+import com.thefatrat.eddiejunior.builders.HelpMessageBuilder;
+import com.thefatrat.eddiejunior.components.AbstractComponent;
+import com.thefatrat.eddiejunior.components.Component;
+import com.thefatrat.eddiejunior.components.GlobalComponent;
+import com.thefatrat.eddiejunior.components.RunnableComponent;
 import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.events.CommandEvent;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
@@ -29,16 +35,18 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class ManagerComponent extends Component {
+public class ManagerComponent extends AbstractComponent implements GlobalComponent {
 
-    public static final String NAME = "Main";
+    private final Map<String, MessageEmbed> helpMessages = new HashMap<>();
 
     public ManagerComponent(Server server) {
-        super(server, NAME, true);
+        super(server, "main");
 
         String logChannelId = getDatabaseManager().getSetting("log");
         if (logChannelId != null) {
@@ -86,18 +94,34 @@ public class ManagerComponent extends Component {
         );
     }
 
-    private void help(CommandEvent command, InteractionReply reply) {
+    private void help(@NotNull CommandEvent command, InteractionReply reply) {
         if (command.hasOption("component")) {
             String componentString = command.get("component").getAsString();
             Component component = getComponentSafe(componentString);
 
-            reply.send(component.getHelp());
+            MessageEmbed help;
+            if (helpMessages.containsKey(component.getId())) {
+                help = helpMessages.get(component.getId());
+            } else {
+                help = new HelpMessageBuilder(component).build(Colors.TRANSPARENT);
+                helpMessages.put(component.getId(), help);
+            }
+
+            reply.send(help);
         } else {
-            reply.send(getHelp());
+            MessageEmbed help;
+            if (helpMessages.containsKey(getId())) {
+                help = helpMessages.get(getId());
+            } else {
+                help = new HelpMessageBuilder(this).build(Colors.TRANSPARENT);
+                helpMessages.put(getId(), help);
+            }
+
+            reply.send(help);
         }
     }
 
-    private void ping(CommandEvent command, InteractionReply reply) {
+    private void ping(@NotNull CommandEvent command, @NotNull InteractionReply reply) {
         PermissionChecker.requireSend(command.getChannel().getPermissionContainer());
         reply.send(new EmbedBuilder()
                 .setColor(Colors.TRANSPARENT)
@@ -123,15 +147,15 @@ public class ManagerComponent extends Component {
             });
     }
 
-    private void enableComponent(CommandEvent command, InteractionReply reply) {
+    private void enableComponent(@NotNull CommandEvent command, InteractionReply reply) {
         String componentString = command.get("component").getAsString();
         Component component = getComponentSafe(componentString);
 
-        if (component.isGlobalComponent()) {
+        if (component instanceof GlobalComponent) {
             throw new BotWarningException("This component is always enabled");
         }
 
-        component.getDatabaseManager().toggleComponent(true);
+        DatabaseManager.toggleComponent(getServer().getId(), componentString, true);
         component.enable();
         getServer().toggleComponent(component, true).queue();
         reply.send(Icon.ENABLE, "Component `%s` enabled", componentString);
@@ -139,12 +163,12 @@ public class ManagerComponent extends Component {
             "Enabled component `%s`", componentString);
     }
 
-    private void disableComponent(CommandEvent command, InteractionReply reply) {
+    private void disableComponent(@NotNull CommandEvent command, InteractionReply reply) {
         String componentString = command.get("component").getAsString();
 
         Component component = getComponentSafe(componentString);
 
-        if (component.isGlobalComponent()) {
+        if (component instanceof GlobalComponent) {
             throw new BotWarningException("This component is always enabled");
         }
 
@@ -152,7 +176,7 @@ public class ManagerComponent extends Component {
             direct.stop(reply);
         }
 
-        component.getDatabaseManager().toggleComponent(false);
+        DatabaseManager.toggleComponent(getServer().getId(), componentString, false);
         component.disable();
         getServer().toggleComponent(component, false).queue();
         reply.send(Icon.DISABLE, "Component `%s` disabled", componentString);
@@ -167,7 +191,7 @@ public class ManagerComponent extends Component {
 
         int empty = 0;
         for (Component component : getServer().getComponents()) {
-            if (component.isGlobalComponent()) {
+            if (component instanceof GlobalComponent) {
                 continue;
             }
             StringBuilder builder = new StringBuilder();
@@ -184,7 +208,9 @@ public class ManagerComponent extends Component {
                 }
             }
 
-            embed.addField(component.getTitle(), builder.toString(), true);
+            String title = component.getId().substring(0, 1).toUpperCase(Locale.ROOT)
+                + component.getId().substring(1);
+            embed.addField(title, builder.toString(), true);
             empty++;
         }
 
@@ -196,7 +222,7 @@ public class ManagerComponent extends Component {
         reply.send(embed.build());
     }
 
-    private void statusCommand(CommandEvent command, InteractionReply reply) {
+    private void statusCommand(@NotNull CommandEvent command, InteractionReply reply) {
         Component component;
 
         if (command.hasOption("component")) {
@@ -207,24 +233,27 @@ public class ManagerComponent extends Component {
             component = this;
         }
 
+        String title = component.getId().substring(0, 1).toUpperCase(Locale.ROOT)
+            + component.getId().substring(1) + " status";
+
         MessageEmbed embed = new EmbedBuilder()
             .setColor(Colors.TRANSPARENT)
-            .setTitle(component.getTitle() + " status")
+            .setTitle(title)
             .setDescription(component.getStatus())
             .build();
 
         reply.send(embed);
     }
 
-    private void reloadComponent(CommandEvent command, InteractionReply reply) {
+    private void reloadComponent(@NotNull CommandEvent command, @NotNull InteractionReply reply) {
         Component component = getComponentSafe(command.get("component").getAsString());
         getServer().toggleComponent(component, false).queue(__ ->
             getServer().toggleComponent(component, true).queue()
         );
-        reply.ok("Reloaded component `%s`", component.getName());
+        reply.ok("Reloaded component `%s`", component.getId());
     }
 
-    private void setLogChannel(CommandEvent command, InteractionReply reply) {
+    private void setLogChannel(@NotNull CommandEvent command, @NotNull InteractionReply reply) {
         TextChannel channel = command.get("channel").getAsChannel().asTextChannel();
         PermissionChecker.requireSend(channel);
         getServer().setLog(channel);
@@ -256,7 +285,7 @@ public class ManagerComponent extends Component {
         }
     }
 
-    private void getVitals(CommandEvent command, InteractionReply reply) {
+    private void getVitals(CommandEvent command, @NotNull InteractionReply reply) {
         reply.defer();
 
         SystemInfo info = new SystemInfo();
@@ -315,7 +344,7 @@ public class ManagerComponent extends Component {
     public String getStatus() {
         int count = 0;
         for (Component component : getServer().getComponents()) {
-            if (component.isEnabled() && !component.isGlobalComponent()) {
+            if (component.isEnabled() && !(component instanceof GlobalComponent)) {
                 ++count;
             }
         }

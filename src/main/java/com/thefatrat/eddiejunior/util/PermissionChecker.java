@@ -14,7 +14,8 @@ public final class PermissionChecker {
             Permission.MESSAGE_SEND);
     }
 
-    public static void requirePermission(@NotNull IPermissionContainer container, @NotNull Permission... permissions)
+    public static void requirePermission(@NotNull IPermissionContainer container,
+        @NotNull Permission @NotNull ... permissions)
     throws BotErrorException {
         Member member = container.getGuild().getSelfMember();
         for (Permission permission : permissions) {

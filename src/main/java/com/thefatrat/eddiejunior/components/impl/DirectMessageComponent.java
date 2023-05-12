@@ -1,5 +1,7 @@
-package com.thefatrat.eddiejunior.components;
+package com.thefatrat.eddiejunior.components.impl;
 
+import com.thefatrat.eddiejunior.components.AbstractComponent;
+import com.thefatrat.eddiejunior.components.RunnableComponent;
 import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.events.CommandEvent;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
@@ -27,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.function.Function;
 
-public abstract class DirectMessageComponent extends Component implements RunnableComponent {
+public abstract class DirectMessageComponent extends AbstractComponent implements RunnableComponent {
 
     private final String alt;
     private final boolean autoRun;
@@ -36,7 +38,7 @@ public abstract class DirectMessageComponent extends Component implements Runnab
     private String destination;
 
     public DirectMessageComponent(Server server, String title, String alt, boolean autoRun) {
-        super(server, title, false);
+        super(server, title);
         this.alt = alt;
         this.autoRun = autoRun;
         destination = getDatabaseManager().getSetting("destination");
@@ -75,7 +77,7 @@ public abstract class DirectMessageComponent extends Component implements Runnab
         );
     }
 
-    private void startCommand(CommandEvent command, InteractionReply reply) {
+    private void startCommand(@NotNull CommandEvent command, InteractionReply reply) {
         OptionMapping option = command.get("channel");
         TextChannel parsedDestination = option == null ? null : option.getAsChannel().asTextChannel();
         TextChannel newDestination;
@@ -105,22 +107,22 @@ public abstract class DirectMessageComponent extends Component implements Runnab
                 newDestination.getAsMention(), newDestination.getId()
             );
             getServer().log(Colors.GRAY, command.getMember().getUser().getId(),
-                "Set destination of `%s` to %s (`%s`)", getName(), newDestination.getAsMention(),
+                "Set destination of `%s` to %s (`%s`)", getId(), newDestination.getAsMention(),
                 newDestination.getId());
         }
 
         this.start(reply);
         getServer().log(Colors.GREEN, command.getMember().getUser(),
-            "Component `%s` started running", getName());
+            "Component `%s` started running", getId());
     }
 
-    private void stopCommand(CommandEvent command, InteractionReply reply) {
+    private void stopCommand(@NotNull CommandEvent command, InteractionReply reply) {
         this.stop(reply);
         getServer().log(Colors.RED, command.getMember().getUser(),
-            "Component `%s` stopped running", getName());
+            "Component `%s` stopped running", getId());
     }
 
-    private void setDestination(CommandEvent command, InteractionReply reply) {
+    private void setDestination(@NotNull CommandEvent command, InteractionReply reply) {
         TextChannel newDestination;
         if (command.hasOption("channel")) {
             newDestination = command.get("channel").getAsChannel().asTextChannel();
@@ -137,12 +139,12 @@ public abstract class DirectMessageComponent extends Component implements Runnab
         setDestination(newDestination.getId());
 
         getServer().log(Colors.GRAY, command.getMember().getUser(), "Set `%s` destination channel to %s " +
-            "(`%s`)", getName(), newDestination.getAsMention(), newDestination.getId());
+            "(`%s`)", getId(), newDestination.getAsMention(), newDestination.getId());
         reply.send(Icon.SETTING, "Destination set to %s `(%s)`%n",
             newDestination.getAsMention(), newDestination.getId());
     }
 
-    private void blacklistCommand(CommandEvent command, InteractionReply reply) {
+    private void blacklistCommand(@NotNull CommandEvent command, InteractionReply reply) {
         String action = command.get("action").getAsString();
         if (!command.hasOption("user")
             && ("add".equals(action) || "remove".equals(action))) {
@@ -163,11 +165,15 @@ public abstract class DirectMessageComponent extends Component implements Runnab
             getGuild()
                 .retrieveMembersByIds(blacklistIds)
                 .onSuccess(list -> {
-                    String[] strings = fillAbsent(blacklist, list, ISnowflake::getId,
-                        IMentionable::getAsMention).toArray(String[]::new);
+                    String[] strings = fillAbsent(blacklist, list, ISnowflake::getId, IMentionable::getAsMention)
+                        .toArray(String[]::new);
+
+                    String title = getId().substring(0, 1).toUpperCase(Locale.ROOT) + getId().substring(1)
+                        + " blacklist";
+
                     reply.send(new EmbedBuilder()
                         .setColor(Colors.TRANSPARENT)
-                        .setTitle(getTitle() + " blacklist")
+                        .setTitle(title)
                         .setDescription(String.join("\n", strings))
                         .build());
                 });
@@ -201,11 +207,11 @@ public abstract class DirectMessageComponent extends Component implements Runnab
         if (add) {
             getServer().log(Colors.RED, command.getMember().getUser(),
                 "Added %s (`%s`) to blacklist of `%s`", user.getAsMention(), user.getId(),
-                getName());
+                getId());
         } else {
             getServer().log(Colors.GREEN, command.getMember().getUser(),
                 "Removed %s (`%s`) from blacklist of `%s`", user.getAsMention(), user.getId(),
-                getName());
+                getId());
         }
     }
 

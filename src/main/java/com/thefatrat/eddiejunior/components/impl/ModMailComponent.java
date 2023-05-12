@@ -1,4 +1,4 @@
-package com.thefatrat.eddiejunior.components;
+package com.thefatrat.eddiejunior.components.impl;
 
 import com.pascalnb.dbwrapper.StringMapper;
 import com.thefatrat.eddiejunior.entities.Command;
@@ -367,7 +367,7 @@ public class ModMailComponent extends DirectMessageComponent {
             privateThreads, ment);
     }
 
-    private synchronized MessageCreateData createTicket(User author, String subject, String message,
+    private synchronized @NotNull MessageCreateData createTicket(User author, String subject, String message,
         List<Message.Attachment> attachments) {
         if (!isRunning()) {
             throw new BotWarningException("The server does not accept tickets at the moment");
@@ -434,7 +434,7 @@ public class ModMailComponent extends DirectMessageComponent {
         EmbedBuilder userEmbed = new EmbedBuilder()
             .setColor(Colors.TRANSPARENT)
             .setDescription(String.format("%s `%s`", author.getAsMention(), author.getId()))
-            .setFooter(getName(), author.getEffectiveAvatarUrl())
+            .setFooter(getId(), author.getEffectiveAvatarUrl())
             .setTimestamp(Instant.now());
 
         EmbedBuilder messageEmbed = new EmbedBuilder()
@@ -476,7 +476,7 @@ public class ModMailComponent extends DirectMessageComponent {
     }
 
     @Override
-    protected void handleDirect(@NotNull Message message, MenuReply reply) {
+    protected void handleDirect(@NotNull Message message, @NotNull MenuReply reply) {
         String content = message.getContentRaw();
         synchronized (userCount) {
             synchronized (timeouts) {

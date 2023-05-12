@@ -43,12 +43,10 @@ public class DatabaseManager {
         for (String setting : settings) {
             actions.add(
                 DatabaseAction.of(GET_SETTINGS.withArgs(server, component, setting),
-                    table -> {
-                        if (table.isEmpty()) {
-                            return new Object[]{setting, new StringMapper(null)};
-                        }
-                        return new Object[]{setting, new StringMapper(table.get(0).get(0))};
-                    })
+                    table -> table.isEmpty()
+                        ? new Object[]{setting, new StringMapper(null)}
+                        : new Object[]{setting, new StringMapper(table.get(0).get(0))}
+                )
             );
         }
         return DatabaseAction.allOf(actions)
@@ -88,7 +86,7 @@ public class DatabaseManager {
     }
 
     @SuppressWarnings("unchecked")
-    public <T> T getSettingOrDefault(String setting, T defaultValue) {
+    public <T> T getSettingOrDefault(String setting, @NotNull T defaultValue) {
         return (T) DatabaseAction.of(GET_SETTINGS.withArgs(server, component, setting))
             .query(Mapper.toPrimitive(defaultValue.getClass()).orDefault(defaultValue))
             .complete();
@@ -103,14 +101,14 @@ public class DatabaseManager {
             .complete();
     }
 
-    public boolean isComponentEnabled() {
-        return DatabaseAction.of(GET_COMPONENT_ENABLED.withArgs(server, component))
+    public static boolean isComponentEnabled(String serverId, String componentId) {
+        return DatabaseAction.of(GET_COMPONENT_ENABLED.withArgs(serverId, componentId))
             .query(table -> !table.isEmpty() && "1".equals(table.get(0).get(0)))
             .complete();
     }
 
-    public CompletedAction<Void> toggleComponent(boolean enable) {
-        return DatabaseAction.of(TOGGLE_COMPONENT.withArgs(server, component, enable, enable)).execute();
+    public static CompletedAction<Void> toggleComponent(String serverId, String componentId, boolean enable) {
+        return DatabaseAction.of(TOGGLE_COMPONENT.withArgs(serverId, componentId, enable, enable)).execute();
     }
 
 }

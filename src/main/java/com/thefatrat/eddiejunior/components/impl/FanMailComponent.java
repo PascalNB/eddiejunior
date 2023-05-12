@@ -1,4 +1,4 @@
-package com.thefatrat.eddiejunior.components;
+package com.thefatrat.eddiejunior.components.impl;
 
 import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;

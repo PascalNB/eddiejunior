@@ -27,7 +27,7 @@ public class CommandEvent {
         return new CommandEvent(subcommand, null, args, channel, member);
     }
 
-    public String getCommand() {
+    public String getName() {
         return command;
     }
 

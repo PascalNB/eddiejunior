@@ -1,6 +1,6 @@
 package com.thefatrat.eddiejunior;
 
-import com.thefatrat.eddiejunior.components.*;
+import com.thefatrat.eddiejunior.components.impl.*;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;

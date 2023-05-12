@@ -1,5 +1,6 @@
-package com.thefatrat.eddiejunior.components;
+package com.thefatrat.eddiejunior.components.impl;
 
+import com.thefatrat.eddiejunior.components.AbstractComponent;
 import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.entities.Interaction;
 import com.thefatrat.eddiejunior.events.CommandEvent;
@@ -37,14 +38,14 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
-public class GrabComponent extends Component {
+public class GrabComponent extends AbstractComponent {
 
     public static final String NAME = "Grab";
 
     private static final Predicate<String> hexMatcher = Pattern.compile("^[\\da-f]{6}$").asMatchPredicate();
 
     public GrabComponent(Server server) {
-        super(server, NAME, false);
+        super(server, NAME);
 
         setComponentCommand();
 
@@ -432,6 +433,11 @@ public class GrabComponent extends Component {
             builder.append(Icon.ERROR).append(" ").append(formatPermissions(denied));
         }
         return builder.toString();
+    }
+
+    @Override
+    public String getStatus() {
+        return String.format("Enabled: " + isEnabled());
     }
 
 }

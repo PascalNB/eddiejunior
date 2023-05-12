@@ -1,5 +1,6 @@
-package com.thefatrat.eddiejunior.components;
+package com.thefatrat.eddiejunior.components.impl;
 
+import com.thefatrat.eddiejunior.components.AbstractComponent;
 import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotWarningException;
@@ -24,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
-public class SessionComponent extends Component {
+public class SessionComponent extends AbstractComponent {
 
     public static final String NAME = "Session";
 
@@ -37,7 +38,7 @@ public class SessionComponent extends Component {
     private final Map<String, Map<String, Message>> sessions = new HashMap<>();
 
     public SessionComponent(Server server) {
-        super(server, NAME, false);
+        super(server, NAME);
 
         {
             List<String> list = getDatabaseManager().getSettings("session");

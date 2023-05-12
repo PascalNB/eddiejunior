@@ -1,5 +1,6 @@
-package com.thefatrat.eddiejunior.components;
+package com.thefatrat.eddiejunior.components.impl;
 
+import com.thefatrat.eddiejunior.components.AbstractComponent;
 import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.entities.Interaction;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
@@ -17,10 +18,10 @@ import net.dv8tion.jda.api.interactions.components.text.TextInput;
 import net.dv8tion.jda.api.interactions.components.text.TextInputStyle;
 import net.dv8tion.jda.api.interactions.modals.Modal;
 
-public class MessageComponent extends Component {
+public class MessageComponent extends AbstractComponent {
 
     public MessageComponent(Server server) {
-        super(server, "Message", false);
+        super(server, "Message");
 
         setComponentCommand();
 
@@ -205,6 +206,11 @@ public class MessageComponent extends Component {
             reply.ok("");
         });
 
+    }
+
+    @Override
+    public String getStatus() {
+        return String.format("Enabled: " + isEnabled());
     }
 
 }

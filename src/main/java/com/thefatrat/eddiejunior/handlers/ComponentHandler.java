@@ -1,6 +1,6 @@
 package com.thefatrat.eddiejunior.handlers;
 
-import com.thefatrat.eddiejunior.components.Component;
+import com.thefatrat.eddiejunior.components.AbstractComponent;
 import com.thefatrat.eddiejunior.reply.MenuReply;
 import net.dv8tion.jda.api.entities.Message;
 
@@ -26,14 +26,14 @@ public class ComponentHandler {
         handler.handle(component, message, reply);
     }
 
-    public void addListener(Component component, String alt, BiConsumer<Message, MenuReply> listener) {
-        handler.addListener(component.getName(), listener);
-        names.put(component.getName(), alt);
+    public void addListener(AbstractComponent component, String alt, BiConsumer<Message, MenuReply> listener) {
+        handler.addListener(component.getId(), listener);
+        names.put(component.getId(), alt);
     }
 
-    public void removeListener(Component component) {
-        handler.removeListener(component.getName());
-        names.remove(component.getName());
+    public void removeListener(AbstractComponent component) {
+        handler.removeListener(component.getId());
+        names.remove(component.getId());
     }
 
 }

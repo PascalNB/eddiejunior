@@ -1,9 +1,10 @@
 package com.thefatrat.eddiejunior.sources;
 
 import com.thefatrat.eddiejunior.Bot;
-import com.thefatrat.eddiejunior.CommandRegister;
+import com.thefatrat.eddiejunior.DatabaseManager;
 import com.thefatrat.eddiejunior.HandlerCollection;
 import com.thefatrat.eddiejunior.components.Component;
+import com.thefatrat.eddiejunior.components.GlobalComponent;
 import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.entities.Interaction;
 import com.thefatrat.eddiejunior.events.*;
@@ -17,12 +18,8 @@ import com.thefatrat.eddiejunior.util.Colors;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
-import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
-import net.dv8tion.jda.api.interactions.commands.build.CommandData;
-import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.components.selections.SelectOption;
 import net.dv8tion.jda.api.requests.RestAction;
-import net.dv8tion.jda.internal.requests.CompletedRestAction;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -38,6 +35,7 @@ public class Server {
     private final HandlerCollection<Member> handlerCollection = new HandlerCollection<>();
     private final ComponentHandler directHandler = new ComponentHandler();
     private final Map<String, Component> components = new HashMap<>();
+    private final Map<String, MapHandler<CommandEvent, InteractionReply>> subCommandHandler = new HashMap<>();
     private TextChannel log = null;
 
     @NotNull
@@ -60,58 +58,16 @@ public class Server {
 
     public List<Component> getComponents() {
         List<Component> list = new ArrayList<>(components.values());
-        list.sort((c1, c2) -> String.CASE_INSENSITIVE_ORDER.compare(c1.getName(), c2.getName()));
+        list.sort((c1, c2) -> String.CASE_INSENSITIVE_ORDER.compare(c1.getId(), c2.getId()));
         return list;
     }
 
     @CheckReturnValue
     public RestAction<?> toggleComponent(Component component, boolean enable) {
-        CommandRegister register = Bot.getInstance().getCommandRegister();
         if (enable) {
-
-            List<CommandData> commandData = new ArrayList<>();
-
-            for (Command command : component.getCommands()) {
-                commandData.add(Commands.slash(command.getName(), command.getDescription())
-                    .setDefaultPermissions(DefaultMemberPermissions.enabledFor(command.getPermissions()))
-                    .addOptions(command.getOptions())
-                    .addSubcommands(command.getSubcommandsData()));
-            }
-
-            for (Interaction<Message> interaction : component.getMessageInteractions()) {
-                commandData.add(Commands.message(interaction.getName())
-                    .setDefaultPermissions(DefaultMemberPermissions.enabledFor(interaction.getPermissions()))
-                    .setGuildOnly(true));
-            }
-
-            for (Interaction<Member> interaction : component.getMemberInteractions()) {
-                commandData.add(Commands.user(interaction.getName())
-                    .setDefaultPermissions(DefaultMemberPermissions.enabledFor(interaction.getPermissions()))
-                    .setGuildOnly(true));
-            }
-
-            return register.registerServerCommands(id, commandData);
-
+            return Bot.getInstance().registerGuildCommands(id, component);
         } else {
-            List<RestAction<Void>> actions = new ArrayList<>();
-
-            for (Command command : component.getCommands()) {
-                actions.add(register.removeServerCommand(id, command.getName()));
-            }
-
-            for (Interaction<Message> interaction : component.getMessageInteractions()) {
-                actions.add(register.removeServerCommand(id, interaction.getName()));
-            }
-
-            for (Interaction<Member> interaction : component.getMemberInteractions()) {
-                actions.add(register.removeServerCommand(id, interaction.getName()));
-            }
-
-            if (actions.isEmpty()) {
-                return new CompletedRestAction<>(getGuild().getJDA(), (Object) null);
-            }
-
-            return RestAction.allOf(actions);
+            return Bot.getInstance().deregisterGuildCommands(id, component);
         }
     }
 
@@ -127,19 +83,44 @@ public class Server {
 
     @NotNull
     @SafeVarargs
-    public final Collection<Component> registerComponents(@NotNull Class<? extends Component>... components) {
+    public final Collection<Component> registerComponents(Class<? extends Component> @NotNull ... components) {
         try {
             for (Class<? extends Component> component : components) {
                 Component instance = component.getDeclaredConstructor(Server.class).newInstance(this);
-                instance.register();
 
-                this.components.put(instance.getName(), instance);
+                for (Command command : instance.getCommands()) {
+                    if (command.hasSubCommands()) {
+                        command.setAction((c, reply) -> {
+                            CommandEvent event = c.toSub();
+                            subCommandHandler.get(command.getName()).handle(event.getName(), event, reply);
+                        });
 
-                if (instance.isGlobalComponent()) {
+                        MapHandler<CommandEvent, InteractionReply> mapHandler = new MapHandler<>();
+                        subCommandHandler.put(command.getName(), mapHandler);
+                        for (Command sub : command.getSubcommands()) {
+                            mapHandler.addListener(sub.getName(), sub.getAction());
+                        }
+                    }
+
+                    getCommandHandler().addListener(command.getName(), command.getAction());
+                }
+
+                for (Interaction<Message> interaction : instance.getMessageInteractions()) {
+                    getMessageInteractionHandler().addListener(interaction.getName(), interaction.getAction());
+                }
+
+                for (Interaction<Member> interaction : instance.getMemberInteractions()) {
+                    getMemberInteractionHandler().addListener(interaction.getName(), interaction.getAction());
+                }
+
+                this.components.put(instance.getId(), instance);
+
+                if (instance instanceof GlobalComponent) {
+                    instance.enable();
                     continue;
                 }
 
-                if (instance.getDatabaseManager().isComponentEnabled()) {
+                if (DatabaseManager.isComponentEnabled(id, instance.getId())) {
                     instance.enable();
                     toggleComponent(instance, true).queue();
                 }
