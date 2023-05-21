@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -52,7 +53,7 @@ public class ModMailComponent extends DirectMessageComponent {
 
     private final Map<String, Long> timeouts = new ConcurrentHashMap<>();
     private final Map<String, Integer> userCount = new ConcurrentHashMap<>();
-    private int tickets = 0;
+    private final AtomicInteger tickets = new AtomicInteger(0);
     private long timeout;
     private long threadId;
     private int maxTickets;
@@ -95,7 +96,7 @@ public class ModMailComponent extends DirectMessageComponent {
             if (getDestination() != null) {
                 getDestination().getThreadChannels().forEach(threadChannel -> {
                     if (!threadChannel.isArchived() && threadChannel.getName().matches("^t\\d+-.+$")) {
-                        tickets++;
+                        tickets.incrementAndGet();
                     }
                 });
             }
@@ -207,12 +208,14 @@ public class ModMailComponent extends DirectMessageComponent {
                     if (getDestination() == null) {
                         throw new BotErrorException("Destination channel has not been set");
                     }
-                    tickets = 0;
+                    tickets.set(0);
+                    int tmp = 0;
                     for (ThreadChannel threadChannel : getDestination().getThreadChannels()) {
                         if (!threadChannel.isArchived() && threadChannel.getName().matches("^t\\d+-.+$")) {
-                            tickets++;
+                            tmp++;
                         }
                     }
+                    tickets.set(tmp);
                     reply.ok("Recheck completed, found **%d** open tickets", tickets);
                 }),
 
@@ -246,7 +249,14 @@ public class ModMailComponent extends DirectMessageComponent {
                 return;
             }
 
-            --tickets;
+            if (!event.isArchived()) {
+                tickets.incrementAndGet();
+                return;
+            }
+
+            if (tickets.get() > 0) {
+                tickets.decrementAndGet();
+            }
 
             synchronized (userCount) {
                 synchronized (timeouts) {
@@ -363,7 +373,7 @@ public class ModMailComponent extends DirectMessageComponent {
                 Private tickets: %b
                 Mention: %s
                 """,
-            isEnabled(), isRunning(), dest, timeout, tickets, maxTickets, maxTicketsPerUser,
+            isEnabled(), isRunning(), dest, timeout, tickets.get(), maxTickets, maxTicketsPerUser,
             privateThreads, ment);
     }
 
@@ -385,7 +395,7 @@ public class ModMailComponent extends DirectMessageComponent {
             throw new BotWarningException("Message was detected as an invalid message");
         }
 
-        if (maxTickets != 0 && tickets == maxTickets) {
+        if (maxTickets != 0 && tickets.get() == maxTickets) {
             throw new BotWarningException("The server does not accept tickets at this moment");
         }
 
@@ -460,7 +470,7 @@ public class ModMailComponent extends DirectMessageComponent {
             thread.sendMessage(builder.build()).queue()
         );
 
-        ++tickets;
+        tickets.incrementAndGet();
 
         getServer().log(Colors.GRAY, author, "Created modmail ticked %s (`%s`)%n%s", thread.getAsMention(),
             thread.getName(), thread.getJumpUrl());

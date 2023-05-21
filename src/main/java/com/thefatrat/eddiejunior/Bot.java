@@ -339,12 +339,10 @@ public class Bot extends ListenerAdapter {
             && !event.isFromType(ChannelType.GUILD_PUBLIC_THREAD))) {
             return;
         }
+
         boolean archived = Boolean.TRUE.equals(event.getNewValue()) && !Boolean.TRUE.equals(event.getOldValue());
-        if (!archived) {
-            return;
-        }
         Guild guild = Objects.requireNonNull(event.getGuild());
-        ArchiveEvent archiveEvent = new ArchiveEvent(event.getChannel().asThreadChannel());
+        ArchiveEvent archiveEvent = new ArchiveEvent(event.getChannel().asThreadChannel(), archived);
 
         servers.get(guild.getId()).getArchiveHandler().handle(archiveEvent, null);
     }
