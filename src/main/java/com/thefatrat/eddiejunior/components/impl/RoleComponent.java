@@ -72,7 +72,7 @@ public class RoleComponent extends AbstractComponent {
                 getGuild().addRoleToMember(member, role).queue(success -> {
                     reply.ok("You received role " + role.getAsMention());
                     getServer().log("Gave role %s (`%s`) to %s (`%s`) (`%s`)", role.getAsMention(), role.getId(),
-                        member.getAsMention(), member.getUser().getAsTag(), member.getId());
+                        member.getAsMention(), member.getUser().getEffectiveName(), member.getId());
                 });
             } else {
                 if (member.getRoles().stream().map(Role::getId).noneMatch(role.getId()::equals)) {
@@ -81,7 +81,7 @@ public class RoleComponent extends AbstractComponent {
                 getGuild().removeRoleFromMember(member, role).queue(success -> {
                     reply.ok("Role " + role.getAsMention() + " has been removed");
                     getServer().log("Removed role %s (`%s`) from %s (`%s`) (`%s`)", role.getAsMention(), role.getId(),
-                        member.getAsMention(), member.getUser().getAsTag(), member.getId());
+                        member.getAsMention(), member.getUser().getEffectiveName(), member.getId());
                 });
             }
         });

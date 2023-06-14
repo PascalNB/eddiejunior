@@ -69,6 +69,21 @@ public class FeedbackComponent extends DirectMessageComponent {
                     reply.ok("Set win channel to %s", channel.getAsMention());
                 }),
 
+            new Command("removesubmission", "remove a user's submission")
+                .addOptions(new OptionData(OptionType.USER, "user", "user", true))
+                .setAction((command, reply) -> {
+                    User user = command.get("user").getAsUser();
+                    String id = user.getId();
+
+                    boolean removed = submissions.removeIf(s -> s.user.getId().equals(id));
+
+                    if (removed) {
+                        reply.ok("Removed submission by %s", user.getAsMention());
+                    } else {
+                        throw new BotWarningException("No submission was removed");
+                    }
+                }),
+
             new Command("reset", "allow submissions for users again")
                 .addOptions(new OptionData(OptionType.USER, "user", "user", false))
                 .setAction((command, reply) -> {
@@ -401,7 +416,7 @@ public class FeedbackComponent extends DirectMessageComponent {
         EmbedBuilder embed = new EmbedBuilder()
             .setColor(Colors.TRANSPARENT)
             .setTimestamp(Instant.now())
-            .setAuthor(author.getAsTag(), null, author.getEffectiveAvatarUrl())
+            .setAuthor(author.getEffectiveName(), null, author.getEffectiveAvatarUrl())
             .addField("User", String.format("%s `(%s)`", author.getAsMention(), author.getId()), true)
             .addField("Submission", String.format("<%s>", url), true)
             .setFooter(getId());
@@ -483,6 +498,7 @@ public class FeedbackComponent extends DirectMessageComponent {
             TextChannel buttonChannel = getGuild().getTextChannelById(buttonChannelId);
             if (buttonChannel != null && buttonChannel.canTalk()) {
                 buttonChannel.sendMessage(new MessageCreateBuilder()
+                        .setContent("Use the button below to submit a song.")
                         .addActionRow(Button.success("feedback-submit", "Submit song")
                             .withEmoji(Emoji.fromUnicode("🎵")))
                         .build())

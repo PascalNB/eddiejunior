@@ -185,7 +185,7 @@ public class FanMailComponent extends DirectMessageComponent {
         timeouts.put(message.getAuthor().getId(), System.currentTimeMillis());
 
         EmbedBuilder embedBuilder = new EmbedBuilder()
-            .setAuthor(message.getAuthor().getAsTag(), null, message.getAuthor().getEffectiveAvatarUrl())
+            .setAuthor(message.getAuthor().getEffectiveName(), null, message.getAuthor().getEffectiveAvatarUrl())
             .setColor(Colors.TRANSPARENT)
             .setImage(attachment.getProxyUrl())
             .setFooter(message.getAuthor().getId());

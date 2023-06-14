@@ -73,7 +73,7 @@ public class GrabComponent extends AbstractComponent {
                     reply.hide();
                     reply.send(new EmbedBuilder()
                         .setColor(Colors.TRANSPARENT)
-                        .setAuthor(user.getAsTag(), null)
+                        .setAuthor(user.getEffectiveName(), null)
                         .setImage(url)
                         .build());
                 }),
@@ -94,7 +94,7 @@ public class GrabComponent extends AbstractComponent {
                     reply.hide();
                     reply.send(new EmbedBuilder()
                         .setColor(Colors.TRANSPARENT)
-                        .setAuthor(user.getAsTag(), null)
+                        .setAuthor(user.getEffectiveName(), null)
                         .setImage(url)
                         .build());
                 }),
@@ -137,7 +137,7 @@ public class GrabComponent extends AbstractComponent {
 
                     EmbedBuilder embed = new EmbedBuilder()
                         .setThumbnail(user.getEffectiveAvatarUrl())
-                        .setTitle(user.getAsTag())
+                        .setTitle(user.getEffectiveName())
                         .setDescription(user.getAsMention());
 
                     EnumSet<User.UserFlag> flags = user.getFlags();
@@ -245,7 +245,7 @@ public class GrabComponent extends AbstractComponent {
                     EmbedBuilder embed = new EmbedBuilder()
                         .setColor(member.getColorRaw())
                         .addField("Permissions", String.join(", ", list.toArray(new String[0])), false)
-                        .setAuthor(user.getAsTag(), null, member.getEffectiveAvatarUrl())
+                        .setAuthor(user.getEffectiveName(), null, member.getEffectiveAvatarUrl())
                         .setFooter(user.getId());
 
                     reply.hide();
@@ -265,11 +265,13 @@ public class GrabComponent extends AbstractComponent {
                     String url = emoji.getImageUrl();
 
                     reply.hide();
-                    reply.send(new EmbedBuilder()
-                        .setColor(Colors.TRANSPARENT)
-                        .setTitle(emoji.getName())
-                        .setImage(url)
-                        .setFooter(emoji.getId())
+                    reply.send(new MessageCreateBuilder()
+                        .addEmbeds(new EmbedBuilder()
+                            .setColor(Colors.TRANSPARENT)
+                            .setTitle(emoji.getName())
+                            .setFooter(emoji.getId())
+                            .build())
+                        .addContent(url)
                         .build());
                 }),
 
@@ -383,11 +385,13 @@ public class GrabComponent extends AbstractComponent {
                 StickerItem sticker = stickers.get(0);
 
                 reply.hide();
-                reply.send(new EmbedBuilder()
-                    .setColor(Colors.TRANSPARENT)
-                    .setTitle(sticker.getName())
-                    .setImage(sticker.getIcon().getUrl(512))
-                    .setFooter(sticker.getId())
+                reply.send(new MessageCreateBuilder()
+                    .addEmbeds(new EmbedBuilder()
+                        .setColor(Colors.TRANSPARENT)
+                        .setTitle(sticker.getName())
+                        .setFooter(sticker.getId())
+                        .build())
+                    .addContent(sticker.getIcon().getUrl(512))
                     .build());
             })
         );

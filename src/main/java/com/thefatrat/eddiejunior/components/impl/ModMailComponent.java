@@ -325,7 +325,7 @@ public class ModMailComponent extends DirectMessageComponent {
                     .setRequired(true)
                     .setPlaceholder("Subject of this ticket")
                     .setRequiredRange(6, 90)
-                    .setValue(event.getActor().getUser().getAsTag())
+                    .setValue(event.getActor().getEffectiveName())
                     .build();
 
                 TextInput message = TextInput.create("message", "Message", TextInputStyle.PARAGRAPH)
@@ -490,7 +490,7 @@ public class ModMailComponent extends DirectMessageComponent {
         String content = message.getContentRaw();
         synchronized (userCount) {
             synchronized (timeouts) {
-                reply.edit(createTicket(message.getAuthor(), message.getAuthor().getAsTag(), content,
+                reply.edit(createTicket(message.getAuthor(), message.getAuthor().getEffectiveName(), content,
                     message.getAttachments()));
             }
         }
