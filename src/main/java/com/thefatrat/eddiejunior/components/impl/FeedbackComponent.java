@@ -70,23 +70,41 @@ public class FeedbackComponent extends DirectMessageComponent {
                 }),
 
             new Command("removesubmission", "remove a user's submission")
-                .addOptions(new OptionData(OptionType.USER, "user", "user", true))
+                .addOptions(
+                    new OptionData(OptionType.USER, "user", "user", true),
+                    new OptionData(OptionType.BOOLEAN, "reset", "let user submit again", true)
+                )
                 .setAction((command, reply) -> {
+                    if (!isRunning()) {
+                        throw new BotWarningException("There is no ongoing feedback session at the moment");
+                    }
+
                     User user = command.get("user").getAsUser();
                     String id = user.getId();
+                    boolean reset = command.get("reset").getAsBoolean();
 
                     boolean removed = submissions.removeIf(s -> s.user.getId().equals(id));
 
                     if (removed) {
-                        reply.ok("Removed submission by %s", user.getAsMention());
-                    } else {
-                        throw new BotWarningException("No submission was removed");
+                        if (reset) {
+                            users.remove(id);
+                            reply.ok("Removed submission by %s, they can submit again", user.getAsMention());
+                        } else {
+                            reply.ok("Removed submission by %s", user.getAsMention());
+                        }
+                        return;
                     }
+
+                    throw new BotWarningException("No submission was removed");
                 }),
 
             new Command("reset", "allow submissions for users again")
                 .addOptions(new OptionData(OptionType.USER, "user", "user", false))
                 .setAction((command, reply) -> {
+                    if (!isRunning()) {
+                        throw new BotWarningException("There is no ongoing feedback session at the moment");
+                    }
+
                     if (!command.hasOption("user")) {
                         users.clear();
                         reply.send(Icon.RESET, "Feedback session reset, users can submit again");
