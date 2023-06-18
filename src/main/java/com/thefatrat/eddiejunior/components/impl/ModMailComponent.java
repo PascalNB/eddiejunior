@@ -305,18 +305,8 @@ public class ModMailComponent extends DirectMessageComponent {
                     "Current thread archived");
                 getServer().log(event.getActor().getUser(), "Archived thread %s (`%s`)%n%s", thread.getAsMention(),
                     thread.getName(), thread.getJumpUrl());
-            }
-        });
-        getServer().getButtonHandler().addListener((event, reply) -> {
-            String buttonId = event.getButtonId();
-            if (!buttonId.startsWith("modmail-")) {
-                return;
-            }
 
-            String[] split = buttonId.split("-");
-            String action = split[1];
-
-            if ("modal".equals(action)) {
+            } else if ("modal".equals(action)) {
                 if (!isRunning()) {
                     throw new BotWarningException("The server does not accept tickets at the moment");
                 }
@@ -324,8 +314,7 @@ public class ModMailComponent extends DirectMessageComponent {
                 TextInput subject = TextInput.create("subject", "Subject", TextInputStyle.SHORT)
                     .setRequired(true)
                     .setPlaceholder("Subject of this ticket")
-                    .setRequiredRange(6, 90)
-                    .setValue(event.getActor().getEffectiveName())
+                    .setRequiredRange(10, 90)
                     .build();
 
                 TextInput message = TextInput.create("message", "Message", TextInputStyle.PARAGRAPH)
@@ -342,6 +331,7 @@ public class ModMailComponent extends DirectMessageComponent {
                 reply.sendModal(modal);
             }
         });
+
         getServer().getModalHandler().addListener("modmail", (event, reply) -> {
             String subject = event.getValues().get("subject").getAsString();
             String message = event.getValues().get("message").getAsString();
@@ -490,7 +480,7 @@ public class ModMailComponent extends DirectMessageComponent {
         String content = message.getContentRaw();
         synchronized (userCount) {
             synchronized (timeouts) {
-                reply.edit(createTicket(message.getAuthor(), message.getAuthor().getEffectiveName(), content,
+                reply.edit(createTicket(message.getAuthor(), message.getAuthor().getName(), content,
                     message.getAttachments()));
             }
         }
