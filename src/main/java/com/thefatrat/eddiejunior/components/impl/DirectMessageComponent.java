@@ -77,6 +77,12 @@ public abstract class DirectMessageComponent extends AbstractComponent implement
         );
     }
 
+    /**
+     * Starts the component.
+     *
+     * @param command command
+     * @param reply   reply
+     */
     private void startCommand(@NotNull CommandEvent command, InteractionReply reply) {
         OptionMapping option = command.get("channel");
         TextChannel parsedDestination = option == null ? null : option.getAsChannel().asTextChannel();
@@ -116,12 +122,24 @@ public abstract class DirectMessageComponent extends AbstractComponent implement
             "Component `%s` started running", getId());
     }
 
+    /**
+     * Stops the component.
+     *
+     * @param command command
+     * @param reply   reply
+     */
     private void stopCommand(@NotNull CommandEvent command, InteractionReply reply) {
         this.stop(reply);
         getServer().log(Colors.RED, command.getMember().getUser(),
             "Component `%s` stopped running", getId());
     }
 
+    /**
+     * Sets the destination channel.
+     *
+     * @param command command
+     * @param reply   reply
+     */
     private void setDestination(@NotNull CommandEvent command, InteractionReply reply) {
         TextChannel newDestination;
         if (command.hasOption("channel")) {
@@ -144,6 +162,12 @@ public abstract class DirectMessageComponent extends AbstractComponent implement
             newDestination.getAsMention(), newDestination.getId());
     }
 
+    /**
+     * Manages the blacklist.
+     *
+     * @param command command
+     * @param reply   reply
+     */
     private void blacklistCommand(@NotNull CommandEvent command, InteractionReply reply) {
         String action = command.get("action").getAsString();
         if (!command.hasOption("user")
@@ -194,16 +218,9 @@ public abstract class DirectMessageComponent extends AbstractComponent implement
         }
 
         boolean add = "add".equals(action);
-        String msg;
-
-        if (add) {
-            msg = "added to";
-        } else {
-            msg = "removed from";
-        }
 
         User user = command.get("user").getAsUser();
-        blacklist(user, add, msg, reply);
+        blacklist(user, add, reply);
         if (add) {
             getServer().log(Colors.RED, command.getMember().getUser(),
                 "Added %s (`%s`) to blacklist of `%s`", user.getAsMention(), user.getId(),
@@ -215,17 +232,14 @@ public abstract class DirectMessageComponent extends AbstractComponent implement
         }
     }
 
-    private void receive(Message message, MenuReply reply) {
-        if (getDestination() == null) {
-            throw new BotErrorException("Something went wrong");
-        }
-        if (getBlacklist().contains(message.getAuthor().getId())) {
-            throw new BotWarningException("You are not allowed to send messages at the moment");
-        }
-        handleDirect(message, reply);
-    }
-
-    private void blacklist(@NotNull User user, boolean add, String msg, Reply reply) {
+    /**
+     * Adds or removes user from the blacklist
+     *
+     * @param user  the user
+     * @param add   whether to add, otherwise removes
+     * @param reply reply
+     */
+    private void blacklist(@NotNull User user, boolean add, Reply reply) {
         String userId = user.getId();
 
         if (add) {
@@ -235,6 +249,7 @@ public abstract class DirectMessageComponent extends AbstractComponent implement
 
             blacklist.add(userId);
             getDatabaseManager().addSetting("blacklist", userId);
+            reply.ok("%s added to the blacklist", user.getAsMention());
         } else {
             if (!blacklist.contains(userId)) {
                 throw new BotWarningException("%s is not on the blacklist", user.getAsMention());
@@ -242,9 +257,19 @@ public abstract class DirectMessageComponent extends AbstractComponent implement
 
             blacklist.remove(userId);
             getDatabaseManager().removeSetting("blacklist", userId);
+            reply.ok("%s removed from the blacklist", user.getAsMention());
         }
 
-        reply.ok("%s %s the blacklist", user.getAsMention(), msg);
+    }
+
+    private void receive(Message message, MenuReply reply) {
+        if (getDestination() == null) {
+            throw new BotErrorException("Message could not be delivered, contact the mods");
+        }
+        if (getBlacklist().contains(message.getAuthor().getId())) {
+            throw new BotWarningException("You are not allowed to send messages at the moment");
+        }
+        handleDirect(message, reply);
     }
 
     @NotNull

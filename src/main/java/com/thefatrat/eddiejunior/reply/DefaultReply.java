@@ -18,7 +18,7 @@ public class DefaultReply implements Reply, EphemeralReply {
     }
 
     @Override
-    public void send(MessageCreateData data, Consumer<Message> callback) {
+    public synchronized void send(MessageCreateData data, Consumer<Message> callback) {
         if (event.isAcknowledged()) {
             if (action == null) {
                 event.getMessageChannel().sendMessage(data).queue(callback);
@@ -32,12 +32,12 @@ public class DefaultReply implements Reply, EphemeralReply {
     }
 
     @Override
-    public void defer() {
+    public synchronized void defer() {
         action = event.deferReply(ephemeral).complete();
     }
 
     @Override
-    public void hide() {
+    public synchronized void hide() {
         this.ephemeral = true;
     }
 

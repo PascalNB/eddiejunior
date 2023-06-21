@@ -3,8 +3,14 @@ package com.thefatrat.eddiejunior.components.impl;
 import com.thefatrat.eddiejunior.Bot;
 import com.thefatrat.eddiejunior.components.AbstractComponent;
 import com.thefatrat.eddiejunior.entities.Command;
+import com.thefatrat.eddiejunior.events.CommandEvent;
+import com.thefatrat.eddiejunior.events.ModalEvent;
+import com.thefatrat.eddiejunior.events.SelectEvent;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotWarningException;
+import com.thefatrat.eddiejunior.reply.DefaultReply;
+import com.thefatrat.eddiejunior.reply.InteractionReply;
+import com.thefatrat.eddiejunior.reply.MenuReply;
 import com.thefatrat.eddiejunior.sources.Server;
 import com.thefatrat.eddiejunior.util.Colors;
 import com.thefatrat.eddiejunior.util.EmojiUtil;
@@ -82,174 +88,25 @@ public class FaqComponent extends AbstractComponent {
                     new OptionData(OptionType.CHANNEL, "channel", "channel", true)
                         .setChannelTypes(ChannelType.TEXT)
                 )
-                .setAction((command, reply) -> {
-                    TextChannel channel = command.get("channel").getAsChannel().asTextChannel();
-                    PermissionChecker.requireSend(channel);
-
-                    storageMessage = channel.sendMessageEmbeds(
-                        new EmbedBuilder().setDescription("tmp").build()
-                    ).complete();
-                    reply.ok("Storage message sent\n%s", storageMessage.getJumpUrl());
-                    updateStorage(storageMessage).queue();
-                    getDatabaseManager().setSetting("storagemessage",
-                        channel.getId() + "_" + storageMessage.getId());
-                    getServer().log(command.getMember().getUser(), "Created a new storage message in %s (`%s`)\n%s",
-                        channel.getAsMention(), channel.getId(), storageMessage.getJumpUrl());
-                }),
+                .setAction(this::setStorageMessage),
 
             new Command("add", "add a new question and answer")
-                .setAction((command, reply) ->
-                    reply.sendModal(Modal.create("faq_add", "Add question")
-                        .addActionRow(TextInput.create("question", "Question", TextInputStyle.SHORT)
-                            .setRequiredRange(10, 100)
-                            .build()
-                        )
-                        .addActionRow(TextInput.create("description", "Description", TextInputStyle.SHORT)
-                            .setRequiredRange(0, 100)
-                            .setRequired(false)
-                            .build()
-                        )
-                        .addActionRow(TextInput.create("answer", "Answer", TextInputStyle.PARAGRAPH)
-                            .setRequiredRange(1, 300)
-                            .build()
-                        )
-                        .addActionRow(TextInput.create("emoji", "Emoji", TextInputStyle.SHORT)
-                            .setRequired(false)
-                            .build()
-                        )
-                        .build())
-                ),
+                .setAction(this::addQuestion),
 
             new Command("remove", "remove a question from the faq list")
-                .setAction((command, reply) -> {
-                    if (faqList.isEmpty()) {
-                        throw new BotWarningException("The list of questions is empty");
-                    }
-
-                    reply.hide();
-                    reply.send(new MessageCreateBuilder()
-                        .addEmbeds(new EmbedBuilder()
-                            .setColor(Colors.TRANSPARENT)
-                            .setDescription("Select a question that should be removed")
-                            .build())
-                        .addActionRow(StringSelectMenu.create("faq_remove")
-                            .addOptions(getOptions(faqList))
-                            .build())
-                        .build());
-                }),
+                .setAction(this::removeQuestion),
 
             new Command("edit", "edit the answer of a question")
-                .setAction((command, reply) -> {
-                    if (faqList.isEmpty()) {
-                        throw new BotWarningException("The list of questions is empty");
-                    }
-
-                    reply.hide();
-                    reply.send(new MessageCreateBuilder()
-                        .addEmbeds(new EmbedBuilder()
-                            .setColor(Colors.TRANSPARENT)
-                            .setDescription("Select the question that needs to be edited")
-                            .build())
-                        .addActionRow(StringSelectMenu.create("faq_edit")
-                            .addOptions(getOptions(faqList))
-                            .build())
-                        .build());
-                }),
+                .setAction((c, r) -> this.editQuestion(r)),
 
             new Command("message", "send the faq message")
                 .addOptions(new OptionData(OptionType.STRING, "text", "text", false).setMinLength(1))
-                .setAction((command, reply) -> {
-                    if (faqList.isEmpty()) {
-                        throw new BotWarningException("The list of questions is empty");
-                    }
-
-                    String text = Optional.ofNullable(command.get("text"))
-                        .map(OptionMapping::getAsString)
-                        .orElse("Select a question");
-
-                    if (text.isBlank()) {
-                        throw new BotWarningException("Text cannot be empty");
-                    }
-
-                    command.getChannel().sendMessage(
-                            new MessageCreateBuilder()
-                                .addEmbeds(new EmbedBuilder()
-                                    .setColor(Colors.TRANSPARENT)
-                                    .setTitle("Frequently Asked Questions")
-                                    .setDescription(text)
-                                    .build())
-                                .addActionRow(StringSelectMenu.create("faq_query")
-                                    .addOptions(getOptions(faqList))
-                                    .setPlaceholder("Select a question")
-                                    .setMaxValues(1)
-                                    .build())
-                                .build())
-                        .queue(m -> {
-                            faqMessage = m;
-                            getDatabaseManager().setSetting("faqmessage", m.getChannel().getId() + "_" + m.getId());
-                        });
-
-                    reply.hide();
-                    reply.ok("Faq message sent");
-                })
+                .setAction(this::sendFaqMesasge)
         );
 
-        getServer().getModalHandler().addListener("faq_add", (event, reply) -> {
-            if (faqList.size() == 25) {
-                throw new BotWarningException("There can be 25 questions added at most");
-            }
+        getServer().getModalHandler().addListener("faq_add", this::handleAddModal);
 
-            Map<String, ModalMapping> map = event.getValues();
-            String question = map.get("question").getAsString();
-            String answer = map.get("answer").getAsString();
-            String emoji = map.get("emoji").getAsString();
-            String desc = map.get("description").getAsString();
-            String key = question.toLowerCase();
-
-            if (question.isBlank() || answer.isBlank()) {
-                throw new BotWarningException("Blank fields are not allowed");
-            }
-
-            if (faqMap.containsKey(key)) {
-                throw new BotWarningException("That question has already been added");
-            }
-
-            if (emoji.isEmpty()) {
-                emoji = null;
-            } else if (!EmojiUtil.isEmoji(emoji)) {
-                throw new BotErrorException("%s is not a valid emoji", emoji);
-            }
-
-            if (desc.isBlank()) {
-                desc = null;
-            }
-
-            faqList.add(question);
-            faqMap.put(key, new String[]{answer, emoji, desc});
-
-            reply.hide();
-            reply.ok("Added question and answer for `%s`", question);
-            getServer().log(event.getMember().getUser(), "Added question and answer for `%s`", question);
-            updateMessage(faqMessage).queue();
-            updateStorage(storageMessage).queue();
-        });
-
-        getServer().getStringSelectHandler().addListener("faq_remove", (event, reply) -> {
-            int index = Integer.parseInt(event.getOption().getValue());
-            String question = event.getOption().getLabel();
-
-            if (index >= faqList.size() || !faqList.get(index).equals(question)) {
-                throw new BotErrorException("Something went wrong, try again");
-            }
-
-            faqList.remove(index);
-            faqMap.remove(question.toLowerCase());
-
-            reply.edit(Icon.STOP, "Removed question `%s`", question);
-            getServer().log(event.getUser(), "Removed question `%s`", question);
-            updateMessage(faqMessage).queue();
-            updateStorage(storageMessage).queue();
-        });
+        getServer().getStringSelectHandler().addListener("faq_remove", this::handleRemoveSelectMenu);
 
         getServer().getStringSelectHandler().addListener("faq_edit", (event, reply) -> {
             int index = Integer.parseInt(event.getOption().getValue());
@@ -389,6 +246,175 @@ public class FaqComponent extends AbstractComponent {
                 .setDescription(answer)
                 .build());
         });
+    }
+
+    /**
+     * Creates a new storage message in the given channel.
+     *
+     * @param command command
+     * @param reply   reply
+     */
+    private void setStorageMessage(CommandEvent command, InteractionReply reply) {
+        TextChannel channel = command.get("channel").getAsChannel().asTextChannel();
+        PermissionChecker.requireSend(channel);
+
+        storageMessage = channel.sendMessageEmbeds(
+            new EmbedBuilder().setDescription("tmp").build()
+        ).complete();
+        reply.ok("Storage message sent\n%s", storageMessage.getJumpUrl());
+        updateStorage(storageMessage).queue();
+        getDatabaseManager().setSetting("storagemessage",
+            channel.getId() + "_" + storageMessage.getId());
+        getServer().log(command.getMember().getUser(), "Created a new storage message in %s (`%s`)\n%s",
+            channel.getAsMention(), channel.getId(), storageMessage.getJumpUrl());
+    }
+
+    private void addQuestion(CommandEvent command, InteractionReply reply) {
+        reply.sendModal(Modal.create("faq_add", "Add question")
+            .addActionRow(TextInput.create("question", "Question", TextInputStyle.SHORT)
+                .setRequiredRange(10, 100)
+                .build()
+            )
+            .addActionRow(TextInput.create("description", "Description", TextInputStyle.SHORT)
+                .setRequiredRange(0, 100)
+                .setRequired(false)
+                .build()
+            )
+            .addActionRow(TextInput.create("answer", "Answer", TextInputStyle.PARAGRAPH)
+                .setRequiredRange(1, 300)
+                .build()
+            )
+            .addActionRow(TextInput.create("emoji", "Emoji", TextInputStyle.SHORT)
+                .setRequired(false)
+                .build()
+            )
+            .build());
+    }
+
+    private void removeQuestion(CommandEvent command, InteractionReply reply) {
+        if (faqList.isEmpty()) {
+            throw new BotWarningException("The list of questions is empty");
+        }
+
+        reply.hide();
+        reply.send(new MessageCreateBuilder()
+            .addEmbeds(new EmbedBuilder()
+                .setColor(Colors.TRANSPARENT)
+                .setDescription("Select a question that should be removed")
+                .build())
+            .addActionRow(StringSelectMenu.create("faq_remove")
+                .addOptions(getOptions(faqList))
+                .build())
+            .build());
+    }
+
+    private void editQuestion(InteractionReply reply) {
+        if (faqList.isEmpty()) {
+            throw new BotWarningException("The list of questions is empty");
+        }
+
+        reply.hide();
+        reply.send(new MessageCreateBuilder()
+            .addEmbeds(new EmbedBuilder()
+                .setColor(Colors.TRANSPARENT)
+                .setDescription("Select the question that needs to be edited")
+                .build())
+            .addActionRow(StringSelectMenu.create("faq_edit")
+                .addOptions(getOptions(faqList))
+                .build())
+            .build());
+    }
+
+    private void sendFaqMesasge(CommandEvent command, InteractionReply reply) {
+        if (faqList.isEmpty()) {
+            throw new BotWarningException("The list of questions is empty");
+        }
+
+        String text = Optional.ofNullable(command.get("text"))
+            .map(OptionMapping::getAsString)
+            .orElse("Select a question");
+
+        if (text.isBlank()) {
+            throw new BotWarningException("Text cannot be empty");
+        }
+
+        command.getChannel().sendMessage(
+                new MessageCreateBuilder()
+                    .addEmbeds(new EmbedBuilder()
+                        .setColor(Colors.TRANSPARENT)
+                        .setTitle("Frequently Asked Questions")
+                        .setDescription(text)
+                        .build())
+                    .addActionRow(StringSelectMenu.create("faq_query")
+                        .addOptions(getOptions(faqList))
+                        .setPlaceholder("Select a question")
+                        .setMaxValues(1)
+                        .build())
+                    .build())
+            .queue(m -> {
+                faqMessage = m;
+                getDatabaseManager().setSetting("faqmessage", m.getChannel().getId() + "_" + m.getId());
+            });
+
+        reply.hide();
+        reply.ok("Faq message sent");
+    }
+
+    private void handleAddModal(ModalEvent event, DefaultReply reply) {
+        if (faqList.size() == 25) {
+            throw new BotWarningException("There can be 25 questions added at most");
+        }
+
+        Map<String, ModalMapping> map = event.getValues();
+        String question = map.get("question").getAsString();
+        String answer = map.get("answer").getAsString();
+        String emoji = map.get("emoji").getAsString();
+        String desc = map.get("description").getAsString();
+        String key = question.toLowerCase();
+
+        if (question.isBlank() || answer.isBlank()) {
+            throw new BotWarningException("Blank fields are not allowed");
+        }
+
+        if (faqMap.containsKey(key)) {
+            throw new BotWarningException("That question has already been added");
+        }
+
+        if (emoji.isEmpty()) {
+            emoji = null;
+        } else if (!EmojiUtil.isEmoji(emoji)) {
+            throw new BotErrorException("%s is not a valid emoji", emoji);
+        }
+
+        if (desc.isBlank()) {
+            desc = null;
+        }
+
+        faqList.add(question);
+        faqMap.put(key, new String[]{answer, emoji, desc});
+
+        reply.hide();
+        reply.ok("Added question and answer for `%s`", question);
+        getServer().log(event.getMember().getUser(), "Added question and answer for `%s`", question);
+        updateMessage(faqMessage).queue();
+        updateStorage(storageMessage).queue();
+    }
+
+    private void handleRemoveSelectMenu(SelectEvent<SelectOption> event, MenuReply reply) {
+        int index = Integer.parseInt(event.getOption().getValue());
+        String question = event.getOption().getLabel();
+
+        if (index >= faqList.size() || !faqList.get(index).equals(question)) {
+            throw new BotErrorException("Something went wrong, try again");
+        }
+
+        faqList.remove(index);
+        faqMap.remove(question.toLowerCase());
+
+        reply.edit(Icon.STOP, "Removed question `%s`", question);
+        getServer().log(event.getUser(), "Removed question `%s`", question);
+        updateMessage(faqMessage).queue();
+        updateStorage(storageMessage).queue();
     }
 
     private SelectOption @NotNull [] getOptions(@NotNull List<String> list) {

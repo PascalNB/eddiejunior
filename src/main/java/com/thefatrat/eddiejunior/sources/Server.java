@@ -152,17 +152,19 @@ public class Server {
     }
 
     public void log(int color, User user, String message, Object... args) {
-        if (log == null || !log.canTalk()) {
-            return;
+        synchronized (log) {
+            if (log == null || !log.canTalk()) {
+                return;
+            }
+            log.sendMessageEmbeds(new EmbedBuilder()
+                .setColor(color)
+                .setDescription(String.format("%s ", user.getAsMention()) +
+                    String.format(message, args))
+                .setFooter(user.getId(), user.getEffectiveAvatarUrl())
+                .setTimestamp(Instant.now())
+                .build()
+            ).queue();
         }
-        log.sendMessageEmbeds(new EmbedBuilder()
-            .setColor(color)
-            .setDescription(String.format("%s ", user.getAsMention()) +
-                String.format(message, args))
-            .setFooter(user.getId(), user.getEffectiveAvatarUrl())
-            .setTimestamp(Instant.now())
-            .build()
-        ).queue();
     }
 
     public void log(User user, String message, Object... args) {
@@ -170,15 +172,17 @@ public class Server {
     }
 
     public void log(int color, String message, Object... args) {
-        if (log == null || !log.canTalk()) {
-            return;
+        synchronized (log) {
+            if (log == null || !log.canTalk()) {
+                return;
+            }
+            log.sendMessageEmbeds(new EmbedBuilder()
+                .setColor(color)
+                .setDescription(String.format(message, args))
+                .setTimestamp(Instant.now())
+                .build()
+            ).queue();
         }
-        log.sendMessageEmbeds(new EmbedBuilder()
-            .setColor(color)
-            .setDescription(String.format(message, args))
-            .setTimestamp(Instant.now())
-            .build()
-        ).queue();
     }
 
     public void log(String message, Object... args) {

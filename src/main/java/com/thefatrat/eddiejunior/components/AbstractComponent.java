@@ -131,7 +131,7 @@ public abstract class AbstractComponent implements Component {
      */
     protected void addSubcommands(Command... subcommands) {
         if (componentCommand == null) {
-            return;
+            throw new UnsupportedOperationException("Component command has not been set");
         }
         for (Command s : subcommands) {
             componentCommand.addSubcommand(s);

@@ -41,7 +41,7 @@ public class EventComponent extends AbstractComponent {
             links.put(keyword, link);
         }
 
-        getServer().getEventHandler().addListener(this::processEvent);
+        getServer().getEventHandler().addListener((e, r) -> this.processEvent(e));
 
         setComponentCommand();
 
@@ -59,11 +59,16 @@ public class EventComponent extends AbstractComponent {
                 .setAction(this::removeLink),
 
             new Command("list", "show the list of links")
-                .setAction(this::listAllLinks)
+                .setAction((c, r) -> this.listAllLinks(r))
         );
     }
 
-    private void processEvent(EventEvent event, Object __) {
+    /**
+     * Activates or deactivates any sessions or components linked to the given event.
+     *
+     * @param event event
+     */
+    private void processEvent(EventEvent event) {
         if (!isEnabled() || !event.getStatus().equals(ScheduledEvent.Status.ACTIVE)
             && !event.getStatus().equals(ScheduledEvent.Status.COMPLETED)) {
             return;
@@ -126,6 +131,12 @@ public class EventComponent extends AbstractComponent {
         }
     }
 
+    /**
+     * Creates a link for the given keyword with the given session and component.
+     *
+     * @param command command
+     * @param reply   reply
+     */
     private void createLink(@NotNull CommandEvent command, InteractionReply reply) {
         OptionMapping sessionObject = command.get("session");
         OptionMapping componentObject = command.get("component");
@@ -170,6 +181,12 @@ public class EventComponent extends AbstractComponent {
         reply.ok("Linked keyword `%s`", keyword);
     }
 
+    /**
+     * Removes a link.
+     *
+     * @param command command
+     * @param reply   reply
+     */
     private void removeLink(@NotNull CommandEvent command, InteractionReply reply) {
         String keyword = command.get("keyword").getAsString().toLowerCase(Locale.ROOT);
 
@@ -182,7 +199,12 @@ public class EventComponent extends AbstractComponent {
         reply.ok("Unlinked keyword `%s`", keyword);
     }
 
-    private void listAllLinks(CommandEvent __, InteractionReply reply) {
+    /**
+     * List all links.
+     *
+     * @param reply reply
+     */
+    private void listAllLinks(InteractionReply reply) {
         if (links.isEmpty()) {
             throw new BotWarningException("No links have been added yet");
         }

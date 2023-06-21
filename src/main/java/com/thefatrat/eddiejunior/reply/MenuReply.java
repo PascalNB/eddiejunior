@@ -21,27 +21,27 @@ public class MenuReply implements Reply, EditReply, ModalReply, EphemeralReply {
     }
 
     @Override
-    public void edit(MessageEditData data, Consumer<Message> callback) {
+    public synchronized void edit(MessageEditData data, Consumer<Message> callback) {
         messageEditCallback.editMessage(data).queue(hook -> hook.retrieveOriginal().queue(callback));
     }
 
     @Override
-    public void sendModal(Modal modal) {
+    public synchronized void sendModal(Modal modal) {
         this.reply.sendModal(modal);
     }
 
     @Override
-    public void send(MessageCreateData data, Consumer<Message> callback) {
+    public synchronized void send(MessageCreateData data, Consumer<Message> callback) {
         this.reply.send(data, callback);
     }
 
     @Override
-    public void defer() {
+    public synchronized void defer() {
         this.reply.defer();
     }
 
     @Override
-    public void hide() {
+    public synchronized void hide() {
         this.reply.hide();
     }
 

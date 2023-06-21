@@ -1,8 +1,11 @@
 package com.thefatrat.eddiejunior.components.impl;
 
 import com.thefatrat.eddiejunior.entities.Command;
+import com.thefatrat.eddiejunior.events.ButtonEvent;
+import com.thefatrat.eddiejunior.events.CommandEvent;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotWarningException;
+import com.thefatrat.eddiejunior.reply.InteractionReply;
 import com.thefatrat.eddiejunior.reply.MenuReply;
 import com.thefatrat.eddiejunior.reply.Reply;
 import com.thefatrat.eddiejunior.sources.Server;
@@ -48,110 +51,135 @@ public class FanMailComponent extends DirectMessageComponent {
                 .addOptions(new OptionData(OptionType.INTEGER, "timeout", "timeout in seconds", true)
                     .setRequiredRange(0, Integer.MAX_VALUE)
                 )
-                .setAction((command, reply) -> {
-                    long timeout = command.get("timeout").getAsInt();
-                    this.timeout = timeout;
-                    reply.ok("Timout set to %d seconds", timeout);
-                    getDatabaseManager().setSetting("timeout", String.valueOf(timeout));
-                    getServer().log(command.getMember().getUser(), "Set fanart timeout to `%d` seconds", timeout);
-                }),
+                .setAction(this::setTimeout),
 
             new Command("reset", "allow submissions for users again")
                 .addOptions(new OptionData(OptionType.USER, "user", "user", true))
-                .setAction((command, reply) -> {
-                    Member member = command.get("user").getAsMember();
-
-                    if (member == null) {
-                        throw new BotErrorException("The given member was not found");
-                    }
-
-                    if (timeouts.remove(member.getId()) == null) {
-                        throw new BotWarningException("The given user was not on a cooldown");
-                    }
-                    reply.send(Icon.RESET, "Cooldown reset for %s, they can submit again",
-                        member.getAsMention());
-                }),
+                .setAction(this::resetSubmission),
 
             new Command("submissionchannel", "sets the channel were submissions will be posted to for review")
                 .addOptions(new OptionData(OptionType.CHANNEL, "channel", "channel", true)
                     .setChannelTypes(ChannelType.TEXT)
                 )
-                .setAction((command, reply) -> {
-                    TextChannel channel = command.get("channel").getAsChannel().asTextChannel();
-                    submissionChannelId = channel.getId();
-
-                    PermissionChecker.requireSend(channel);
-
-                    reply.ok("Set submission review channel to %s", channel.getAsMention());
-                    getDatabaseManager().setSetting("submissionchannel", channel.getId());
-                    getServer().log(command.getMember().getUser(), "Set fanart submission review channel to %s " +
-                        "(`%s`)", channel.getAsMention(), channel.getId());
-                })
+                .setAction(this::setSubmissionChannel)
         );
 
-        getServer().getButtonHandler().addListener((event, reply) -> {
-            if (event.getButtonId().equals("fanart_approve")) {
-                MessageCreateData data = MessageCreateBuilder.fromMessage(event.getMessage())
-                    .setComponents()
-                    .build();
+        getServer().getButtonHandler().addListener(this::handleButton);
+    }
 
-                TextChannel destination = getDestination();
+    /**
+     * Sets the submission timeout.
+     *
+     * @param command command
+     * @param reply   reply
+     */
+    private void setTimeout(CommandEvent command, InteractionReply reply) {
+        long timeout = command.get("timeout").getAsInt();
+        this.timeout = timeout;
+        reply.ok("Timout set to %d seconds", timeout);
+        getDatabaseManager().setSetting("timeout", String.valueOf(timeout));
+        getServer().log(command.getMember().getUser(), "Set fanart timeout to `%d` seconds", timeout);
+    }
 
-                if (destination == null || !destination.canTalk()) {
-                    throw new BotErrorException("Destination channel not accessible");
-                }
+    /**
+     * Resets the submission timeout for the given user.
+     *
+     * @param command command
+     * @param reply   reply
+     */
+    private void resetSubmission(CommandEvent command, InteractionReply reply) {
+        Member member = command.get("user").getAsMember();
 
-                Message response = destination.sendMessage(data)
-                    .onErrorMap(e -> null)
-                    .complete();
+        if (member == null) {
+            throw new BotErrorException("The given member was not found");
+        }
 
-                if (response == null) {
-                    throw new BotErrorException("Couldn't approve submission");
-                }
+        if (timeouts.remove(member.getId()) == null) {
+            throw new BotWarningException("The given user was not on a cooldown");
+        }
+        reply.send(Icon.RESET, "Cooldown reset for %s, they can submit again", member.getAsMention());
+    }
 
-                try {
-                    response.addReaction(Emoji.fromUnicode("❤️")).queue();
-                } catch (InsufficientPermissionException ignore) {
-                }
+    /**
+     * Sets the channel where submissions will be posted for review.
+     *
+     * @param command command
+     * @param reply   reply
+     */
+    private void setSubmissionChannel(CommandEvent command, InteractionReply reply) {
+        TextChannel channel = command.get("channel").getAsChannel().asTextChannel();
+        submissionChannelId = channel.getId();
 
-                MessageEmbed embed = event.getMessage().getEmbeds().get(0);
+        PermissionChecker.requireSend(channel);
 
-                MessageCreateData newData = MessageCreateBuilder.from(data)
-                    .setEmbeds(new EmbedBuilder(embed)
-                        .setColor(Colors.GREEN)
-                        .build())
-                    .build();
+        reply.ok("Set submission review channel to %s", channel.getAsMention());
+        getDatabaseManager().setSetting("submissionchannel", channel.getId());
+        getServer().log(command.getMember().getUser(), "Set fanart submission review channel to %s " +
+            "(`%s`)", channel.getAsMention(), channel.getId());
+    }
 
-                event.getMessage().editMessage(MessageEditData.fromCreateData(newData)).queue();
+    private void handleButton(ButtonEvent<Member> event, MenuReply reply) {
+        if (event.getButtonId().equals("fanart_approve")) {
+            MessageCreateData data = MessageCreateBuilder.fromMessage(event.getMessage())
+                .setComponents()
+                .build();
 
-                reply.hide();
-                reply.ok("Submission approved\n%s", response.getJumpUrl());
+            TextChannel destination = getDestination();
 
-                String userId = Objects.requireNonNull(embed.getFooter()).getText();
-                getServer().log(event.getActor().getUser(), "Approved fanart submission by <@%s> (`%s`)",
-                    userId, userId);
-
-            } else if (event.getButtonId().equals("fanart_deny")) {
-                Message message = event.getMessage();
-                MessageEmbed embed = message.getEmbeds().get(0);
-
-                MessageCreateData newData = MessageCreateBuilder.fromMessage(message)
-                    .setComponents()
-                    .setEmbeds(new EmbedBuilder(embed)
-                        .setColor(Colors.RED)
-                        .build())
-                    .build();
-
-                message.editMessage(MessageEditData.fromCreateData(newData)).queue();
-
-                reply.hide();
-                reply.send(Icon.STOP, "Denied fanart submission");
-
-                String userId = Objects.requireNonNull(embed.getFooter()).getText();
-                getServer().log(event.getActor().getUser(), "Denied fanart submission by <@%s> (`%s`)",
-                    userId, userId);
+            if (destination == null || !destination.canTalk()) {
+                throw new BotErrorException("Destination channel not accessible");
             }
-        });
+
+            Message response = destination.sendMessage(data)
+                .onErrorMap(e -> null)
+                .complete();
+
+            if (response == null) {
+                throw new BotErrorException("Couldn't approve submission");
+            }
+
+            try {
+                response.addReaction(Emoji.fromUnicode("❤️")).queue();
+            } catch (InsufficientPermissionException ignore) {
+            }
+
+            MessageEmbed embed = event.getMessage().getEmbeds().get(0);
+
+            MessageCreateData newData = MessageCreateBuilder.from(data)
+                .setEmbeds(new EmbedBuilder(embed)
+                    .setColor(Colors.GREEN)
+                    .build())
+                .build();
+
+            event.getMessage().editMessage(MessageEditData.fromCreateData(newData)).queue();
+
+            reply.hide();
+            reply.ok("Submission approved\n%s", response.getJumpUrl());
+
+            String userId = Objects.requireNonNull(embed.getFooter()).getText();
+            getServer().log(event.getActor().getUser(), "Approved fanart submission by <@%s> (`%s`)",
+                userId, userId);
+
+        } else if (event.getButtonId().equals("fanart_deny")) {
+            Message message = event.getMessage();
+            MessageEmbed embed = message.getEmbeds().get(0);
+
+            MessageCreateData newData = MessageCreateBuilder.fromMessage(message)
+                .setComponents()
+                .setEmbeds(new EmbedBuilder(embed)
+                    .setColor(Colors.RED)
+                    .build())
+                .build();
+
+            message.editMessage(MessageEditData.fromCreateData(newData)).queue();
+
+            reply.hide();
+            reply.send(Icon.STOP, "Denied fanart submission");
+
+            String userId = Objects.requireNonNull(embed.getFooter()).getText();
+            getServer().log(event.getActor().getUser(), "Denied fanart submission by <@%s> (`%s`)",
+                userId, userId);
+        }
     }
 
     @Override

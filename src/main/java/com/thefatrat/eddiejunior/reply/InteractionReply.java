@@ -19,17 +19,17 @@ public class InteractionReply implements Reply, ModalReply, EphemeralReply {
     }
 
     @Override
-    public void send(MessageCreateData data, Consumer<Message> callback) {
+    public synchronized void send(MessageCreateData data, Consumer<Message> callback) {
         reply.send(data, callback);
     }
 
     @Override
-    public void defer() {
+    public synchronized void defer() {
         reply.defer();
     }
 
     @Override
-    public void sendModal(Modal modal) {
+    public synchronized void sendModal(Modal modal) {
         if (modalCallback.isAcknowledged()) {
             throw new UnsupportedOperationException("Can only reply with a modal once");
         }
@@ -37,7 +37,7 @@ public class InteractionReply implements Reply, ModalReply, EphemeralReply {
     }
 
     @Override
-    public void hide() {
+    public synchronized void hide() {
         reply.hide();
     }
 

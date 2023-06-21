@@ -14,12 +14,12 @@ public class MessageReply implements Reply {
     }
 
     @Override
-    public void send(MessageCreateData data, Consumer<Message> callback) {
+    public synchronized void send(MessageCreateData data, Consumer<Message> callback) {
         message.reply(data).queue(callback);
     }
 
     @Override
-    public void defer() {
+    public synchronized void defer() {
 
     }
 
