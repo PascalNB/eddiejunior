@@ -20,8 +20,11 @@ import com.thefatrat.eddiejunior.util.Colors;
 import com.thefatrat.eddiejunior.util.Icon;
 import com.thefatrat.eddiejunior.util.PermissionChecker;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.IMentionable;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
@@ -51,6 +54,11 @@ public class ManagerComponent extends AbstractComponent implements GlobalCompone
         String logChannelId = getDatabaseManager().getSetting("log");
         if (logChannelId != null) {
             getServer().setLog(getGuild().getTextChannelById(logChannelId));
+        }
+        String manageRoleId = getDatabaseManager().getSetting("managerole");
+        if (manageRoleId != null) {
+            Role manageRole = getGuild().getRoleById(manageRoleId);
+            getServer().setManageRole(manageRole);
         }
 
         addCommands(
@@ -90,7 +98,11 @@ public class ManagerComponent extends AbstractComponent implements GlobalCompone
                 .setAction(this::showErrorLog),
 
             new Command("vitals", "show system vitals")
-                .setAction(this::getVitals)
+                .setAction(this::getVitals),
+
+            new Command("setrole", "set the role that can use Eddie Junior")
+                .addOptions(new OptionData(OptionType.ROLE, "role", "role", true))
+                .setAction(this::setRole)
         );
     }
 
@@ -325,6 +337,24 @@ public class ManagerComponent extends AbstractComponent implements GlobalCompone
             .build());
     }
 
+    private void setRole(CommandEvent command, InteractionReply reply) {
+        Role role = command.get("role").getAsRole();
+
+        Member member = command.getMember();
+        if (!member.hasPermission(Permission.ADMINISTRATOR)) {
+            throw new BotWarningException("You need administrator permissions to use this command");
+        }
+        if (getServer().getGuild().getPublicRole().equals(role)) {
+            throw new BotWarningException("Cannot set `@everyone` to allow the use of Eddie Junior");
+        }
+
+        getServer().setManageRole(role);
+        getDatabaseManager().setSetting("managerole", role.getId());
+        reply.ok("Enabled role %s to use Eddie Junior", role.getAsMention());
+        getServer().log(Colors.BLUE, member.getUser(), "Enabled role %s (`%s`) to use Eddie Junior",
+            role.getAsMention(), role.getId());
+    }
+
     /**
      * Throws specific {@link BotErrorException} with the given component name.
      *
@@ -352,10 +382,12 @@ public class ManagerComponent extends AbstractComponent implements GlobalCompone
                 Components enabled: %d
                 Uptime: %s
                 Log: %s
+                Role: %s
                 """,
             count,
             Bot.getInstance().getUptime(),
-            Optional.ofNullable(getServer().getLog()).map(IMentionable::getAsMention).orElse(null));
+            Optional.ofNullable(getServer().getLog()).map(IMentionable::getAsMention).orElse(null),
+            getServer().getManageRole());
     }
 
 }

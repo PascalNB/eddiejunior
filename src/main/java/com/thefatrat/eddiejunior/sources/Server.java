@@ -8,6 +8,8 @@ import com.thefatrat.eddiejunior.components.GlobalComponent;
 import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.entities.Interaction;
 import com.thefatrat.eddiejunior.events.*;
+import com.thefatrat.eddiejunior.exceptions.BotErrorException;
+import com.thefatrat.eddiejunior.exceptions.BotException;
 import com.thefatrat.eddiejunior.handlers.ComponentHandler;
 import com.thefatrat.eddiejunior.handlers.MapHandler;
 import com.thefatrat.eddiejunior.handlers.SetHandler;
@@ -16,6 +18,7 @@ import com.thefatrat.eddiejunior.reply.InteractionReply;
 import com.thefatrat.eddiejunior.reply.MenuReply;
 import com.thefatrat.eddiejunior.util.Colors;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.interactions.components.selections.SelectOption;
@@ -37,6 +40,7 @@ public class Server {
     private final Map<String, Component> components = new HashMap<>();
     private final Map<String, MapHandler<CommandEvent, InteractionReply>> subCommandHandler = new HashMap<>();
     private TextChannel log = null;
+    private Role manageRole = null;
 
     @NotNull
     @Contract(" -> new")
@@ -54,6 +58,23 @@ public class Server {
 
     public String getId() {
         return id;
+    }
+
+    public void checkPermissions(@NotNull Member member) throws BotException {
+        if (member.hasPermission(Permission.ADMINISTRATOR)) {
+            return;
+        }
+        if (manageRole == null || !member.getRoles().contains(manageRole)) {
+            throw new BotErrorException("No permission to interact");
+        }
+    }
+
+    public Role getManageRole() {
+        return manageRole;
+    }
+
+    public void setManageRole(@Nullable Role manageRole) {
+        this.manageRole = manageRole;
     }
 
     public List<Component> getComponents() {

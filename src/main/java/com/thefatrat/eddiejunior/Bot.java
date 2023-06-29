@@ -253,8 +253,10 @@ public class Bot extends ListenerAdapter {
 
         try {
             String interaction = event.getName();
-            servers.get(guild.getId()).getMessageInteractionHandler().handle(interaction,
-                new InteractionEvent<>(message, event.getMember()), reply);
+            Server server = servers.get(guild.getId());
+            server.checkPermissions(Objects.requireNonNull(event.getMember()));
+            server.getMessageInteractionHandler()
+                .handle(interaction, new InteractionEvent<>(message, event.getMember()), reply);
         } catch (BotException e) {
             reply.hide();
             reply.send(e);
@@ -274,8 +276,10 @@ public class Bot extends ListenerAdapter {
 
         try {
             String interaction = event.getName();
-            servers.get(guild.getId()).getMemberInteractionHandler().handle(interaction,
-                new InteractionEvent<>(member, event.getMember()), reply);
+            Server server = servers.get(guild.getId());
+            server.checkPermissions(Objects.requireNonNull(event.getMember()));
+            server.getMemberInteractionHandler()
+                .handle(interaction, new InteractionEvent<>(member, event.getMember()), reply);
         } catch (BotException e) {
             reply.hide();
             reply.send(e);
@@ -302,7 +306,9 @@ public class Bot extends ListenerAdapter {
             options, event.getGuildChannel(), Objects.requireNonNull(event.getMember()));
 
         try {
-            servers.get(guild.getId()).getCommandHandler().handle(event.getName(), commandEvent, reply);
+            Server server = servers.get(guild.getId());
+            server.checkPermissions(event.getMember());
+            server.getCommandHandler().handle(event.getName(), commandEvent, reply);
         } catch (BotException e) {
             reply.hide();
             reply.send(e);
