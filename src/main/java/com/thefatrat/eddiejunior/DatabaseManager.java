@@ -5,6 +5,7 @@ import com.pascalnb.dbwrapper.Query;
 import com.pascalnb.dbwrapper.StringMapper;
 import com.pascalnb.dbwrapper.action.CompletedAction;
 import com.pascalnb.dbwrapper.action.DatabaseAction;
+import com.thefatrat.eddiejunior.components.impl.FaqComponent;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -29,6 +30,17 @@ public class DatabaseManager {
 
     private static final Query REMOVE_SETTING_VALUE = new Query(
         "DELETE FROM setting WHERE server_id=? AND component_name=? AND name=? AND value=?;");
+
+    public static final Query GET_QUESTIONS = new Query(
+        "SELECT * FROM faq WHERE server_id=?;"
+    );
+    private static final Query REMOVE_QUESTION = new Query(
+        "DELETE FROM faq WHERE server_id=? AND q_number=?;"
+    );
+
+    public static final Query SET_QUESTION = new Query(
+        "INSERT INTO faq (server_id,q_number,value) VALUES(?,?,?) ON DUPLICATE KEY UPDATE value=?;"
+    );
 
     private final String server;
     private final String component;
@@ -109,6 +121,34 @@ public class DatabaseManager {
 
     public static CompletedAction<Void> toggleComponent(String serverId, String componentId, boolean enable) {
         return DatabaseAction.of(TOGGLE_COMPONENT.withArgs(serverId, componentId, enable, enable)).execute();
+    }
+
+    public List<FaqComponent.Question> getQuestions() {
+        return DatabaseAction.of(
+                GET_QUESTIONS.withArgs(server),
+                Mapper.allRows()
+            ).query()
+            .map(list -> list.stream()
+                .map(tuple -> {
+                    int id = Integer.parseInt(tuple.get("q_number"));
+                    String json = tuple.get("value");
+                    return FaqComponent.Question.fromJson(id, json);
+                })
+                .toList()
+            )
+            .complete();
+    }
+
+    public CompletedAction<Void> removeQuestion(int id) {
+        return DatabaseAction.of(
+            REMOVE_QUESTION.withArgs(server, id)
+        ).execute();
+    }
+
+    public CompletedAction<Void> setQuestion(int id, String json) {
+        return DatabaseAction.of(
+            SET_QUESTION.withArgs(server, id, json, json)
+        ).execute();
     }
 
 }
