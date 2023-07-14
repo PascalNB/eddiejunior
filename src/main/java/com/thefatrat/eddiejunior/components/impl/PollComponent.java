@@ -30,7 +30,6 @@ import net.dv8tion.jda.api.utils.messages.MessageEditBuilder;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 public class PollComponent extends AbstractComponent {
@@ -155,6 +154,7 @@ public class PollComponent extends AbstractComponent {
         }
 
         int maxPicks = command.hasOption("picks") ? command.get("picks").getAsInt() : 1;
+        Arrays.sort(options, String.CASE_INSENSITIVE_ORDER);
         polls.put(message.getId(), new Poll(maxPicks, options));
 
         List<ActionRow> rows = new ArrayList<>();
@@ -229,15 +229,17 @@ public class PollComponent extends AbstractComponent {
         polls.remove(message.getId());
 
         List<String> resultStrings = new ArrayList<>(results.size());
-        AtomicInteger total = new AtomicInteger();
-        results.forEach((vote, count) -> {
-            resultStrings.add(String.format("`%-15s %5d`", vote + ':', count));
-            total.addAndGet(count);
-        });
+        long total = results.entrySet().stream()
+            .sorted(Comparator.comparingInt(e -> -e.getValue()))
+            .mapToInt(e -> {
+                resultStrings.add(String.format("- **%s**: `%d`", e.getKey(), e.getValue()));
+                return e.getValue();
+            })
+            .sum();
         int userCount = poll.votes.size();
 
         String joined = String.join("\n", resultStrings.toArray(String[]::new))
-            + "\n__Total votes:__ " + total.get() + "\n__Total users:__ " + userCount;
+            + "\nTotal votes: " + total + "\nTotal users: " + userCount;
 
         MessageEmbed embed = new EmbedBuilder()
             .setTitle("Poll results")
