@@ -55,9 +55,13 @@ public class PollComponent extends AbstractComponent {
                 )
                 .setAction(this::newPoll),
 
-            new Command("results", "close poll and show results")
+            new Command("close", "close poll and show results")
                 .addOptions(new OptionData(OptionType.STRING, "url", "message url", true))
-                .setAction(this::getPollResults)
+                .setAction(this::getPollResults),
+
+            new Command("info", "show current poll results without closing the poll")
+                .addOptions(new OptionData(OptionType.STRING, "url", "message url", true))
+                .setAction(this::getPollInfo)
         );
 
         getServer().getButtonHandler().addListener(this::castVote);
@@ -201,6 +205,31 @@ public class PollComponent extends AbstractComponent {
         reply.ok("Successfully voted for `%s`, you have %d votes left", vote, votesLeft);
     }
 
+    private void replyPollResult(Poll poll, InteractionReply reply) {
+        Map<String, Integer> results = poll.getResults();
+        List<String> resultStrings = new ArrayList<>(results.size());
+
+        long total = results.entrySet().stream()
+            .sorted(Comparator.comparingInt(e -> -e.getValue()))
+            .mapToInt(e -> {
+                resultStrings.add(String.format("- **%s**: `%d`", e.getKey(), e.getValue()));
+                return e.getValue();
+            })
+            .sum();
+
+        int userCount = poll.votes.size();
+        String joined = String.join("\n", resultStrings.toArray(String[]::new))
+            + "\nTotal votes: " + total + "\nTotal users: " + userCount;
+
+        MessageEmbed embed = new EmbedBuilder()
+            .setTitle("Poll results")
+            .setColor(Colors.TRANSPARENT)
+            .setDescription(joined)
+            .build();
+
+        reply.send(embed);
+    }
+
     /**
      * Closes the poll and posts the poll results.
      *
@@ -218,36 +247,30 @@ public class PollComponent extends AbstractComponent {
             throw new BotErrorException("Couldn't find poll");
         }
 
-        PermissionChecker.requireSend(message.getGuildChannel().getPermissionContainer());
-
         MessageEditBuilder edit = MessageEditBuilder.fromMessage(message);
         edit.setComponents();
         message.editMessage(edit.build()).queue();
 
         Poll poll = polls.get(message.getId());
-        Map<String, Integer> results = poll.getResults();
         polls.remove(message.getId());
 
-        List<String> resultStrings = new ArrayList<>(results.size());
-        long total = results.entrySet().stream()
-            .sorted(Comparator.comparingInt(e -> -e.getValue()))
-            .mapToInt(e -> {
-                resultStrings.add(String.format("- **%s**: `%d`", e.getKey(), e.getValue()));
-                return e.getValue();
-            })
-            .sum();
-        int userCount = poll.votes.size();
+        replyPollResult(poll, reply);
+    }
 
-        String joined = String.join("\n", resultStrings.toArray(String[]::new))
-            + "\nTotal votes: " + total + "\nTotal users: " + userCount;
+    private void getPollInfo(CommandEvent command, InteractionReply reply) {
+        Message message = URLUtil.messageFromURL(command.get("url").getAsString(), getGuild());
 
-        MessageEmbed embed = new EmbedBuilder()
-            .setTitle("Poll results")
-            .setColor(Colors.TRANSPARENT)
-            .setDescription(joined)
-            .build();
+        if (!message.getAuthor().getId().equals(getGuild().getSelfMember().getId())) {
+            throw new BotErrorException("Message was not sent by me");
+        }
 
-        reply.send(embed);
+        if (!polls.containsKey(message.getId())) {
+            throw new BotErrorException("Couldn't find poll");
+        }
+
+        Poll poll = polls.get(message.getId());
+
+        replyPollResult(poll, reply);
     }
 
     private static class Poll {

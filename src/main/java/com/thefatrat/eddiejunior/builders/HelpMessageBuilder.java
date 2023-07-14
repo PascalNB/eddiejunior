@@ -55,7 +55,7 @@ public class HelpMessageBuilder {
     private String formatOptions(@NotNull Collection<OptionData> options) {
         return options.stream()
             .map(this::formatOption)
-            .reduce(" ", (s, o) -> s + o);
+            .reduce("", (s, o) -> s + " " + o);
     }
 
     private @NotNull String formatOption(@NotNull OptionData option) {
