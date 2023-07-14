@@ -2,6 +2,7 @@ package com.thefatrat.eddiejunior.components.impl;
 
 import com.thefatrat.eddiejunior.components.AbstractComponent;
 import com.thefatrat.eddiejunior.entities.Command;
+import com.thefatrat.eddiejunior.entities.Interaction;
 import com.thefatrat.eddiejunior.events.ButtonEvent;
 import com.thefatrat.eddiejunior.events.CommandEvent;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
@@ -17,7 +18,6 @@ import com.thefatrat.eddiejunior.util.URLUtil;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
@@ -51,7 +51,8 @@ public class PollComponent extends AbstractComponent {
                         .setMinValue(1)
                         .setMaxValue(100),
                     new OptionData(OptionType.CHANNEL, "channel", "channel that the poll will be sent in", false)
-                        .setChannelTypes(ChannelType.TEXT)
+                        .setChannelTypes(ChannelType.TEXT),
+                    new OptionData(OptionType.STRING, "image", "image url", false)
                 )
                 .setAction(this::newPoll),
 
@@ -65,6 +66,11 @@ public class PollComponent extends AbstractComponent {
         );
 
         getServer().getButtonHandler().addListener(this::castVote);
+
+        addMessageInteractions(
+            new Interaction<Message>("close").setAction((e, r) -> closePoll(e.getEntity(), r))
+        );
+
     }
 
     /**
@@ -75,11 +81,22 @@ public class PollComponent extends AbstractComponent {
      */
     private void newPoll(CommandEvent command, InteractionReply reply) {
         MessageCreateBuilder builder = new MessageCreateBuilder();
-        String text = command.get("text").getAsString();
+        String text = unescape(command.get("text").getAsString());
+        final String image;
+
+        if (command.hasOption("image")) {
+            image = command.get("image").getAsString();
+            if (URLUtil.matchUrl(image) == null) {
+                throw new BotWarningException("Please specify a valid image url");
+            }
+        } else {
+            image = null;
+        }
 
         builder.addEmbeds(new EmbedBuilder()
             .setDescription(text)
             .setColor(Colors.TRANSPARENT)
+            .setImage(image)
             .build()
         );
 
@@ -205,31 +222,6 @@ public class PollComponent extends AbstractComponent {
         reply.ok("Successfully voted for `%s`, you have %d votes left", vote, votesLeft);
     }
 
-    private void replyPollResult(Poll poll, InteractionReply reply) {
-        Map<String, Integer> results = poll.getResults();
-        List<String> resultStrings = new ArrayList<>(results.size());
-
-        long total = results.entrySet().stream()
-            .sorted(Comparator.comparingInt(e -> -e.getValue()))
-            .mapToInt(e -> {
-                resultStrings.add(String.format("- **%s**: `%d`", e.getKey(), e.getValue()));
-                return e.getValue();
-            })
-            .sum();
-
-        int userCount = poll.votes.size();
-        String joined = String.join("\n", resultStrings.toArray(String[]::new))
-            + "\nTotal votes: " + total + "\nTotal users: " + userCount;
-
-        MessageEmbed embed = new EmbedBuilder()
-            .setTitle("Poll results")
-            .setColor(Colors.TRANSPARENT)
-            .setDescription(joined)
-            .build();
-
-        reply.send(embed);
-    }
-
     /**
      * Closes the poll and posts the poll results.
      *
@@ -238,7 +230,10 @@ public class PollComponent extends AbstractComponent {
      */
     private void getPollResults(CommandEvent command, InteractionReply reply) {
         Message message = URLUtil.messageFromURL(command.get("url").getAsString(), getGuild());
+        closePoll(message, reply);
+    }
 
+    private void closePoll(Message message, InteractionReply reply) {
         if (!message.getAuthor().getId().equals(getGuild().getSelfMember().getId())) {
             throw new BotErrorException("Message was not sent by me");
         }
@@ -247,14 +242,23 @@ public class PollComponent extends AbstractComponent {
             throw new BotErrorException("Couldn't find poll");
         }
 
-        MessageEditBuilder edit = MessageEditBuilder.fromMessage(message);
-        edit.setComponents();
-        message.editMessage(edit.build()).queue();
-
         Poll poll = polls.get(message.getId());
         polls.remove(message.getId());
 
-        replyPollResult(poll, reply);
+        MessageEditBuilder edit = MessageEditBuilder.fromMessage(message)
+            .setComponents()
+            .setEmbeds(
+                message.getEmbeds().get(0),
+                new EmbedBuilder()
+                    .setTitle("Poll results")
+                    .setColor(Colors.TRANSPARENT)
+                    .setDescription(poll.toString())
+                    .build()
+            );
+        message.editMessage(edit.build()).queue();
+
+        reply.hide();
+        reply.ok("Poll closed");
     }
 
     private void getPollInfo(CommandEvent command, InteractionReply reply) {
@@ -270,7 +274,11 @@ public class PollComponent extends AbstractComponent {
 
         Poll poll = polls.get(message.getId());
 
-        replyPollResult(poll, reply);
+        reply.send(new EmbedBuilder()
+            .setTitle("Poll results")
+            .setColor(Colors.TRANSPARENT)
+            .setDescription(poll.toString())
+            .build());
     }
 
     private static class Poll {
@@ -318,11 +326,60 @@ public class PollComponent extends AbstractComponent {
             return results;
         }
 
+        @Override
+        public String toString() {
+            Map<String, Integer> results = getResults();
+            List<String> resultStrings = new ArrayList<>(results.size());
+
+            long total = results.entrySet().stream()
+                .sorted(Comparator.comparingInt(e -> -e.getValue()))
+                .mapToInt(e -> {
+                    resultStrings.add(String.format("- **%s**: `%d`", e.getKey(), e.getValue()));
+                    return e.getValue();
+                })
+                .sum();
+
+            int userCount = votes.size();
+            return String.join("\n", resultStrings.toArray(String[]::new))
+                + "\nTotal votes: " + total + "\nTotal users: " + userCount;
+        }
+
     }
 
     @Override
     public String getStatus() {
         return String.format("Enabled: " + isEnabled());
+    }
+
+    /**
+     * Unescapes the given string.
+     * \n -> newline
+     * \r -> carriage return
+     * \t -> tab
+     *
+     * @param string the escaped string
+     * @return the unescaped string
+     */
+    @NotNull
+    public static String unescape(@NotNull String string) {
+        StringBuilder result = new StringBuilder();
+        boolean escape = false;
+        for (char c : string.toCharArray()) {
+            if (escape) {
+                result.append(switch (c) {
+                    case 'n' -> '\n';
+                    case 'r' -> '\r';
+                    case 't' -> '\t';
+                    default -> c;
+                });
+                escape = false;
+            } else if (c == '\\') {
+                escape = true;
+            } else {
+                result.append(c);
+            }
+        }
+        return result.toString();
     }
 
 }
