@@ -60,7 +60,7 @@ public class PollComponent extends AbstractComponent {
                 .addOptions(new OptionData(OptionType.STRING, "url", "message url", true))
                 .setAction(this::getPollResults),
 
-            new Command("info", "show current poll results without closing the poll")
+            new Command("peek", "show current poll results without closing the poll")
                 .addOptions(new OptionData(OptionType.STRING, "url", "message url", true))
                 .setAction(this::getPollInfo)
         );
@@ -68,7 +68,8 @@ public class PollComponent extends AbstractComponent {
         getServer().getButtonHandler().addListener(this::castVote);
 
         addMessageInteractions(
-            new Interaction<Message>("close").setAction((e, r) -> closePoll(e.getEntity(), r))
+            new Interaction<Message>("close").setAction((e, r) -> closePoll(e.getEntity(), r)),
+            new Interaction<Message>("peek").setAction((e, r) -> showPoll(e.getEntity(), r))
         );
 
     }
@@ -261,9 +262,7 @@ public class PollComponent extends AbstractComponent {
         reply.ok("Poll closed");
     }
 
-    private void getPollInfo(CommandEvent command, InteractionReply reply) {
-        Message message = URLUtil.messageFromURL(command.get("url").getAsString(), getGuild());
-
+    private void showPoll(Message message, InteractionReply reply) {
         if (!message.getAuthor().getId().equals(getGuild().getSelfMember().getId())) {
             throw new BotErrorException("Message was not sent by me");
         }
@@ -274,11 +273,17 @@ public class PollComponent extends AbstractComponent {
 
         Poll poll = polls.get(message.getId());
 
+        reply.hide();
         reply.send(new EmbedBuilder()
             .setTitle("Poll results")
             .setColor(Colors.TRANSPARENT)
             .setDescription(poll.toString())
             .build());
+    }
+
+    private void getPollInfo(CommandEvent command, InteractionReply reply) {
+        Message message = URLUtil.messageFromURL(command.get("url").getAsString(), getGuild());
+        showPoll(message, reply);
     }
 
     private static class Poll {
