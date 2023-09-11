@@ -31,6 +31,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public class PollComponent extends AbstractComponent {
 
@@ -152,7 +153,19 @@ public class PollComponent extends AbstractComponent {
             Button temp = EmojiUtil.formatButton("p", option, ButtonStyle.SECONDARY);
             String label;
             if ("".equals(temp.getLabel())) {
-                label = Objects.requireNonNull(temp.getEmoji()).asUnicode().getAsCodepoints();
+                String codepoints = Objects.requireNonNull(temp.getEmoji()).asUnicode().getAsCodepoints();
+                label = Arrays.stream(codepoints.split("U\\+"))
+                    .map(s -> {
+                        try {
+                            return Integer.parseInt(s, 16);
+                        } catch (NumberFormatException e) {
+                            return null;
+                        }
+                    })
+                    .filter(Objects::nonNull)
+                    .filter(Character::isValidCodePoint)
+                    .map(Character::toString)
+                    .collect(Collectors.joining());
             } else {
                 label = temp.getLabel();
             }

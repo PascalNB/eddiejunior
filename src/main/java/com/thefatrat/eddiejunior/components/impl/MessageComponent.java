@@ -11,12 +11,15 @@ import com.thefatrat.eddiejunior.util.URLUtil;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
+import net.dv8tion.jda.api.entities.channel.concrete.ForumChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.forums.ForumPost;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.components.text.TextInput;
 import net.dv8tion.jda.api.interactions.components.text.TextInputStyle;
 import net.dv8tion.jda.api.interactions.modals.Modal;
+import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 
 public class MessageComponent extends AbstractComponent {
 
@@ -63,7 +66,7 @@ public class MessageComponent extends AbstractComponent {
                 }),
 
             new Command("send", "send a message in a given channel")
-                .addOptions(new OptionData(OptionType.CHANNEL, "channel", "channel", true)
+                .addOptions(new OptionData(OptionType.CHANNEL, "channel", "text channel", true)
                     .setChannelTypes(ChannelType.TEXT)
                 )
                 .setAction((command, reply) -> {
@@ -80,6 +83,29 @@ public class MessageComponent extends AbstractComponent {
 
                     reply.sendModal(Modal.create("message_send", "Send message")
                         .addActionRow(input)
+                        .build());
+                }),
+
+            new Command("post", "create a new forum post in the given channel")
+                .addOptions(new OptionData(OptionType.CHANNEL, "channel", "forum channel", true)
+                    .setChannelTypes(ChannelType.FORUM)
+                )
+                .setAction((command, reply) -> {
+                    ForumChannel channel = command.get("channel").getAsChannel().asForumChannel();
+
+                    TextInput title = TextInput.create("post_title_" + channel.getId(), "Title",
+                            TextInputStyle.SHORT)
+                        .setRequiredRange(1, ForumChannel.MAX_NAME_LENGTH)
+                        .build();
+
+                    TextInput body = TextInput.create("post_body_" + channel.getId(), "Text",
+                            TextInputStyle.PARAGRAPH)
+                        .setRequiredRange(1, 2048)
+                        .build();
+
+                    reply.sendModal(Modal.create("message_post", "Post thread")
+                        .addActionRow(title)
+                        .addActionRow(body)
                         .build());
                 })
         );
@@ -166,6 +192,35 @@ public class MessageComponent extends AbstractComponent {
             reply.ok("Message sent in %s\n%s", channel.getAsMention(), response.getJumpUrl());
             getServer().log(event.getMember().getUser(), "Sent custom message in %s (`%s`)\n%s",
                 channel.getAsMention(), channel.getId(), response.getJumpUrl());
+        });
+
+        getServer().getModalHandler().addListener("message_post", (event, reply) -> {
+            String key = event.getValues().keySet().iterator().next();
+            String[] split = key.split("_", 3);
+            String channelId = split[2];
+
+            ForumChannel channel = getGuild().getForumChannelById(channelId);
+            if (channel == null) {
+                throw new BotErrorException("Channel with id `%s` not found", split[3]);
+            }
+
+            PermissionChecker.requirePermission(channel, Permission.VIEW_CHANNEL, Permission.MESSAGE_SEND);
+
+            String title = event.getValues().get("post_title_" + channelId).getAsString();
+            String body = event.getValues().get("post_body_" + channelId).getAsString();
+
+            MessageCreateData message = MessageCreateData.fromContent(body);
+            ForumPost response = channel.createForumPost(title, message)
+                .onErrorMap(e -> null)
+                .complete();
+
+            if (response == null) {
+                throw new BotErrorException("Message could not be posted");
+            }
+            reply.hide();
+            reply.ok("Message posted in %s\n%s", channel.getAsMention(), response.getMessage().getJumpUrl());
+            getServer().log(event.getMember().getUser(), "Sent custom post in %s (`%s`)\n%s",
+                channel.getAsMention(), channel.getId(), response.getMessage().getJumpUrl());
         });
 
         getServer().getModalHandler().addListener("message_edit", (event, reply) -> {
