@@ -18,6 +18,7 @@ import com.thefatrat.eddiejunior.util.Icon;
 import com.thefatrat.eddiejunior.util.URLUtil;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
@@ -87,6 +88,7 @@ public class FaqComponent extends AbstractComponent {
                 .setAction(this::sendFaqMesasge),
 
             new Command("answer", "sends the answer for one of the faq questions")
+                .addOptions(new OptionData(OptionType.USER, "user", "user ping", false))
                 .setAction(this::answerQuestion)
         );
 
@@ -168,16 +170,24 @@ public class FaqComponent extends AbstractComponent {
             throw new BotWarningException("The list of questions is empty");
         }
 
-        reply.hide();
-        reply.send(new MessageCreateBuilder()
+        MessageCreateBuilder builder = new MessageCreateBuilder()
             .addEmbeds(new EmbedBuilder()
                 .setColor(Colors.TRANSPARENT)
                 .setDescription("Select the question that should be answered")
-                .build())
+                .build()
+            )
             .addActionRow(StringSelectMenu.create("faq_answer")
                 .addOptions(getOptions())
-                .build())
-            .build());
+                .build()
+            );
+
+        if (command.hasOption("user")) {
+            User user = command.get("user").getAsUser();
+            builder.setContent(user.getAsMention());
+        }
+
+        reply.hide();
+        reply.send(builder.build());
     }
 
     private void sendFaqMesasge(CommandEvent command, InteractionReply reply) {
@@ -414,15 +424,17 @@ public class FaqComponent extends AbstractComponent {
             throw new BotErrorException("Something went wrong");
         }
 
+        MessageCreateBuilder builder = new MessageCreateBuilder()
+            .setContent(event.getMessage().getContentRaw())
+            .addEmbeds(new EmbedBuilder()
+                .setColor(Colors.TRANSPARENT)
+                .setTitle(faqQuestion.question())
+                .setDescription(faqQuestion.answer())
+                .setImage(faqQuestion.url())
+                .build());
+
         TextChannel channel = event.getMessage().getChannel().asTextChannel();
-        channel.sendMessageEmbeds(
-                new EmbedBuilder()
-                    .setColor(Colors.TRANSPARENT)
-                    .setTitle(faqQuestion.question())
-                    .setDescription(faqQuestion.answer())
-                    .setImage(faqQuestion.url())
-                    .build()
-            )
+        channel.sendMessage(builder.build())
             .queue(callback -> reply.edit(Icon.OK, "Answer sent"));
     }
 
