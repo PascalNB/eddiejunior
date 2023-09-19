@@ -414,13 +414,16 @@ public class FaqComponent extends AbstractComponent {
             throw new BotErrorException("Something went wrong");
         }
 
-        reply.send(new EmbedBuilder()
-            .setColor(Colors.TRANSPARENT)
-            .setTitle(faqQuestion.question())
-            .setDescription(faqQuestion.answer())
-            .setImage(faqQuestion.url())
-            .build()
-        );
+        TextChannel channel = event.getMessage().getChannel().asTextChannel();
+        channel.sendMessageEmbeds(
+                new EmbedBuilder()
+                    .setColor(Colors.TRANSPARENT)
+                    .setTitle(faqQuestion.question())
+                    .setDescription(faqQuestion.answer())
+                    .setImage(faqQuestion.url())
+                    .build()
+            )
+            .queue(callback -> reply.edit(Icon.OK, "Answer sent"));
     }
 
     private SelectOption @NotNull [] getOptions() {
