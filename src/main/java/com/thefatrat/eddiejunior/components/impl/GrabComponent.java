@@ -325,11 +325,52 @@ public class GrabComponent extends AbstractComponent {
                         .setDescription(channel.getAsMention())
                         .addField("Channel type", '`' + channel.getType().toString() + '`', true)
                         .addField("Creation date", TimeFormat.DATE_TIME_LONG.format(channel.getTimeCreated()), true);
-                    if (!roleOverrides.isEmpty()) {
-                        embed.addField("Role overrides", String.join("\n\n", roleOverrides), false);
-                    }
-                    if (!memberOverrides.isEmpty()) {
-                        embed.addField("Member overrides", String.join("\n\n", memberOverrides), false);
+
+                    try {
+                        if (!roleOverrides.isEmpty()) {
+                            int iteration = 1;
+                            for (int i = 0; i < roleOverrides.size(); i++) {
+                                StringBuilder builder = new StringBuilder();
+                                while (i < roleOverrides.size()) {
+                                    String override = roleOverrides.get(i) + "\n\n";
+                                    if (builder.length() + override.length() > 1024) {
+                                        break;
+                                    }
+                                    builder.append(override);
+                                    i++;
+                                }
+                                if (builder.isEmpty()) {
+                                    break;
+                                }
+                                builder.delete(builder.length() - 2, builder.length());
+                                embed.addField("Role overrides " + iteration, builder.toString(), false);
+                                iteration++;
+                            }
+//                        embed.addField("Role overrides", String.join("\n\n", roleOverrides), false);
+                        }
+                        if (!memberOverrides.isEmpty()) {
+                            int iteration = 1;
+                            for (int i = 0; i < memberOverrides.size(); i++) {
+                                StringBuilder builder = new StringBuilder();
+                                while (i < memberOverrides.size()) {
+                                    String override = memberOverrides.get(i) + "\n\n";
+                                    if (builder.length() + override.length() > 1024) {
+                                        break;
+                                    }
+                                    builder.append(override);
+                                    i++;
+                                }
+                                if (builder.isEmpty()) {
+                                    break;
+                                }
+                                builder.delete(builder.length() - 2, builder.length());
+                                embed.addField("Member overrides " + iteration, builder.toString(), false);
+                                iteration++;
+                            }
+//                        embed.addField("Member overrides", String.join("\n\n", memberOverrides), false);
+                        }
+                    } catch (Exception e) {
+                        throw new BotErrorException(e.getMessage());
                     }
                     embed.setFooter(channel.getId());
                     reply.hide();
