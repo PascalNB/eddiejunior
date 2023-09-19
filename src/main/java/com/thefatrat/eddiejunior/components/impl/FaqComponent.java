@@ -84,7 +84,10 @@ public class FaqComponent extends AbstractComponent {
 
             new Command("message", "send the faq message")
                 .addOptions(new OptionData(OptionType.STRING, "text", "text", false).setMinLength(1))
-                .setAction(this::sendFaqMesasge)
+                .setAction(this::sendFaqMesasge),
+
+            new Command("answer", "sends the answer for one of the faq questions")
+                .setAction(this::answerQuestion)
         );
 
         getServer().getModalHandler().addListener("faq_add", this::handleAddModal);
@@ -96,6 +99,8 @@ public class FaqComponent extends AbstractComponent {
         getServer().getModalHandler().addListener("faq_edit", this::handleEditModal);
 
         getServer().getStringSelectHandler().addListener("faq_query", this::handleFaqQuery);
+
+        getServer().getStringSelectHandler().addListener("faq_answer", this::handleFaqAnswer);
     }
 
     private void addQuestion(CommandEvent command, InteractionReply reply) {
@@ -153,6 +158,23 @@ public class FaqComponent extends AbstractComponent {
                 .setDescription("Select the question that needs to be edited")
                 .build())
             .addActionRow(StringSelectMenu.create("faq_edit")
+                .addOptions(getOptions())
+                .build())
+            .build());
+    }
+
+    private void answerQuestion(CommandEvent command, InteractionReply reply) {
+        if (this.questions.isEmpty()) {
+            throw new BotWarningException("The list of questions is empty");
+        }
+
+        reply.hide();
+        reply.send(new MessageCreateBuilder()
+            .addEmbeds(new EmbedBuilder()
+                .setColor(Colors.TRANSPARENT)
+                .setDescription("Select the question that should be answered")
+                .build())
+            .addActionRow(StringSelectMenu.create("faq_answer")
                 .addOptions(getOptions())
                 .build())
             .build());
@@ -383,6 +405,22 @@ public class FaqComponent extends AbstractComponent {
             .setDescription(faqQuestion.answer())
             .setImage(faqQuestion.url())
             .build());
+    }
+
+    private void handleFaqAnswer(SelectEvent<SelectOption> event, MenuReply reply) {
+        int id = Integer.parseInt(event.getOption().getValue());
+        Question faqQuestion = this.questions.get(id);
+        if (faqQuestion == null) {
+            throw new BotErrorException("Something went wrong");
+        }
+
+        reply.send(new EmbedBuilder()
+            .setColor(Colors.TRANSPARENT)
+            .setTitle(faqQuestion.question())
+            .setDescription(faqQuestion.answer())
+            .setImage(faqQuestion.url())
+            .build()
+        );
     }
 
     private SelectOption @NotNull [] getOptions() {
