@@ -83,7 +83,7 @@ public class FeedbackComponent extends DirectMessageComponent {
                     String id = user.getId();
                     boolean reset = command.get("reset").getAsBoolean();
 
-                    boolean removed = submissions.removeIf(s -> s.user.getId().equals(id));
+                    boolean removed = submissions.removeIf(s -> s.user().getId().equals(id));
 
                     if (removed) {
                         if (reset) {
@@ -92,6 +92,8 @@ public class FeedbackComponent extends DirectMessageComponent {
                         } else {
                             reply.ok("Removed submission by %s", user.getAsMention());
                         }
+                        getServer().log(Colors.RED, command.getMember().getUser(), "Removed submission by %s (`%s`)",
+                            user.getAsMention(), id);
                         return;
                     }
 
@@ -358,14 +360,14 @@ public class FeedbackComponent extends DirectMessageComponent {
                 if (winChannel != null) {
                     TextChannel output = getGuild().getTextChannelById(winChannel);
                     if (output != null && output.canTalk()) {
-                        output.sendMessageEmbeds(
-                                new EmbedBuilder()
+                        output.sendMessage(new MessageCreateBuilder()
+                                .setContent(submission.user().getAsMention())
+                                .addEmbeds(new EmbedBuilder()
                                     .setColor(Icon.WIN.getColor())
-                                    .setDescription(String.format(
-                                        "%s %s has won!",
-                                        Icon.WIN, submission.user().getAsMention()
-                                    ))
+                                    .setDescription(String.format("%s You won!", Icon.WIN))
                                     .build()
+                                )
+                                .build()
                             )
                             .queue();
                     }
