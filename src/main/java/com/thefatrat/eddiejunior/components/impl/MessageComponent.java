@@ -14,6 +14,7 @@ import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.ForumChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.forums.ForumPost;
+import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.components.text.TextInput;
@@ -227,9 +228,12 @@ public class MessageComponent extends AbstractComponent {
             String key = event.getValues().keySet().iterator().next();
             String[] split = key.split("_", 3);
 
-            TextChannel channel = getGuild().getTextChannelById(split[1]);
+            GuildMessageChannel channel = getGuild().getTextChannelById(split[1]);
             if (channel == null) {
-                throw new BotErrorException("Message could not be edited");
+                channel = getGuild().getThreadChannelById(split[1]);
+                if (channel == null) {
+                    throw new BotErrorException("Message could not be edited");
+                }
             }
 
             PermissionChecker.requireSend(channel.getPermissionContainer());
