@@ -29,20 +29,20 @@ import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import net.dv8tion.jda.api.utils.FileUpload;
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
+import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import org.jetbrains.annotations.NotNull;
 import oshi.SystemInfo;
 import oshi.hardware.CentralProcessor;
 import oshi.hardware.GlobalMemory;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 public class ManagerComponent extends AbstractComponent implements GlobalComponent {
 
@@ -279,21 +279,13 @@ public class ManagerComponent extends AbstractComponent implements GlobalCompone
             throw new BotErrorException("Could not find log file");
         }
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(log))) {
-            String lines = reader.lines()
-                .map(line -> '`' + line + '`')
-                .collect(Collectors.joining(" - "));
-
-            if (lines.length() > 2048) {
-                lines = lines.substring(lines.length() - 2049);
-                if (lines.charAt(0) != '`') {
-                    lines = '`' + lines;
-                }
-            }
-
-            reply.send(lines);
+        try (FileUpload fileUpload = FileUpload.fromData(log).setName("log.txt")) {
+            MessageCreateData message = new MessageCreateBuilder()
+                .addFiles(fileUpload)
+                .build();
+            reply.send(message);
         } catch (IOException e) {
-            throw new BotErrorException("Could not read log file");
+            throw new BotErrorException("Something went wrong");
         }
     }
 
