@@ -544,6 +544,8 @@ public class FeedbackComponent extends DirectMessageComponent {
             buttonMessage.delete().onErrorMap(e -> null).queue();
         }
 
+        this.clearRequests();
+
         reply.send(Icon.STOP, "Feedback session stopped");
     }
 

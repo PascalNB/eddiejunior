@@ -2,6 +2,7 @@ package com.thefatrat.eddiejunior.components;
 
 import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.entities.Interaction;
+import com.thefatrat.eddiejunior.sources.Server;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 
@@ -48,5 +49,10 @@ public interface Component {
      * @return the current status of the component
      */
     String getStatus();
+
+    /**
+     * @return the server corresponding to the component
+     */
+    Server getServer();
 
 }

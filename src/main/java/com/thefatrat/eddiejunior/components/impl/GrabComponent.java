@@ -415,26 +415,27 @@ public class GrabComponent extends AbstractComponent {
                 })
         );
 
-        addMessageInteractions(new Interaction<Message>("sticker")
-            .setAction((event, reply) -> {
-                List<StickerItem> stickers = event.getEntity().getStickers();
+        addMessageInteractions(
+            new Interaction<Message>("sticker")
+                .setAction((event, reply) -> {
+                    List<StickerItem> stickers = event.getEntity().getStickers();
 
-                if (stickers.isEmpty()) {
-                    throw new BotWarningException("No sticker found in the message");
-                }
+                    if (stickers.isEmpty()) {
+                        throw new BotWarningException("No sticker found in the message");
+                    }
 
-                StickerItem sticker = stickers.get(0);
+                    StickerItem sticker = stickers.get(0);
 
-                reply.hide();
-                reply.send(new MessageCreateBuilder()
-                    .addEmbeds(new EmbedBuilder()
-                        .setColor(Colors.TRANSPARENT)
-                        .setTitle(sticker.getName())
-                        .setFooter(sticker.getId())
-                        .build())
-                    .addContent(sticker.getIcon().getUrl(512))
-                    .build());
-            })
+                    reply.hide();
+                    reply.send(new MessageCreateBuilder()
+                        .addEmbeds(new EmbedBuilder()
+                            .setColor(Colors.TRANSPARENT)
+                            .setTitle(sticker.getName())
+                            .setFooter(sticker.getId())
+                            .build())
+                        .addContent(sticker.getIcon().getUrl(512))
+                        .build());
+                })
         );
 
     }

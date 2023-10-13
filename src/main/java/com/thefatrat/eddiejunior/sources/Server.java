@@ -12,6 +12,7 @@ import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotException;
 import com.thefatrat.eddiejunior.handlers.ComponentHandler;
 import com.thefatrat.eddiejunior.handlers.MapHandler;
+import com.thefatrat.eddiejunior.handlers.RequestHandler;
 import com.thefatrat.eddiejunior.handlers.SetHandler;
 import com.thefatrat.eddiejunior.reply.DefaultReply;
 import com.thefatrat.eddiejunior.reply.InteractionReply;
@@ -37,6 +38,7 @@ public class Server {
     private final String id;
     private final HandlerCollection<Member> handlerCollection = new HandlerCollection<>();
     private final ComponentHandler directHandler = new ComponentHandler();
+    private final RequestHandler requestHandler = new RequestHandler();
     private final Map<String, Component> components = new HashMap<>();
     private final Map<String, MapHandler<CommandEvent, InteractionReply>> subCommandHandler = new HashMap<>();
     private TextChannel log = null;
@@ -212,6 +214,10 @@ public class Server {
 
     public ComponentHandler getDirectMessageHandler() {
         return directHandler;
+    }
+
+    public RequestHandler getRequestHandler() {
+        return requestHandler;
     }
 
     public MapHandler<CommandEvent, InteractionReply> getCommandHandler() {

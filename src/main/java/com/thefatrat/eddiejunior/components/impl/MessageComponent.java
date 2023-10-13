@@ -20,6 +20,7 @@ import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.components.text.TextInput;
 import net.dv8tion.jda.api.interactions.components.text.TextInputStyle;
 import net.dv8tion.jda.api.interactions.modals.Modal;
+import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 
 public class MessageComponent extends AbstractComponent {
@@ -82,8 +83,14 @@ public class MessageComponent extends AbstractComponent {
                         .setRequiredRange(1, 2000)
                         .build();
 
+                    TextInput messageReply = TextInput.create("send_message_reply_" + channel.getId(),
+                            "Message Reply URL", TextInputStyle.SHORT)
+                        .setRequired(false)
+                        .build();
+
                     reply.sendModal(Modal.create("message_send", "Send message")
                         .addActionRow(input)
+                        .addActionRow(messageReply)
                         .build());
                 }),
 
@@ -182,7 +189,17 @@ public class MessageComponent extends AbstractComponent {
             }
 
             String content = event.getValues().get(key).getAsString();
-            Message response = channel.sendMessage(content)
+            MessageCreateAction createAction = channel.sendMessage(content);
+            String responseUrl = event.getValues().get("message_send_reply_" + split[3]).getAsString();
+            if (!"".equals(responseUrl)) {
+                Message message = URLUtil.messageFromURL(responseUrl, getGuild());
+                if (!channel.getId().equals(message.getChannel().getId())) {
+                    throw new BotWarningException("Can only reply to messages in the same channel");
+                }
+                createAction.setMessageReference(message);
+            }
+
+            Message response = createAction
                 .onErrorMap(e -> null)
                 .complete();
 

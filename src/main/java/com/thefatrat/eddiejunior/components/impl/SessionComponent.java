@@ -21,7 +21,6 @@ import net.dv8tion.jda.api.requests.RestAction;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import net.dv8tion.jda.internal.utils.PermissionUtil;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
@@ -48,7 +47,7 @@ public class SessionComponent extends AbstractComponent {
                 List<String> ids = getDatabaseManager().getSettings("session_" + session);
                 for (String id : ids) {
                     String messageString = getDatabaseManager().getSetting("message_" + session + "_" + id);
-                    Message message = getMessage(messageString);
+                    Message message = URLUtil.getMessageFromString(messageString, getGuild());
                     map.put(id, message);
                 }
             }
@@ -356,21 +355,6 @@ public class SessionComponent extends AbstractComponent {
         for (String id : sessions.get(session).keySet()) {
             getDatabaseManager().removeSetting("message_" + session + "_" + id);
         }
-    }
-
-    @Nullable
-    private Message getMessage(@Nullable String messageString) {
-        if (messageString == null) {
-            return null;
-        }
-        String[] split = messageString.split("_", 2);
-        TextChannel channel = getGuild().getTextChannelById(split[0]);
-        if (channel == null) {
-            return null;
-        }
-        return channel.retrieveMessageById(split[1])
-            .onErrorMap(e -> null)
-            .complete();
     }
 
     @Override

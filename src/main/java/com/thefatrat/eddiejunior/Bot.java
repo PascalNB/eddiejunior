@@ -167,7 +167,7 @@ public class Bot extends ListenerAdapter {
 
             try {
                 ButtonEvent<User> bE = new ButtonEvent<>(event.getUser(), event.getComponentId(), event.getMessage());
-                direct.getButtonHandler().handle(event.getComponentId(), bE, reply);
+                direct.getButtonHandler().handle(bE, reply);
 
             } catch (BotException e) {
                 reply.edit(e);

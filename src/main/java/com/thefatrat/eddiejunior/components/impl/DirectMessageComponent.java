@@ -4,15 +4,18 @@ import com.thefatrat.eddiejunior.components.AbstractComponent;
 import com.thefatrat.eddiejunior.components.RunnableComponent;
 import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.events.CommandEvent;
+import com.thefatrat.eddiejunior.events.RequestEvent;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotWarningException;
 import com.thefatrat.eddiejunior.reply.InteractionReply;
 import com.thefatrat.eddiejunior.reply.MenuReply;
 import com.thefatrat.eddiejunior.reply.Reply;
+import com.thefatrat.eddiejunior.sources.Direct;
 import com.thefatrat.eddiejunior.sources.Server;
 import com.thefatrat.eddiejunior.util.Colors;
 import com.thefatrat.eddiejunior.util.Icon;
 import com.thefatrat.eddiejunior.util.PermissionChecker;
+import com.thefatrat.eddiejunior.util.URLUtil;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.IMentionable;
 import net.dv8tion.jda.api.entities.ISnowflake;
@@ -20,9 +23,14 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import net.dv8tion.jda.api.interactions.components.ActionRow;
+import net.dv8tion.jda.api.interactions.components.buttons.ButtonStyle;
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
+import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,8 +42,10 @@ public abstract class DirectMessageComponent extends AbstractComponent implement
     private final String alt;
     private final boolean autoRun;
     private final Set<String> blacklist = new HashSet<>();
+    private final Map<String, Message> requests = new HashMap<>();
     private boolean running = false;
     private String destination;
+    private Message confirmation;
 
     public DirectMessageComponent(Server server, String title, String alt, boolean autoRun) {
         super(server, title);
@@ -46,6 +56,8 @@ public abstract class DirectMessageComponent extends AbstractComponent implement
             start(Reply.EMPTY);
         }
         blacklist.addAll(getDatabaseManager().getSettings("blacklist"));
+        String confirmationString = getDatabaseManager().getSetting("confirmationmessage");
+        confirmation = URLUtil.getMessageFromString(confirmationString, getGuild());
 
         setComponentCommand();
 
@@ -73,8 +85,18 @@ public abstract class DirectMessageComponent extends AbstractComponent implement
                     .addChoice("clear", "clear")
                 )
                 .addOptions(new OptionData(OptionType.USER, "user", "user", false))
-                .setAction(this::blacklistCommand)
+                .setAction(this::blacklistCommand),
+
+            new Command("setconfirmation", "set the confirmation message that will be shown to users upon submission")
+                .addOptions(new OptionData(OptionType.STRING, "message", "message url", true))
+                .setAction(this::setConfirmation),
+
+            new Command("removeconfirmation", "remove the confirmation message")
+                .setAction(this::removeConfirmation)
         );
+
+        getServer().getRequestHandler().addListener(this, "submit", this::handleRequest);
+        getServer().getRequestHandler().addListener(this, "cancel", this::removeRequest);
     }
 
     /**
@@ -269,7 +291,37 @@ public abstract class DirectMessageComponent extends AbstractComponent implement
         if (getBlacklist().contains(message.getAuthor().getId())) {
             throw new BotWarningException("You are not allowed to send messages at the moment");
         }
-        handleDirect(message, reply);
+        if (confirmation == null) {
+            this.handleDirect(message, reply);
+            return;
+        }
+
+        this.requests.put(message.getAuthor().getId(), message);
+
+        MessageCreateData confirmationReply = MessageCreateBuilder.fromMessage(confirmation)
+            .setComponents(
+                ActionRow.of(
+                    Direct.requestButton(this, ButtonStyle.SUCCESS, "submit", "Submit")
+                        .withEmoji(Emoji.fromFormatted("✔️")),
+                    Direct.requestButton(this, ButtonStyle.DANGER, "cancel", "Cancel")
+                        .withEmoji(Emoji.fromFormatted("✖️"))
+                )
+            )
+            .build();
+        reply.edit(confirmationReply);
+    }
+
+    private void handleRequest(RequestEvent<Void> event, MenuReply reply) {
+        Message message = requests.remove(event.getUser().getId());
+        if (message == null) {
+            throw new BotErrorException("Couldn't submit, try again");
+        }
+        this.handleDirect(message, reply);
+    }
+
+    private void removeRequest(RequestEvent<Void> event, MenuReply reply) {
+        requests.remove(event.getUser().getId());
+        reply.edit(Icon.STOP, "Successfully cancelled");
     }
 
     @NotNull
@@ -311,6 +363,28 @@ public abstract class DirectMessageComponent extends AbstractComponent implement
     public final void setDestination(String destination) {
         this.destination = destination;
         getDatabaseManager().setSetting("destination", destination);
+    }
+
+    private void setConfirmation(CommandEvent command, InteractionReply reply) {
+        Message message = URLUtil.messageFromURL(command.get("message").getAsString(), getGuild());
+        this.confirmation = message;
+        reply.hide();
+        reply.ok("Set confirmation message for `%s`", getId());
+        getServer().log(command.getMember().getUser(), "Set confirmation message for `%s` (%s)", getId(),
+            confirmation.getJumpUrl());
+        getDatabaseManager().setSetting("confirmationmessage", message.getChannel().getId() + "_" + message.getId());
+    }
+
+    private void removeConfirmation(CommandEvent command, InteractionReply reply) {
+        this.confirmation = null;
+        reply.hide();
+        reply.ok("Removed confirmation message for `%s`", getId());
+        getServer().log(command.getMember().getUser(), "Removed confirmation message for `%s`", getId());
+        getDatabaseManager().removeSetting("confirmationmessage");
+    }
+
+    public void clearRequests() {
+        this.requests.clear();
     }
 
     @Nullable

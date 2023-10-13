@@ -2,11 +2,14 @@ package com.thefatrat.eddiejunior.sources;
 
 import com.thefatrat.eddiejunior.Bot;
 import com.thefatrat.eddiejunior.HandlerCollection;
+import com.thefatrat.eddiejunior.components.Component;
 import com.thefatrat.eddiejunior.events.ButtonEvent;
+import com.thefatrat.eddiejunior.events.RequestEvent;
 import com.thefatrat.eddiejunior.events.SelectEvent;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotWarningException;
 import com.thefatrat.eddiejunior.handlers.MapHandler;
+import com.thefatrat.eddiejunior.handlers.SetHandler;
 import com.thefatrat.eddiejunior.reply.MenuReply;
 import com.thefatrat.eddiejunior.reply.Reply;
 import com.thefatrat.eddiejunior.util.Colors;
@@ -18,6 +21,7 @@ import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.interactions.components.ActionRow;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import net.dv8tion.jda.api.interactions.components.buttons.ButtonStyle;
 import net.dv8tion.jda.api.interactions.components.selections.SelectOption;
 import net.dv8tion.jda.api.interactions.components.selections.StringSelectMenu;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
@@ -61,18 +65,32 @@ public class Direct {
             ))
         );
 
-        getButtonHandler().addListener("x", (event, reply) -> {
-            cache.remove(event.getActor().getId());
-            reply.edit(Icon.STOP, "Successfully cancelled");
+        getButtonHandler().addListener((event, reply) -> {
+            if ("x".equals(event.getButtonId())) {
+                cache.remove(event.getActor().getId());
+                reply.edit(Icon.STOP, "Successfully cancelled");
+            } else {
+                handleRequestEvent(event, reply);
+            }
         });
+    }
+
+    private void handleRequestEvent(ButtonEvent<User> event, MenuReply reply) {
+        String[] split = event.getButtonId().split("-", 2);
+        Server server = Bot.getInstance().getServer(split[0]);
+        if (server == null) {
+            throw new BotErrorException("Server not found");
+        }
+        RequestEvent<Void> requestEvent = new RequestEvent<>(event.getActor(), null);
+        server.getRequestHandler().handle(split[1], requestEvent, reply);
     }
 
     public MapHandler<SelectEvent<SelectOption>, MenuReply> getStringSelectHandler() {
         return handlerCollection.getStringSelectHandler();
     }
 
-    public MapHandler<ButtonEvent<User>, MenuReply> getButtonHandler() {
-        return handlerCollection.getButtonMapHandler();
+    public SetHandler<ButtonEvent<User>, MenuReply> getButtonHandler() {
+        return handlerCollection.getButtonHandler();
     }
 
     public void receiveMessage(@NotNull Message message, Reply reply) {
@@ -150,6 +168,10 @@ public class Direct {
                 ActionRow.of(Button.danger("x", "Cancel").withEmoji(Emoji.fromUnicode("✖")))
             )
             .build();
+    }
+
+    public static Button requestButton(Component component, ButtonStyle style, String id, String label) {
+        return Button.of(style, component.getServer().getId() + "-" + component.getId() + "-" + id, label);
     }
 
 }

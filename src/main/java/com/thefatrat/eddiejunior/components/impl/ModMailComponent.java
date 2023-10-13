@@ -49,7 +49,7 @@ public class ModMailComponent extends DirectMessageComponent {
 
     public static final String NAME = "Modmail";
 
-    private static final Pattern MENTION_PATTERN = Pattern.compile("^.*(\\d+).*$");
+    private static final Pattern MENTION_PATTERN = Pattern.compile("^\\D*(\\d+)\\D*$");
 
     private final Map<String, Long> timeouts = new ConcurrentHashMap<>();
     private final Map<String, Integer> userCount = new ConcurrentHashMap<>();
