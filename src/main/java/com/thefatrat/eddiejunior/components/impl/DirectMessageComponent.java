@@ -311,7 +311,7 @@ public abstract class DirectMessageComponent extends AbstractComponent implement
         reply.edit(confirmationReply);
     }
 
-    private void handleRequest(RequestEvent<Void> event, MenuReply reply) {
+    private void handleRequest(RequestEvent event, MenuReply reply) {
         Message message = requests.remove(event.getUser().getId());
         if (message == null) {
             throw new BotErrorException("Couldn't submit, try again");
@@ -319,7 +319,7 @@ public abstract class DirectMessageComponent extends AbstractComponent implement
         this.handleDirect(message, reply);
     }
 
-    private void removeRequest(RequestEvent<Void> event, MenuReply reply) {
+    private void removeRequest(RequestEvent event, MenuReply reply) {
         requests.remove(event.getUser().getId());
         reply.edit(Icon.STOP, "Successfully cancelled");
     }

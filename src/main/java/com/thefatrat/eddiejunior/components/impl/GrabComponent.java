@@ -270,6 +270,7 @@ public class GrabComponent extends AbstractComponent {
                             .setColor(Colors.TRANSPARENT)
                             .setTitle(emoji.getName())
                             .setFooter(emoji.getId())
+                            .setImage(url)
                             .build())
                         .addContent(url)
                         .build());
@@ -346,7 +347,6 @@ public class GrabComponent extends AbstractComponent {
                                 embed.addField("Role overrides " + iteration, builder.toString(), false);
                                 iteration++;
                             }
-//                        embed.addField("Role overrides", String.join("\n\n", roleOverrides), false);
                         }
                         if (!memberOverrides.isEmpty()) {
                             int iteration = 1;
@@ -367,7 +367,6 @@ public class GrabComponent extends AbstractComponent {
                                 embed.addField("Member overrides " + iteration, builder.toString(), false);
                                 iteration++;
                             }
-//                        embed.addField("Member overrides", String.join("\n\n", memberOverrides), false);
                         }
                     } catch (Exception e) {
                         throw new BotErrorException(e.getMessage());
@@ -394,10 +393,10 @@ public class GrabComponent extends AbstractComponent {
                     }
 
                     int color = Integer.parseInt(hexString, 16);
-                    BufferedImage image = new BufferedImage(50, 50, BufferedImage.TYPE_INT_RGB);
+                    BufferedImage image = new BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB);
                     Graphics2D g = image.createGraphics();
                     g.setColor(new Color(color));
-                    g.fillRect(0, 0, 50, 50);
+                    g.fillRect(0, 0, 100, 100);
 
                     try {
                         PipedInputStream inputStream = new PipedInputStream();
@@ -432,6 +431,7 @@ public class GrabComponent extends AbstractComponent {
                             .setColor(Colors.TRANSPARENT)
                             .setTitle(sticker.getName())
                             .setFooter(sticker.getId())
+                            .setImage(sticker.getIcon().getUrl(512))
                             .build())
                         .addContent(sticker.getIcon().getUrl(512))
                         .build());

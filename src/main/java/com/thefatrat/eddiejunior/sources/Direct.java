@@ -81,7 +81,7 @@ public class Direct {
         if (server == null) {
             throw new BotErrorException("Server not found");
         }
-        RequestEvent<Void> requestEvent = new RequestEvent<>(event.getActor(), null);
+        RequestEvent requestEvent = new RequestEvent(event.getActor());
         server.getRequestHandler().handle(split[1], requestEvent, reply);
     }
 

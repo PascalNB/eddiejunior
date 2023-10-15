@@ -2,22 +2,16 @@ package com.thefatrat.eddiejunior.events;
 
 import net.dv8tion.jda.api.entities.User;
 
-public class RequestEvent<T> {
+public class RequestEvent {
 
     private final User user;
-    private final T t;
 
-    public RequestEvent(User user, T t) {
+    public RequestEvent(User user) {
         this.user = user;
-        this.t = t;
     }
 
     public User getUser() {
         return user;
-    }
-
-    public T getData() {
-        return t;
     }
 
 }

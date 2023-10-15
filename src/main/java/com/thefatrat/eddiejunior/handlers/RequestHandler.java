@@ -8,19 +8,16 @@ import java.util.function.BiConsumer;
 
 public class RequestHandler {
 
-    private final MapHandler<RequestEvent<?>, MenuReply> handler = new MapHandler<>();
+    private final MapHandler<RequestEvent, MenuReply> handler = new MapHandler<>();
 
-    public <T> void handle(String requestId, RequestEvent<T> event, MenuReply reply) {
+    public void handle(String requestId, RequestEvent event, MenuReply reply) {
         handler.handle(requestId, event, reply);
     }
 
-    public <T> void addListener(Component component, String requestId,
-        BiConsumer<RequestEvent<T>, MenuReply> listener) {
+    public void addListener(Component component, String requestId,
+        BiConsumer<RequestEvent, MenuReply> listener) {
 
-        handler.addListener(component.getId() + "-" + requestId, (genericEvent, reply) -> {
-            //noinspection unchecked
-            listener.accept((RequestEvent<T>) genericEvent, reply);
-        });
+        handler.addListener(component.getId() + "-" + requestId, listener);
     }
 
 }

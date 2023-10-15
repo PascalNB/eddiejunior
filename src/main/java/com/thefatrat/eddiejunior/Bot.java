@@ -87,10 +87,12 @@ public class Bot extends ListenerAdapter {
     }
 
     private void loadServer(String id) {
-        Server server = new Server(id);
-        servers.put(server.getId(), server);
-        server.registerComponents(components);
-        commandManager.setupGuildCommands(server);
+        if (!servers.containsKey(id)) {
+            Server server = new Server(id);
+            servers.put(server.getId(), server);
+            server.registerComponents(components);
+            commandManager.setupGuildCommands(server);
+        }
     }
 
     public String getUptime() {
