@@ -189,7 +189,7 @@ public class MessageComponent extends AbstractComponent {
                 throw new BotWarningException("Cannot send messages in %s", channel.getAsMention());
             }
 
-            String content = event.getValues().get(key).getAsString();
+            String content = event.getValues().get("message_send_input_" + split[3]).getAsString();
             MessageCreateAction createAction = channel.sendMessage(content);
 
             ModalMapping responseUrlMapping = event.getValues().get("message_send_reply_" + split[3]);
