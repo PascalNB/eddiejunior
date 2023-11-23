@@ -20,6 +20,7 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
@@ -433,7 +434,7 @@ public class FaqComponent extends AbstractComponent {
                 .setImage(faqQuestion.url())
                 .build());
 
-        TextChannel channel = event.getMessage().getChannel().asTextChannel();
+        GuildMessageChannel channel = event.getMessage().getChannel().asGuildMessageChannel();
         channel.sendMessage(builder.build())
             .queue(callback -> reply.edit(Icon.OK, "Answer sent"));
     }

@@ -84,7 +84,7 @@ public class MessageComponent extends AbstractComponent {
                         .setRequiredRange(1, 2000)
                         .build();
 
-                    TextInput messageReply = TextInput.create("send_message_reply_" + channel.getId(),
+                    TextInput messageReply = TextInput.create("message_send_reply_" + channel.getId(),
                             "Message Reply URL", TextInputStyle.SHORT)
                         .setRequired(false)
                         .build();
@@ -194,11 +194,14 @@ public class MessageComponent extends AbstractComponent {
 
             ModalMapping responseUrlMapping = event.getValues().get("message_send_reply_" + split[3]);
             if (responseUrlMapping != null) {
-                Message message = URLUtil.messageFromURL(responseUrlMapping.getAsString(), getGuild());
-                if (!channel.getId().equals(message.getChannel().getId())) {
-                    throw new BotWarningException("Can only reply to messages in the same channel");
+                String responseUrl = responseUrlMapping.getAsString();
+                if (!responseUrl.isBlank()) {
+                    Message message = URLUtil.messageFromURL(responseUrl, getGuild());
+                    if (!channel.getId().equals(message.getChannel().getId())) {
+                        throw new BotWarningException("Can only reply to messages in the same channel");
+                    }
+                    createAction.setMessageReference(message);
                 }
-                createAction.setMessageReference(message);
             }
 
             Message response = createAction
