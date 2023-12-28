@@ -7,6 +7,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Set;
+import java.util.regex.Pattern;
 
 public final class EmojiUtil {
 
@@ -26,10 +27,20 @@ public final class EmojiUtil {
             } else {
                 return Button.of(style, id, emoji);
             }
+        } else if (CUSTOM_EMOJI_PATTERN.matcher(split[0]).find()) {
+            Emoji emoji = Emoji.fromFormatted(split[0]);
+
+            if (split.length > 1) {
+                return Button.of(style, id, split[1]).withEmoji(emoji);
+            } else {
+                return Button.of(style, id, emoji);
+            }
         } else {
             return Button.of(style, id, label);
         }
     }
+
+    public static final Pattern CUSTOM_EMOJI_PATTERN = Pattern.compile("^<a?:[a-z\\dA-Z_]+:\\d+>$");
 
     public static final Set<String> EMOJIS = Set.of(
         "😀",

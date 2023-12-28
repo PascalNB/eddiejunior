@@ -20,6 +20,7 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.components.ActionRow;
@@ -153,19 +154,25 @@ public class PollComponent extends AbstractComponent {
             Button temp = EmojiUtil.formatButton("p", option, ButtonStyle.SECONDARY);
             String label;
             if ("".equals(temp.getLabel())) {
-                String codepoints = Objects.requireNonNull(temp.getEmoji()).asUnicode().getAsCodepoints();
-                label = Arrays.stream(codepoints.split("U\\+"))
-                    .map(s -> {
-                        try {
-                            return Integer.parseInt(s, 16);
-                        } catch (NumberFormatException e) {
-                            return null;
-                        }
-                    })
-                    .filter(Objects::nonNull)
-                    .filter(Character::isValidCodePoint)
-                    .map(Character::toString)
-                    .collect(Collectors.joining());
+                if (Objects.requireNonNull(temp.getEmoji()).getType().equals(Emoji.Type.UNICODE)) {
+                    String codepoints = temp.getEmoji().asUnicode().getAsCodepoints();
+
+                    label = Arrays.stream(codepoints.split("U\\+"))
+                        .map(s -> {
+                            try {
+                                return Integer.parseInt(s, 16);
+                            } catch (NumberFormatException e) {
+                                return null;
+                            }
+                        })
+                        .filter(Objects::nonNull)
+                        .filter(Character::isValidCodePoint)
+                        .map(Character::toString)
+                        .collect(Collectors.joining());
+                } else {
+                    label = temp.getEmoji().asCustom().getFormatted();
+                }
+
             } else {
                 label = temp.getLabel();
             }
@@ -233,7 +240,7 @@ public class PollComponent extends AbstractComponent {
         Poll poll = polls.get(pollId);
         int votesLeft = poll.addVote(event.getActor().getId(), vote);
         reply.hide();
-        reply.ok("Successfully voted for `%s`, you have %d votes left", vote, votesLeft);
+        reply.ok("Successfully voted for %s, you have %d votes left", vote, votesLeft);
     }
 
     /**
