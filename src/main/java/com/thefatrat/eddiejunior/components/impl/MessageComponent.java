@@ -12,9 +12,9 @@ import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.ForumChannel;
-import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.forums.ForumPost;
 import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.components.text.TextInput;
@@ -70,10 +70,11 @@ public class MessageComponent extends AbstractComponent {
 
             new Command("send", "send a message in a given channel")
                 .addOptions(new OptionData(OptionType.CHANNEL, "channel", "text channel", true)
-                    .setChannelTypes(ChannelType.TEXT)
+                    .setChannelTypes(ChannelType.TEXT, ChannelType.VOICE, ChannelType.NEWS,
+                        ChannelType.GUILD_PUBLIC_THREAD, ChannelType.GUILD_PRIVATE_THREAD)
                 )
                 .setAction((command, reply) -> {
-                    TextChannel channel = command.get("channel").getAsChannel().asTextChannel();
+                    MessageChannel channel = command.get("channel").getAsChannel().asGuildMessageChannel();
 
                     if (!channel.canTalk()) {
                         throw new BotWarningException("Cannot talk in the given channel");
@@ -181,9 +182,9 @@ public class MessageComponent extends AbstractComponent {
             String key = event.getValues().keySet().iterator().next();
             String[] split = key.split("_", 4);
 
-            TextChannel channel = getGuild().getTextChannelById(split[3]);
+            MessageChannel channel = getGuild().getChannelById(MessageChannel.class, split[3]);
             if (channel == null) {
-                throw new BotErrorException("Channel with id `%s` not found", split[3]);
+                throw new BotErrorException("Message channel with id `%s` not found", split[3]);
             }
             if (!channel.canTalk()) {
                 throw new BotWarningException("Cannot send messages in %s", channel.getAsMention());
