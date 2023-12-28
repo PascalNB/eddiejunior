@@ -23,6 +23,7 @@ public class HandlerCollection<V> {
     private SetHandler<EventEvent, Void> eventHandler;
     private MapHandler<SelectEvent<SelectOption>, MenuReply> stringSelectHandler;
     private MapHandler<SelectEvent<IMentionable>, MenuReply> entitySelectHandler;
+    private MapHandler<GenericEvent<?>, Void> genericHandler;
 
     public MapHandler<CommandEvent, InteractionReply> getCommandHandler() {
         if (commandHandler == null) {
@@ -92,6 +93,14 @@ public class HandlerCollection<V> {
             entitySelectHandler = new MapHandler<>();
         }
         return entitySelectHandler;
+    }
+
+    public <T> MapHandler<GenericEvent<T>, Void> getGenericHandler() {
+        if (genericHandler == null) {
+            genericHandler = new MapHandler<>();
+        }
+        //noinspection unchecked,rawtypes
+        return (MapHandler) genericHandler;
     }
 
 }

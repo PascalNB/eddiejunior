@@ -6,6 +6,7 @@ import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.requests.GatewayIntent;
+import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 
 import java.io.*;
@@ -60,16 +61,20 @@ public class Initializer {
             GrabComponent.class,
             RoleComponent.class,
             HoistComponent.class,
-            MessageComponent.class
+            MessageComponent.class,
+            NicknameComponent.class
         );
 
         jda = JDABuilder.createLight(token,
                 GatewayIntent.DIRECT_MESSAGES,
                 GatewayIntent.GUILD_MEMBERS,
+                GatewayIntent.GUILD_VOICE_STATES,
                 GatewayIntent.MESSAGE_CONTENT,
                 GatewayIntent.SCHEDULED_EVENTS
             )
-            .enableCache(CacheFlag.MEMBER_OVERRIDES, CacheFlag.SCHEDULED_EVENTS, CacheFlag.ROLE_TAGS)
+            .setMemberCachePolicy(MemberCachePolicy.VOICE)
+            .enableCache(CacheFlag.VOICE_STATE, CacheFlag.MEMBER_OVERRIDES, CacheFlag.SCHEDULED_EVENTS,
+                CacheFlag.ROLE_TAGS)
             .setRawEventsEnabled(false)
             .addEventListeners(Bot.getInstance())
             .build();

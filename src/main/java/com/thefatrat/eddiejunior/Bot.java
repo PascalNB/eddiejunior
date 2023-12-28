@@ -15,6 +15,7 @@ import net.dv8tion.jda.api.events.channel.update.ChannelUpdateArchivedEvent;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.events.guild.GuildLeaveEvent;
 import net.dv8tion.jda.api.events.guild.GuildReadyEvent;
+import net.dv8tion.jda.api.events.guild.member.GuildMemberUpdateEvent;
 import net.dv8tion.jda.api.events.guild.scheduledevent.update.ScheduledEventUpdateStatusEvent;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent;
@@ -369,6 +370,13 @@ public class Bot extends ListenerAdapter {
         } catch (BotException e) {
             reply.send(e);
         }
+    }
+
+    @Override
+    public void onGuildMemberUpdate(@NotNull GuildMemberUpdateEvent event) {
+        Guild guild = event.getGuild();
+        GenericEvent<Member> genericEvent = new GenericEvent<>(event.getMember());
+        servers.get(guild.getId()).<Member>getGenericHandler().handle("member", genericEvent, null);
     }
 
     @Override

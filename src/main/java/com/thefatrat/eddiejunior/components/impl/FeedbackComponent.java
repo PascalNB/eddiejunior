@@ -11,12 +11,14 @@ import com.thefatrat.eddiejunior.util.Icon;
 import com.thefatrat.eddiejunior.util.PermissionChecker;
 import com.thefatrat.eddiejunior.util.URLUtil;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.GuildVoiceState;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.Channel;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.AudioChannel;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
@@ -45,6 +47,7 @@ public class FeedbackComponent extends DirectMessageComponent {
     private final Set<String> users = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final List<Submission> submissions = new CopyOnWriteArrayList<>();
     private String winChannel;
+    private String voiceChannel;
     private String buttonChannelId;
     private Message buttonMessage = null;
     private int submissionCount = 0;
@@ -55,6 +58,7 @@ public class FeedbackComponent extends DirectMessageComponent {
         domains.addAll(getDatabaseManager().getSettings("domains"));
         filetypes.addAll(getDatabaseManager().getSettings("filetypes"));
         winChannel = getDatabaseManager().getSetting("winchannel");
+        voiceChannel = getDatabaseManager().getSetting("voicechannel");
         buttonChannelId = getDatabaseManager().getSetting("buttonchannel");
 
         addSubcommands(
@@ -83,7 +87,7 @@ public class FeedbackComponent extends DirectMessageComponent {
                     String id = user.getId();
                     boolean reset = command.get("reset").getAsBoolean();
 
-                    boolean removed = submissions.removeIf(s -> s.user().getId().equals(id));
+                    boolean removed = submissions.removeIf(s -> s.member().getId().equals(id));
 
                     if (removed) {
                         if (reset) {
@@ -326,6 +330,29 @@ public class FeedbackComponent extends DirectMessageComponent {
                     getDatabaseManager().setSetting("buttonchannel", buttonChannelId);
                     getServer().log(command.getMember().getUser(), "Set feedback button channel to %s (`%s`)",
                         channel.getAsMention(), channel.getId());
+                }),
+
+            new Command("voicechannel", "set voice channel that users need to be connected to")
+                .addOptions(
+                    new OptionData(OptionType.CHANNEL, "channel", "channel", false)
+                        .setChannelTypes(ChannelType.VOICE, ChannelType.STAGE)
+                )
+                .setAction((command, reply) -> {
+                    if (command.hasOption("channel")) {
+                        AudioChannel audioChannel = command.get("channel").getAsChannel().asAudioChannel();
+                        voiceChannel = audioChannel.getId();
+                        getDatabaseManager().setSetting("voicechannel", voiceChannel);
+                        reply.ok("Set voice channel to %s", audioChannel.getAsMention());
+                        getServer().log(Colors.GRAY, command.getMember().getUser(),
+                            "Set feedback voice channel to %s (`%s`)",
+                            audioChannel.getAsMention(), audioChannel.getId());
+                    } else {
+                        voiceChannel = null;
+                        getDatabaseManager().removeSetting("voicechannel");
+                        reply.ok("Removed voice channel");
+                        getServer().log(Colors.GRAY, command.getMember().getUser(),
+                            "Removed feedback voice channel");
+                    }
                 })
         );
 
@@ -351,17 +378,37 @@ public class FeedbackComponent extends DirectMessageComponent {
 
                 TextChannel channel = event.getMessage().getChannel().asTextChannel();
                 PermissionChecker.requireSend(channel);
+                Submission submission = null;
 
-                Collections.shuffle(submissions);
+                while (!submissions.isEmpty()) {
+                    Collections.shuffle(submissions);
+                    submission = submissions.remove(0);
 
-                Submission submission = submissions.get(0);
-                submissions.remove(0);
+                    GuildVoiceState voiceState = submission.member().getVoiceState();
+                    if (voiceState == null) {
+                        break;
+                    }
+
+                    AudioChannel connected = voiceState.getChannel();
+                    if (connected != null && connected.getId().equals(voiceChannel)) {
+                        break;
+                    }
+
+                    getServer().log(Colors.GRAY, submission.member().getUser(),
+                        "Skipped song because of inactivity");
+
+                    submission = null;
+                }
+
+                if (submission == null) {
+                    throw new BotWarningException("No users were connected to the voice channel");
+                }
 
                 if (winChannel != null) {
                     TextChannel output = getGuild().getTextChannelById(winChannel);
                     if (output != null && output.canTalk()) {
                         output.sendMessage(new MessageCreateBuilder()
-                                .setContent(submission.user().getAsMention())
+                                .setContent(submission.member().getAsMention())
                                 .addEmbeds(new EmbedBuilder()
                                     .setColor(Icon.WIN.getColor())
                                     .setDescription(String.format("%s You won!", Icon.WIN))
@@ -431,6 +478,21 @@ public class FeedbackComponent extends DirectMessageComponent {
             }
         }
 
+        Member member = getGuild().retrieveMember(author).complete();
+
+        if (voiceChannel != null) {
+            AudioChannel audioChannel = getGuild().getChannelById(AudioChannel.class, voiceChannel);
+            if (audioChannel != null) {
+                GuildVoiceState voiceState = member.getVoiceState();
+                if (voiceState != null) {
+                    AudioChannel connected = voiceState.getChannel();
+                    if (connected == null || !connected.getId().equals(voiceChannel)) {
+                        throw new BotWarningException("You are not connected to the voice channel");
+                    }
+                }
+            }
+        }
+
         MessageCreateBuilder builder = new MessageCreateBuilder();
 
         EmbedBuilder embed = new EmbedBuilder()
@@ -453,7 +515,7 @@ public class FeedbackComponent extends DirectMessageComponent {
             Button.primary("feedback-next", "Get next song").withEmoji(Emoji.fromUnicode("🎵"))
         );
 
-        submissions.add(new Submission(author, builder.build()));
+        submissions.add(new Submission(member, builder.build()));
         submissionCount++;
         getServer().log(Colors.GRAY, author, "Submitted song <%s>", url);
     }
@@ -562,6 +624,10 @@ public class FeedbackComponent extends DirectMessageComponent {
             .map(getGuild()::getTextChannelById)
             .map(Channel::getAsMention)
             .orElse(null);
+        String voice = Optional.ofNullable(voiceChannel)
+            .map(getGuild()::getGuildChannelById)
+            .map(Channel::getAsMention)
+            .orElse(null);
         return String.format("""
                 Enabled: %b
                 Running: %b
@@ -569,11 +635,12 @@ public class FeedbackComponent extends DirectMessageComponent {
                 Destination: %s
                 Win channel: %s
                 Button channel: %s
+                Voice channel: %s
                 """,
-            isEnabled(), isRunning(), submissionCount, dest, win, butt);
+            isEnabled(), isRunning(), submissionCount, dest, win, butt, voice);
     }
 
-    private record Submission(User user, MessageCreateData submission) {
+    private record Submission(Member member, MessageCreateData submission) {
     }
 
 }

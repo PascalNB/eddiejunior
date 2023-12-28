@@ -4,7 +4,7 @@ import com.thefatrat.eddiejunior.Bot;
 import com.thefatrat.eddiejunior.HandlerCollection;
 import com.thefatrat.eddiejunior.components.Component;
 import com.thefatrat.eddiejunior.events.ButtonEvent;
-import com.thefatrat.eddiejunior.events.RequestEvent;
+import com.thefatrat.eddiejunior.events.GenericEvent;
 import com.thefatrat.eddiejunior.events.SelectEvent;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotWarningException;
@@ -81,7 +81,7 @@ public class Direct {
         if (server == null) {
             throw new BotErrorException("Server not found");
         }
-        RequestEvent requestEvent = new RequestEvent(event.getActor());
+        GenericEvent<User> requestEvent = new GenericEvent<>(event.getActor());
         server.getRequestHandler().handle(split[1], requestEvent, reply);
     }
 

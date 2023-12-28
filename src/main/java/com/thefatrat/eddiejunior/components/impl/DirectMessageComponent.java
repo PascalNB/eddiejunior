@@ -4,7 +4,7 @@ import com.thefatrat.eddiejunior.components.AbstractComponent;
 import com.thefatrat.eddiejunior.components.RunnableComponent;
 import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.events.CommandEvent;
-import com.thefatrat.eddiejunior.events.RequestEvent;
+import com.thefatrat.eddiejunior.events.GenericEvent;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotWarningException;
 import com.thefatrat.eddiejunior.reply.InteractionReply;
@@ -311,16 +311,16 @@ public abstract class DirectMessageComponent extends AbstractComponent implement
         reply.edit(confirmationReply);
     }
 
-    private void handleRequest(RequestEvent event, MenuReply reply) {
-        Message message = requests.remove(event.getUser().getId());
+    private void handleRequest(GenericEvent<User> event, MenuReply reply) {
+        Message message = requests.remove(event.getEntity().getId());
         if (message == null) {
             throw new BotErrorException("Couldn't submit, try again");
         }
         this.handleDirect(message, reply);
     }
 
-    private void removeRequest(RequestEvent event, MenuReply reply) {
-        requests.remove(event.getUser().getId());
+    private void removeRequest(GenericEvent<User> event, MenuReply reply) {
+        requests.remove(event.getEntity().getId());
         reply.edit(Icon.STOP, "Successfully cancelled");
     }
 

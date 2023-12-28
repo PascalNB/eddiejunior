@@ -256,4 +256,8 @@ public class Server {
         return handlerCollection.getEntitySelectHandler();
     }
 
+    public <T> MapHandler<GenericEvent<T>, Void> getGenericHandler() {
+        return handlerCollection.getGenericHandler();
+    }
+
 }
