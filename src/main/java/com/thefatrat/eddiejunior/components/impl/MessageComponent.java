@@ -6,10 +6,13 @@ import com.thefatrat.eddiejunior.entities.Interaction;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotWarningException;
 import com.thefatrat.eddiejunior.sources.Server;
+import com.thefatrat.eddiejunior.util.Colors;
 import com.thefatrat.eddiejunior.util.PermissionChecker;
 import com.thefatrat.eddiejunior.util.URLUtil;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.ForumChannel;
 import net.dv8tion.jda.api.entities.channel.forums.ForumPost;
@@ -117,6 +120,48 @@ public class MessageComponent extends AbstractComponent {
                         .addActionRow(title)
                         .addActionRow(body)
                         .build());
+                }),
+
+            new Command("embed", "send a new embedded message in the given channel")
+                .addOptions(new OptionData(OptionType.CHANNEL, "channel", "channel", true)
+                    .setChannelTypes(ChannelType.TEXT, ChannelType.VOICE, ChannelType.NEWS,
+                        ChannelType.GUILD_PUBLIC_THREAD, ChannelType.GUILD_PRIVATE_THREAD))
+                .setAction((command, reply) -> {
+                    MessageChannel channel = command.get("channel").getAsChannel().asGuildMessageChannel();
+
+                    if (!channel.canTalk()) {
+                        throw new BotWarningException("Cannot talk in the given channel");
+                    }
+
+                    TextInput title = TextInput.create("embed_title_" + channel.getId(), "Title", TextInputStyle.SHORT)
+                        .setRequiredRange(0, MessageEmbed.TITLE_MAX_LENGTH)
+                        .setRequired(false)
+                        .build();
+
+                    TextInput thumbnail = TextInput.create("embed_thumbnail_" + channel.getId(), "Thumbnail URL",
+                            TextInputStyle.SHORT)
+                        .setRequiredRange(0, MessageEmbed.URL_MAX_LENGTH)
+                        .setRequired(false)
+                        .build();
+
+                    TextInput description = TextInput.create("embed_desc_" + channel.getId(), "Description",
+                            TextInputStyle.PARAGRAPH)
+                        .setRequiredRange(0, Math.min(TextInput.MAX_VALUE_LENGTH, MessageEmbed.DESCRIPTION_MAX_LENGTH))
+                        .setRequired(false)
+                        .build();
+
+                    TextInput image = TextInput.create("embed_image_" + channel.getId(), "Image URL",
+                            TextInputStyle.SHORT)
+                        .setRequiredRange(0, MessageEmbed.URL_MAX_LENGTH)
+                        .setRequired(false)
+                        .build();
+
+                    reply.sendModal(Modal.create("message_embed", "Send message embed")
+                        .addActionRow(title)
+                        .addActionRow(thumbnail)
+                        .addActionRow(description)
+                        .addActionRow(image)
+                        .build());
                 })
         );
 
@@ -215,6 +260,57 @@ public class MessageComponent extends AbstractComponent {
             reply.hide();
             reply.ok("Message sent in %s\n%s", channel.getAsMention(), response.getJumpUrl());
             getServer().log(event.getMember().getUser(), "Sent custom message in %s (`%s`)\n%s",
+                channel.getAsMention(), channel.getId(), response.getJumpUrl());
+        });
+
+        getServer().getModalHandler().addListener("message_embed", (event, reply) -> {
+            String key = event.getValues().keySet().iterator().next();
+            String[] split = key.split("_", 3);
+            String channelId = split[2];
+
+            MessageChannel channel = getGuild().getChannelById(MessageChannel.class, channelId);
+            if (channel == null) {
+                throw new BotErrorException("Message channel with id `%s` not found", channelId);
+            }
+            if (!channel.canTalk()) {
+                throw new BotWarningException("Cannot send messages in %s", channel.getAsMention());
+            }
+
+            String title = event.getValues().get("embed_title_" + channelId).getAsString();
+            String thumbnail = event.getValues().get("embed_thumbnail_" + channelId).getAsString();
+            String description = event.getValues().get("embed_desc_" + channelId).getAsString();
+            String imageUrl = event.getValues().get("embed_image_" + channelId).getAsString();
+
+            EmbedBuilder builder = new EmbedBuilder()
+                .setColor(Colors.TRANSPARENT);
+
+            boolean notEmpty = false;
+            if (!title.isBlank()) {
+                builder.setTitle(title);
+                notEmpty = true;
+            }
+            if (!thumbnail.isBlank() && URLUtil.matchUrl(thumbnail) != null) {
+                builder.setThumbnail(thumbnail);
+                notEmpty = true;
+            }
+            if (!description.isBlank()) {
+                builder.setDescription(description);
+                notEmpty = true;
+            }
+            if (!imageUrl.isBlank() && URLUtil.matchUrl(imageUrl) != null) {
+                builder.setImage(imageUrl);
+                notEmpty = true;
+            }
+
+            if (!notEmpty) {
+                throw new BotWarningException("Embed cannot be empty");
+            }
+
+            Message response = channel.sendMessageEmbeds(builder.build()).complete();
+
+            reply.hide();
+            reply.ok("Message embed sent in %s\n%s", channel.getAsMention(), response.getJumpUrl());
+            getServer().log(event.getMember().getUser(), "Sent custom embedded message in %s (`%s`)\n%s",
                 channel.getAsMention(), channel.getId(), response.getJumpUrl());
         });
 
