@@ -7,11 +7,14 @@ public class EventEvent {
     private final String name;
     private final String description;
     private final ScheduledEvent.Status status;
+    private final ScheduledEvent.Status previousStatus;
 
-    public EventEvent(String name, String description, ScheduledEvent.Status status) {
+    public EventEvent(String name, String description, ScheduledEvent.Status status,
+        ScheduledEvent.Status previousStatus) {
         this.name = name;
         this.description = description;
         this.status = status;
+        this.previousStatus = previousStatus;
     }
 
     public String getName() {
@@ -24,6 +27,10 @@ public class EventEvent {
 
     public ScheduledEvent.Status getStatus() {
         return status;
+    }
+
+    public ScheduledEvent.Status getPreviousStatus() {
+        return previousStatus;
     }
 
 }

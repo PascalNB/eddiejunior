@@ -386,7 +386,7 @@ public class Bot extends ListenerAdapter {
         }
 
         EventEvent eventEvent = new EventEvent(event.getEntity().getName(), event.getEntity().getDescription(),
-            event.getNewStatus());
+            event.getNewStatus(), event.getOldStatus());
         getServer(event.getGuild().getId()).getEventHandler().handle(eventEvent, null);
     }
 

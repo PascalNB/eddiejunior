@@ -21,6 +21,7 @@ import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -32,11 +33,15 @@ public class EventComponent extends AbstractComponent {
     public EventComponent(Server server) {
         super(server, "Event");
 
+        Base64.Decoder decoder = Base64.getDecoder();
+
         for (String linkString : getDatabaseManager().getSettings("link")) {
             String[] split = linkString.split("-", 3);
-            String keyword = split[0];
-            String session = "null".equals(split[1]) ? null : split[1];
-            String component = "null".equals(split[2]) ? null : split[2];
+            String keyword = new String(decoder.decode(split[0]));
+            String sessionDecoded = new String(decoder.decode(split[1]));
+            String session = "null".equals(sessionDecoded) ? null : sessionDecoded;
+            String componentDecoded = new String(decoder.decode(split[2]));
+            String component = "null".equals(componentDecoded) ? null : componentDecoded;
             Link link = new Link(keyword, session, component);
             links.put(keyword, link);
         }
@@ -69,8 +74,18 @@ public class EventComponent extends AbstractComponent {
      * @param event event
      */
     private void processEvent(EventEvent event) {
-        if (!isEnabled() || !event.getStatus().equals(ScheduledEvent.Status.ACTIVE)
-            && !event.getStatus().equals(ScheduledEvent.Status.COMPLETED)) {
+        if (!isEnabled()) {
+            return;
+        }
+
+        boolean start = event.getPreviousStatus().equals(ScheduledEvent.Status.SCHEDULED)
+            && event.getStatus().equals(ScheduledEvent.Status.ACTIVE);
+
+        boolean end = event.getPreviousStatus().equals(ScheduledEvent.Status.ACTIVE)
+            && (event.getStatus().equals(ScheduledEvent.Status.COMPLETED)
+            || event.getStatus().equals(ScheduledEvent.Status.SCHEDULED));
+
+        if (!start && !end) {
             return;
         }
 
@@ -99,7 +114,7 @@ public class EventComponent extends AbstractComponent {
             }
         }
 
-        if (event.getStatus().equals(ScheduledEvent.Status.ACTIVE)) {
+        if (start) {
             if (link.session() != null && sessionComponent != null && sessionComponent.isEnabled()
                 && sessionComponent.isSession(link.session())) {
                 try {
@@ -114,7 +129,7 @@ public class EventComponent extends AbstractComponent {
                 getServer().log(Colors.GREEN, "Component `%s` started running", link.component());
             }
 
-        } else if (event.getStatus().equals(ScheduledEvent.Status.COMPLETED)) {
+        } else {
             if (link.session() != null && sessionComponent != null && sessionComponent.isEnabled()
                 && sessionComponent.isSession(link.session())) {
                 try {
@@ -239,7 +254,12 @@ public class EventComponent extends AbstractComponent {
 
         @Override
         public String toString() {
-            return String.format("%s-%s-%s", keyword, session, component);
+            Base64.Encoder encoder = Base64.getEncoder();
+
+            return String.format("%s-%s-%s",
+                encoder.encodeToString(keyword.getBytes()),
+                session == null ? "null" : encoder.encodeToString(session.getBytes()),
+                component == null ? "null" : encoder.encodeToString(component.getBytes()));
         }
 
     }

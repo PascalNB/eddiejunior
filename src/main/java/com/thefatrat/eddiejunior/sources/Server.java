@@ -107,8 +107,8 @@ public class Server {
     @NotNull
     @SafeVarargs
     public final Collection<Component> registerComponents(Class<? extends Component> @NotNull ... components) {
-        try {
-            for (Class<? extends Component> component : components) {
+        for (Class<? extends Component> component : components) {
+            try {
                 Component instance = component.getDeclaredConstructor(Server.class).newInstance(this);
 
                 for (Command command : instance.getCommands()) {
@@ -148,13 +148,13 @@ public class Server {
                     toggleComponent(instance, true).queue();
                 }
 
+            } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
+                     IllegalAccessException e) {
+                e.printStackTrace();
             }
-
-            return this.components.values();
-        } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
-                 IllegalAccessException e) {
-            throw new RuntimeException(e);
         }
+
+        return this.components.values();
     }
 
     public Set<String> getRegisteredCommands() {
