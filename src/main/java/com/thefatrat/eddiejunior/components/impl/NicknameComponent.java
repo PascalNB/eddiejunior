@@ -4,6 +4,7 @@ import com.thefatrat.eddiejunior.components.AbstractComponent;
 import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.events.CommandEvent;
 import com.thefatrat.eddiejunior.events.GenericEvent;
+import com.thefatrat.eddiejunior.exceptions.BotWarningException;
 import com.thefatrat.eddiejunior.reply.InteractionReply;
 import com.thefatrat.eddiejunior.sources.Server;
 import net.dv8tion.jda.api.entities.Member;
@@ -11,24 +12,39 @@ import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Base64;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 public class NicknameComponent extends AbstractComponent {
 
-    private final Pattern pattern = Pattern.compile("[^ -¡¿-ÖØ-öø-ÿ]");
+    private Pattern pattern = Pattern.compile("[^ -¡¿-ÖØ-öø-ÿ]");
     private String replacement;
 
     public NicknameComponent(@NotNull Server server) {
         super(server, "nickname");
 
         replacement = getDatabaseManager().getSettingOrDefault("replacement", "nickname");
+        String base64 = getDatabaseManager().getSetting("regex");
+        if (base64 != null) {
+            String pattern = new String(Base64.getDecoder().decode(base64));
+            try {
+                this.pattern = Pattern.compile(pattern);
+            } catch (PatternSyntaxException e) {
+                e.printStackTrace();
+            }
+        }
 
         setComponentCommand();
 
         addSubcommands(
             new Command("replacement", "set the replacement nickname")
                 .addOptions(new OptionData(OptionType.STRING, "replacement", "replacement", true))
-                .setAction(this::setReplacement)
+                .setAction(this::setReplacement),
+
+            new Command("regex", "set the regex pattern")
+                .addOptions(new OptionData(OptionType.STRING, "regex", "regex", true))
+                .setAction(this::setRegex)
         );
 
         server.<Member>getGenericHandler().addListener("member", this::checkNickname);
@@ -40,6 +56,20 @@ public class NicknameComponent extends AbstractComponent {
         getDatabaseManager().setSetting("replacement", newReplacement);
         getServer().log(command.getMember().getUser(), "Changed nickname replacement to `%s`", newReplacement);
         reply.ok("Nickname changed to `%s`", newReplacement);
+    }
+
+    private void setRegex(CommandEvent command, InteractionReply reply) {
+        String regex = command.get("regex").getAsString();
+        try {
+            this.pattern = Pattern.compile(regex);
+            reply.ok("Set regex pattern to `%s`", regex);
+            String base64 = Base64.getEncoder().encodeToString(regex.getBytes());
+            getDatabaseManager().setSetting("regex", base64);
+            getServer().log(command.getMember().getUser(), "Set nickname regex pattern to `%s`", regex);
+
+        } catch (PatternSyntaxException e) {
+            throw new BotWarningException("Invalid regex pattern");
+        }
     }
 
     private void checkNickname(GenericEvent<Member> event, Void __) {
@@ -57,7 +87,7 @@ public class NicknameComponent extends AbstractComponent {
 
     @Override
     public String getStatus() {
-        return "Enabled: " + isEnabled() + "\nReplacement: " + replacement;
+        return "Enabled: " + isEnabled() + "\nReplacement: " + replacement + "\nRegex: `" + pattern + '`';
     }
 
 }
