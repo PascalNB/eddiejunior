@@ -16,16 +16,17 @@ import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.ForumChannel;
 import net.dv8tion.jda.api.entities.channel.forums.ForumPost;
-import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
+import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.components.text.TextInput;
 import net.dv8tion.jda.api.interactions.components.text.TextInputStyle;
-import net.dv8tion.jda.api.interactions.modals.Modal;
-import net.dv8tion.jda.api.interactions.modals.ModalMapping;
 import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
+
+import java.util.Map;
+import java.util.Optional;
 
 public class MessageComponent extends AbstractComponent {
 
@@ -56,8 +57,13 @@ public class MessageComponent extends AbstractComponent {
                         throw new BotErrorException("Message does not contain editable text");
                     }
 
+                    Map<String, Object> metadata = Map.of(
+                        "channel", message.getChannel().getId(),
+                        "message", message.getId()
+                    );
+
                     TextInput input = TextInput.create(
-                            "message_" + message.getChannel().getId() + "_" + message.getId(),
+                            "message",
                             "Message", TextInputStyle.PARAGRAPH)
                         .setRequired(true)
                         .setValue(content)
@@ -65,16 +71,19 @@ public class MessageComponent extends AbstractComponent {
                         .build();
 
                     reply.sendModal(
-                        Modal.create("message_edit", "Edit message")
+                        getRequestManager().createModal("message_edit", "Edit message", metadata)
                             .addActionRow(input)
                             .build()
                     );
                 }),
 
             new Command("send", "send a message in a given channel")
-                .addOptions(new OptionData(OptionType.CHANNEL, "channel", "text channel", true)
-                    .setChannelTypes(ChannelType.TEXT, ChannelType.VOICE, ChannelType.NEWS,
-                        ChannelType.GUILD_PUBLIC_THREAD, ChannelType.GUILD_PRIVATE_THREAD)
+                .addOptions(
+                    new OptionData(OptionType.CHANNEL, "channel", "text channel", true)
+                        .setChannelTypes(ChannelType.TEXT, ChannelType.VOICE, ChannelType.NEWS,
+                            ChannelType.GUILD_PUBLIC_THREAD, ChannelType.GUILD_PRIVATE_THREAD),
+                    new OptionData(OptionType.STRING, "reply", "reply message url", false),
+                    new OptionData(OptionType.BOOLEAN, "ping", "ping replied user", false)
                 )
                 .setAction((command, reply) -> {
                     MessageChannel channel = command.get("channel").getAsChannel().asGuildMessageChannel();
@@ -83,20 +92,26 @@ public class MessageComponent extends AbstractComponent {
                         throw new BotWarningException("Cannot talk in the given channel");
                     }
 
-                    TextInput input = TextInput.create("message_send_input_" + channel.getId(), "Text",
+                    Map<String, Object> metadata = Map.of(
+                        "channel", channel.getId(),
+                        "reply", Optional.ofNullable(command.get("reply"))
+                            .map(OptionMapping::getAsString)
+                            .orElse(""),
+                        "ping", Optional.ofNullable(command.get("ping"))
+                            .map(OptionMapping::getAsBoolean)
+                            .orElse(true)
+                    );
+
+                    TextInput input = TextInput.create("message_send_input", "Text",
                             TextInputStyle.PARAGRAPH)
                         .setRequiredRange(1, 2000)
                         .build();
 
-                    TextInput messageReply = TextInput.create("message_send_reply_" + channel.getId(),
-                            "Message Reply URL", TextInputStyle.SHORT)
-                        .setRequired(false)
-                        .build();
-
-                    reply.sendModal(Modal.create("message_send", "Send message")
-                        .addActionRow(input)
-                        .addActionRow(messageReply)
-                        .build());
+                    reply.sendModal(
+                        getRequestManager().createModal("message_send", "Send message", metadata)
+                            .addActionRow(input)
+                            .build()
+                    );
                 }),
 
             new Command("post", "create a new forum post in the given channel")
@@ -106,20 +121,26 @@ public class MessageComponent extends AbstractComponent {
                 .setAction((command, reply) -> {
                     ForumChannel channel = command.get("channel").getAsChannel().asForumChannel();
 
-                    TextInput title = TextInput.create("post_title_" + channel.getId(), "Title",
+                    Map<String, Object> metadata = Map.of(
+                        "channel", channel.getId()
+                    );
+
+                    TextInput title = TextInput.create("post_title", "Title",
                             TextInputStyle.SHORT)
                         .setRequiredRange(1, ForumChannel.MAX_NAME_LENGTH)
                         .build();
 
-                    TextInput body = TextInput.create("post_body_" + channel.getId(), "Text",
+                    TextInput body = TextInput.create("post_body", "Text",
                             TextInputStyle.PARAGRAPH)
                         .setRequiredRange(1, 2048)
                         .build();
 
-                    reply.sendModal(Modal.create("message_post", "Post thread")
-                        .addActionRow(title)
-                        .addActionRow(body)
-                        .build());
+                    reply.sendModal(
+                        getRequestManager().createModal("message_post", "Post thread", metadata)
+                            .addActionRow(title)
+                            .addActionRow(body)
+                            .build()
+                    );
                 }),
 
             new Command("embed", "send a new embedded message in the given channel")
@@ -133,35 +154,41 @@ public class MessageComponent extends AbstractComponent {
                         throw new BotWarningException("Cannot talk in the given channel");
                     }
 
-                    TextInput title = TextInput.create("embed_title_" + channel.getId(), "Title", TextInputStyle.SHORT)
+                    Map<String, Object> metadata = Map.of(
+                        "channel", channel.getId()
+                    );
+
+                    TextInput title = TextInput.create("embed_title", "Title", TextInputStyle.SHORT)
                         .setRequiredRange(0, MessageEmbed.TITLE_MAX_LENGTH)
                         .setRequired(false)
                         .build();
 
-                    TextInput thumbnail = TextInput.create("embed_thumbnail_" + channel.getId(), "Thumbnail URL",
+                    TextInput thumbnail = TextInput.create("embed_thumbnail", "Thumbnail URL",
                             TextInputStyle.SHORT)
                         .setRequiredRange(0, MessageEmbed.URL_MAX_LENGTH)
                         .setRequired(false)
                         .build();
 
-                    TextInput description = TextInput.create("embed_desc_" + channel.getId(), "Description",
+                    TextInput description = TextInput.create("embed_desc", "Description",
                             TextInputStyle.PARAGRAPH)
                         .setRequiredRange(0, Math.min(TextInput.MAX_VALUE_LENGTH, MessageEmbed.DESCRIPTION_MAX_LENGTH))
                         .setRequired(false)
                         .build();
 
-                    TextInput image = TextInput.create("embed_image_" + channel.getId(), "Image URL",
+                    TextInput image = TextInput.create("embed_image", "Image URL",
                             TextInputStyle.SHORT)
                         .setRequiredRange(0, MessageEmbed.URL_MAX_LENGTH)
                         .setRequired(false)
                         .build();
 
-                    reply.sendModal(Modal.create("message_embed", "Send message embed")
-                        .addActionRow(title)
-                        .addActionRow(thumbnail)
-                        .addActionRow(description)
-                        .addActionRow(image)
-                        .build());
+                    reply.sendModal(
+                        getRequestManager().createModal("message_embed", "Send message embed", metadata)
+                            .addActionRow(title)
+                            .addActionRow(thumbnail)
+                            .addActionRow(description)
+                            .addActionRow(image)
+                            .build()
+                    );
                 })
         );
 
@@ -184,70 +211,48 @@ public class MessageComponent extends AbstractComponent {
                         throw new BotErrorException("Message does not contain editable text");
                     }
 
-                    TextInput input = TextInput.create(
-                            "message_" + message.getChannel().getId() + "_" + message.getId(),
-                            "Message", TextInputStyle.PARAGRAPH)
+                    Map<String, Object> metadata = Map.of(
+                        "message", message.getId(),
+                        "channel", message.getChannel().getId()
+                    );
+
+                    TextInput input = TextInput.create("message", "Message", TextInputStyle.PARAGRAPH)
                         .setRequired(true)
                         .setValue(content)
                         .setRequiredRange(1, 2000)
                         .build();
 
                     reply.sendModal(
-                        Modal.create("message_edit", "Edit message")
+                        getRequestManager().createModal("message_edit", "Edit message", metadata)
                             .addActionRow(input)
                             .build()
                     );
-                }),
-
-            new Interaction<Message>("copy")
-                .setAction((event, reply) -> {
-                    Message message = event.getEntity();
-                    String content = message.getContentRaw();
-
-                    if (content.isEmpty()) {
-                        throw new BotWarningException("Message is empty");
-                    }
-
-                    reply.sendModal(Modal.create("message_copy", "Copy message")
-                        .addActionRow(
-                            TextInput.create("input", "Raw text", TextInputStyle.PARAGRAPH)
-                                .setValue(message.getContentRaw())
-                                .build()
-                        )
-                        .addActionRow(
-                            TextInput.create("input2", "Displayed text", TextInputStyle.PARAGRAPH)
-                                .setValue(message.getContentStripped())
-                                .build()
-                        )
-                        .build());
                 })
         );
 
         getServer().getModalHandler().addListener("message_send", (event, reply) -> {
-            String key = event.getValues().keySet().iterator().next();
-            String[] split = key.split("_", 4);
+            String channelId = (String) event.getMetadata().get("channel");
+            MessageChannel channel = getGuild().getChannelById(MessageChannel.class, channelId);
 
-            MessageChannel channel = getGuild().getChannelById(MessageChannel.class, split[3]);
             if (channel == null) {
-                throw new BotErrorException("Message channel with id `%s` not found", split[3]);
+                throw new BotErrorException("Message channel with id `%s` not found", channelId);
             }
             if (!channel.canTalk()) {
                 throw new BotWarningException("Cannot send messages in %s", channel.getAsMention());
             }
 
-            String content = event.getValues().get("message_send_input_" + split[3]).getAsString();
+            String content = event.getValues().get("message_send_input").getAsString();
             MessageCreateAction createAction = channel.sendMessage(content);
 
-            ModalMapping responseUrlMapping = event.getValues().get("message_send_reply_" + split[3]);
-            if (responseUrlMapping != null) {
-                String responseUrl = responseUrlMapping.getAsString();
-                if (!responseUrl.isBlank()) {
-                    Message message = URLUtil.messageFromURL(responseUrl, getGuild());
-                    if (!channel.getId().equals(message.getChannel().getId())) {
-                        throw new BotWarningException("Can only reply to messages in the same channel");
-                    }
-                    createAction.setMessageReference(message);
+            String responseUrl = (String) event.getMetadata().get("reply");
+            if (!responseUrl.isBlank()) {
+                Message message = URLUtil.messageFromURL(responseUrl, getGuild());
+                if (!channel.getId().equals(message.getChannel().getId())) {
+                    throw new BotWarningException("Can only reply to messages in the same channel");
                 }
+                createAction = createAction
+                    .setMessageReference(message)
+                    .mentionRepliedUser((boolean) event.getMetadata().get("ping"));
             }
 
             Message response = createAction
@@ -264,9 +269,7 @@ public class MessageComponent extends AbstractComponent {
         });
 
         getServer().getModalHandler().addListener("message_embed", (event, reply) -> {
-            String key = event.getValues().keySet().iterator().next();
-            String[] split = key.split("_", 3);
-            String channelId = split[2];
+            String channelId = (String) event.getMetadata().get("channel");
 
             MessageChannel channel = getGuild().getChannelById(MessageChannel.class, channelId);
             if (channel == null) {
@@ -276,10 +279,10 @@ public class MessageComponent extends AbstractComponent {
                 throw new BotWarningException("Cannot send messages in %s", channel.getAsMention());
             }
 
-            String title = event.getValues().get("embed_title_" + channelId).getAsString();
-            String thumbnail = event.getValues().get("embed_thumbnail_" + channelId).getAsString();
-            String description = event.getValues().get("embed_desc_" + channelId).getAsString();
-            String imageUrl = event.getValues().get("embed_image_" + channelId).getAsString();
+            String title = event.getValues().get("embed_title").getAsString();
+            String thumbnail = event.getValues().get("embed_thumbnail").getAsString();
+            String description = event.getValues().get("embed_desc").getAsString();
+            String imageUrl = event.getValues().get("embed_image").getAsString();
 
             EmbedBuilder builder = new EmbedBuilder()
                 .setColor(Colors.TRANSPARENT);
@@ -315,19 +318,17 @@ public class MessageComponent extends AbstractComponent {
         });
 
         getServer().getModalHandler().addListener("message_post", (event, reply) -> {
-            String key = event.getValues().keySet().iterator().next();
-            String[] split = key.split("_", 3);
-            String channelId = split[2];
+            String channelId = (String) event.getMetadata().get("channel");
 
             ForumChannel channel = getGuild().getForumChannelById(channelId);
             if (channel == null) {
-                throw new BotErrorException("Channel with id `%s` not found", split[3]);
+                throw new BotErrorException("Channel with id `%s` not found", channelId);
             }
 
             PermissionChecker.requirePermission(channel, Permission.VIEW_CHANNEL, Permission.MESSAGE_SEND);
 
-            String title = event.getValues().get("post_title_" + channelId).getAsString();
-            String body = event.getValues().get("post_body_" + channelId).getAsString();
+            String title = event.getValues().get("post_title").getAsString();
+            String body = event.getValues().get("post_body").getAsString();
 
             MessageCreateData message = MessageCreateData.fromContent(body);
             ForumPost response = channel.createForumPost(title, message)
@@ -344,20 +345,19 @@ public class MessageComponent extends AbstractComponent {
         });
 
         getServer().getModalHandler().addListener("message_edit", (event, reply) -> {
-            String key = event.getValues().keySet().iterator().next();
-            String[] split = key.split("_", 3);
+            String channelId = (String) event.getMetadata().get("channel");
+            String messageId = (String) event.getMetadata().get("message");
 
-            GuildMessageChannel channel = getGuild().getTextChannelById(split[1]);
+            MessageChannel channel = getGuild().getChannelById(MessageChannel.class, channelId);
             if (channel == null) {
-                channel = getGuild().getThreadChannelById(split[1]);
-                if (channel == null) {
-                    throw new BotErrorException("Message could not be edited");
-                }
+                throw new BotErrorException("Message could not be edited");
             }
 
-            PermissionChecker.requireSend(channel.getPermissionContainer());
+            if (!channel.canTalk()) {
+                throw new BotErrorException("Insufficient permissions");
+            }
 
-            Message message = channel.retrieveMessageById(split[2])
+            Message message = channel.retrieveMessageById(messageId)
                 .onErrorMap(e -> null)
                 .complete();
 
@@ -365,7 +365,7 @@ public class MessageComponent extends AbstractComponent {
                 throw new BotErrorException("Message could not be edited");
             }
 
-            String content = event.getValues().get(key).getAsString();
+            String content = event.getValues().get("message").getAsString();
             Message response = message.editMessage(content)
                 .onErrorMap(e -> null)
                 .complete();
@@ -373,17 +373,12 @@ public class MessageComponent extends AbstractComponent {
             if (response == null) {
                 throw new BotErrorException("Message could not be edited");
             }
+
             reply.hide();
             reply.ok("Message has been edited");
             getServer().log(event.getMember().getUser(), "Edited message in %s (`%s`)\n(%s)",
                 channel.getAsMention(), channel.getId(), message.getJumpUrl());
         });
-
-        getServer().getModalHandler().addListener("message_copy", (event, reply) -> {
-            reply.hide();
-            reply.ok("");
-        });
-
     }
 
     @Override

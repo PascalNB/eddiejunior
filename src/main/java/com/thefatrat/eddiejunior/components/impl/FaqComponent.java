@@ -86,7 +86,11 @@ public class FaqComponent extends AbstractComponent {
 
             new Command("message", "send the faq message")
                 .addOptions(new OptionData(OptionType.STRING, "text", "text", false).setMinLength(1))
-                .setAction(this::sendFaqMesasge),
+                .setAction(this::sendFaqMessage),
+
+            new Command("setmessage", "set the faq message")
+                .addOptions(new OptionData(OptionType.STRING, "message", "message url", true))
+                .setAction(this::setFaqMessage),
 
             new Command("answer", "sends the answer for one of the faq questions")
                 .addOptions(new OptionData(OptionType.USER, "user", "user ping", false))
@@ -191,7 +195,7 @@ public class FaqComponent extends AbstractComponent {
         reply.send(builder.build());
     }
 
-    private void sendFaqMesasge(CommandEvent command, InteractionReply reply) {
+    private void sendFaqMessage(CommandEvent command, InteractionReply reply) {
         if (this.questions.isEmpty()) {
             throw new BotWarningException("The list of questions is empty");
         }
@@ -220,10 +224,31 @@ public class FaqComponent extends AbstractComponent {
             .queue(m -> {
                 faqMessage = m;
                 getDatabaseManager().setSetting("faqmessage", m.getChannel().getId() + "_" + m.getId());
+                getServer().log(command.getMember().getUser(), "Set FAQ message:%n%s", m.getJumpUrl());
             });
 
         reply.hide();
         reply.ok("Faq message sent");
+    }
+
+    private void setFaqMessage(CommandEvent command, InteractionReply reply) {
+        if (this.questions.isEmpty()) {
+            throw new BotWarningException("The list of questions is empty");
+        }
+
+        Message message = URLUtil.messageFromURL(command.get("message").getAsString(), getGuild());
+
+        if (!message.getAuthor().equals(getGuild().getSelfMember().getUser())) {
+            throw new BotErrorException("Message was not sent by me");
+        }
+
+        faqMessage = message;
+        getDatabaseManager().setSetting("faqmessage", message.getChannel().getId() + "_" + message.getId());
+        updateMessage(faqMessage).queue();
+
+        reply.hide();
+        reply.ok("FAQ message set: %s", message.getJumpUrl());
+        getServer().log(command.getMember().getUser(), "Set FAQ message:%n%s", message.getJumpUrl());
     }
 
     private void handleAddModal(ModalEvent event, DefaultReply reply) {
@@ -284,54 +309,57 @@ public class FaqComponent extends AbstractComponent {
         int id = Integer.parseInt(event.getOption().getValue());
         String question = event.getOption().getLabel();
 
+        Map<String, Object> metadata = Map.of(
+            "id", id
+        );
+
         Question faqQuestion = this.questions.get(id);
 
         if (!question.equals(faqQuestion.question())) {
             throw new BotErrorException("Something went wrong, try again");
         }
 
-        reply.sendModal(Modal.create("faq_edit", "Edit answer")
-            .addActionRow(TextInput.create("q-" + id, "Question", TextInputStyle.SHORT)
-                .setRequiredRange(10, 150)
-                .setValue(question)
+        reply.sendModal(
+            getRequestManager().createModal("faq_edit", "Edit answer", metadata)
+                .addActionRow(TextInput.create("q", "Question", TextInputStyle.SHORT)
+                    .setRequiredRange(10, 150)
+                    .setValue(question)
+                    .build()
+                )
+                .addActionRow(TextInput.create("d", "Description", TextInputStyle.SHORT)
+                    .setRequiredRange(0, 100)
+                    .setRequired(false)
+                    .setValue(faqQuestion.description())
+                    .build()
+                )
+                .addActionRow(TextInput.create("a", "Answer", TextInputStyle.PARAGRAPH)
+                    .setRequiredRange(1, 350)
+                    .setValue(faqQuestion.answer())
+                    .build()
+                )
+                .addActionRow(TextInput.create("e", "Emoji", TextInputStyle.SHORT)
+                    .setRequired(false)
+                    .setValue(faqQuestion.emoji())
+                    .build()
+                )
+                .addActionRow(TextInput.create("u", "Image URL", TextInputStyle.SHORT)
+                    .setRequired(false)
+                    .setValue(faqQuestion.url())
+                    .build()
+                )
                 .build()
-            )
-            .addActionRow(TextInput.create("d-" + id, "Description", TextInputStyle.SHORT)
-                .setRequiredRange(0, 100)
-                .setRequired(false)
-                .setValue(faqQuestion.description())
-                .build()
-            )
-            .addActionRow(TextInput.create("a-" + id, "Answer", TextInputStyle.PARAGRAPH)
-                .setRequiredRange(1, 350)
-                .setValue(faqQuestion.answer())
-                .build()
-            )
-            .addActionRow(TextInput.create("e-" + id, "Emoji", TextInputStyle.SHORT)
-                .setRequired(false)
-                .setValue(faqQuestion.emoji())
-                .build()
-            )
-            .addActionRow(TextInput.create("u-" + id, "Image URL", TextInputStyle.SHORT)
-                .setRequired(false)
-                .setValue(faqQuestion.url())
-                .build()
-            )
-            .build());
+        );
     }
 
     private void handleEditModal(ModalEvent event, DefaultReply reply) {
         Map<String, ModalMapping> values = event.getValues();
-        String key = values.keySet().iterator().next();
-        String[] split = key.split("-", 2);
+        int id = (int) event.getMetadata().get("id");
 
-        int id = Integer.parseInt(split[1]);
-        String append = "-" + id;
-        String newQuestion = values.get('q' + append).getAsString();
-        String newAnswer = values.get('a' + append).getAsString();
-        String newEmoji = values.get('e' + append).getAsString();
-        String newDesc = values.get('d' + append).getAsString();
-        String newUrl = values.get('u' + append).getAsString();
+        String newQuestion = values.get("q").getAsString();
+        String newAnswer = values.get("a").getAsString();
+        String newEmoji = values.get("e").getAsString();
+        String newDesc = values.get("d").getAsString();
+        String newUrl = values.get("u").getAsString();
 
         if (newQuestion.isBlank() || newAnswer.isBlank()) {
             throw new BotWarningException("Answer cannot be blank");
@@ -379,16 +407,16 @@ public class FaqComponent extends AbstractComponent {
 
         List<String> changes = new ArrayList<>();
         if (changeQ) {
-            changes.add(String.format("- `%s` → `%s`", oldQuestion, newQuestion));
+            changes.add(String.format("- Question: `%s` → `%s`", oldQuestion, newQuestion));
         }
         if (changeD) {
-            changes.add(String.format("- `%s` → `%s`", oldDesc, newDesc));
+            changes.add(String.format("- Description: `%s` → `%s`", oldDesc, newDesc));
         }
         if (changeE) {
-            changes.add(String.format("- %s → %s", oldEmoji, newEmoji));
+            changes.add(String.format("- Emoji: %s → %s", oldEmoji, newEmoji));
         }
         if (changeU) {
-            changes.add(String.format("- `%s` → `%s`", oldUrl, newUrl));
+            changes.add(String.format("- URL: `%s` → `%s`", oldUrl, newUrl));
         }
         if (changeA) {
             changes.add("- Answer modified");

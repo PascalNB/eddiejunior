@@ -332,11 +332,14 @@ public class Bot extends ListenerAdapter {
             map.put(value.getId(), value);
         }
 
-        ModalEvent modalEvent = new ModalEvent(event.getMember(), map);
         DefaultReply reply = new DefaultReply(event);
+        ModalEvent modalEvent = new ModalEvent(event.getModalId(), event.getMember(), map);
+        Server server = servers.get(guild.getId());
 
         try {
-            servers.get(guild.getId()).getModalHandler().handle(event.getModalId(), modalEvent, reply);
+            String id = server.getRequestManager().populateHolder(modalEvent);
+            server.getRequestManager().removeRequest(event.getModalId());
+            server.getModalHandler().handle(id, modalEvent, reply);
         } catch (BotException e) {
             reply.hide();
             reply.send(e);

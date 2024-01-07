@@ -1,5 +1,6 @@
 package com.thefatrat.eddiejunior.components;
 
+import com.thefatrat.eddiejunior.RequestManager;
 import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.entities.Interaction;
 import com.thefatrat.eddiejunior.sources.Server;
@@ -54,5 +55,9 @@ public interface Component {
      * @return the server corresponding to the component
      */
     Server getServer();
+
+    default RequestManager getRequestManager() {
+        return getServer().getRequestManager();
+    }
 
 }

@@ -1,16 +1,20 @@
 package com.thefatrat.eddiejunior.events;
 
+import com.thefatrat.eddiejunior.util.MetadataHolder;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.interactions.modals.ModalMapping;
 
 import java.util.Map;
 
-public class ModalEvent {
+public class ModalEvent implements MetadataHolder {
 
-    public final Member member;
-    public final Map<String, ModalMapping> values;
+    private final String id;
+    private final Member member;
+    private final Map<String, ModalMapping> values;
+    private Map<String, Object> metadata;
 
-    public ModalEvent(Member member, Map<String, ModalMapping> values) {
+    public ModalEvent(String id, Member member, Map<String, ModalMapping> values) {
+        this.id = id;
         this.member = member;
         this.values = values;
     }
@@ -21,6 +25,20 @@ public class ModalEvent {
 
     public Map<String, ModalMapping> getValues() {
         return values;
+    }
+
+    @Override
+    public String getMetadataId() {
+        return id;
+    }
+
+    @Override
+    public void setMetadata(Map<String, Object> metadata) {
+        this.metadata = metadata;
+    }
+
+    public Map<String, Object> getMetadata() {
+        return metadata;
     }
 
 }

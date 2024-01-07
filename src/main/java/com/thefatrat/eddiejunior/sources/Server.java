@@ -3,6 +3,7 @@ package com.thefatrat.eddiejunior.sources;
 import com.thefatrat.eddiejunior.Bot;
 import com.thefatrat.eddiejunior.DatabaseManager;
 import com.thefatrat.eddiejunior.HandlerCollection;
+import com.thefatrat.eddiejunior.RequestManager;
 import com.thefatrat.eddiejunior.components.Component;
 import com.thefatrat.eddiejunior.components.GlobalComponent;
 import com.thefatrat.eddiejunior.entities.Command;
@@ -40,6 +41,7 @@ public class Server {
     private final ComponentHandler directHandler = new ComponentHandler();
     private final RequestHandler requestHandler = new RequestHandler();
     private final Map<String, Component> components = new HashMap<>();
+    private final RequestManager requestManager = new RequestManager();
     private final Map<String, MapHandler<CommandEvent, InteractionReply>> subCommandHandler = new HashMap<>();
     private TextChannel log = null;
     private Role manageRole = null;
@@ -210,6 +212,10 @@ public class Server {
 
     public void log(String message, Object... args) {
         log(Colors.TRANSPARENT, message, args);
+    }
+
+    public RequestManager getRequestManager() {
+        return requestManager;
     }
 
     public ComponentHandler getDirectMessageHandler() {
