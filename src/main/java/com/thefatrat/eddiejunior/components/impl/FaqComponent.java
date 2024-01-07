@@ -435,6 +435,10 @@ public class FaqComponent extends AbstractComponent {
                 .build());
 
         GuildMessageChannel channel = event.getMessage().getChannel().asGuildMessageChannel();
+        if (!channel.canTalk()) {
+            throw new BotErrorException("Missing permissions to talk in %s", channel.getAsMention());
+        }
+
         channel.sendMessage(builder.build())
             .queue(callback -> reply.edit(Icon.OK, "Answer sent"));
     }
