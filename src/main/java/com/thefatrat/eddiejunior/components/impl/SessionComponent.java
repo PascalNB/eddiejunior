@@ -62,18 +62,27 @@ public class SessionComponent extends AbstractComponent {
                         throw new BotWarningException("There are no sessions added yet");
                     }
 
-                    List<String> list = new ArrayList<>(sessions.size());
-                    for (String session : sessions.keySet()) {
-                        list.add('`' + session + '`');
-                    }
-                    String joined = String.join("\n", list.toArray(new String[0]));
-
-                    reply.send(new EmbedBuilder()
+                    EmbedBuilder embedBuilder = new EmbedBuilder()
                         .setTitle("Sessions")
-                        .setColor(Colors.TRANSPARENT)
-                        .setDescription(joined)
-                        .build()
-                    );
+                        .setColor(Colors.TRANSPARENT);
+
+                    sessions.entrySet().stream()
+                        .limit(MessageEmbed.MAX_FIELD_AMOUNT)
+                        .forEach(entry -> {
+                            StringBuilder stringBuilder = new StringBuilder();
+                            entry.getValue().forEach((channelId, message) -> {
+                                stringBuilder.append("<#").append(channelId).append(">\n");
+                                if (message != null) {
+                                    stringBuilder.append("- ").append(message.getJumpUrl()).append("\n");
+                                }
+                            });
+                            if (!stringBuilder.isEmpty()) {
+                                stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+                                embedBuilder.addField(entry.getKey(), stringBuilder.toString(), false);
+                            }
+                        });
+
+                    reply.send(embedBuilder.build());
                 }),
             new Command("add",
                 "add a channel to a session, creates a new session if it does not exist")
