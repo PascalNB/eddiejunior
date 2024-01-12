@@ -38,10 +38,8 @@ public class EventComponent extends AbstractComponent {
         for (String linkString : getDatabaseManager().getSettings("link")) {
             String[] split = linkString.split("-", 3);
             String keyword = new String(decoder.decode(split[0]));
-            String sessionDecoded = new String(decoder.decode(split[1]));
-            String session = "null".equals(sessionDecoded) ? null : sessionDecoded;
-            String componentDecoded = new String(decoder.decode(split[2]));
-            String component = "null".equals(componentDecoded) ? null : componentDecoded;
+            String session = "null".equals(split[1]) ? null : new String(decoder.decode(split[1]));
+            String component = "null".equals(split[2]) ? null : new String(decoder.decode(split[2]));
             Link link = new Link(keyword, session, component);
             links.put(keyword, link);
         }
