@@ -2,6 +2,7 @@ package com.thefatrat.eddiejunior;
 
 import com.thefatrat.eddiejunior.events.*;
 import com.thefatrat.eddiejunior.handlers.MapHandler;
+import com.thefatrat.eddiejunior.handlers.PermissionMapHandler;
 import com.thefatrat.eddiejunior.handlers.SetHandler;
 import com.thefatrat.eddiejunior.reply.DefaultReply;
 import com.thefatrat.eddiejunior.reply.InteractionReply;
@@ -13,9 +14,9 @@ import net.dv8tion.jda.api.interactions.components.selections.SelectOption;
 
 public class HandlerCollection<V> {
 
-    private MapHandler<CommandEvent, InteractionReply> commandHandler;
-    private MapHandler<InteractionEvent<Message>, InteractionReply> messageInteractionHandler;
-    private MapHandler<InteractionEvent<Member>, InteractionReply> memberInteractionHandler;
+    private PermissionMapHandler<CommandEvent, InteractionReply> commandHandler;
+    private PermissionMapHandler<InteractionEvent<Message>, InteractionReply> messageInteractionHandler;
+    private PermissionMapHandler<InteractionEvent<Member>, InteractionReply> memberInteractionHandler;
     private SetHandler<ArchiveEvent, Void> archiveHandler;
     private SetHandler<ButtonEvent<V>, MenuReply> buttonHandler;
     private MapHandler<ButtonEvent<V>, MenuReply> buttonMapHandler;
@@ -25,23 +26,23 @@ public class HandlerCollection<V> {
     private MapHandler<SelectEvent<IMentionable>, MenuReply> entitySelectHandler;
     private MapHandler<GenericEvent<?>, Void> genericHandler;
 
-    public MapHandler<CommandEvent, InteractionReply> getCommandHandler() {
+    public PermissionMapHandler<CommandEvent, InteractionReply> getCommandHandler() {
         if (commandHandler == null) {
-            commandHandler = new MapHandler<>();
+            commandHandler = new PermissionMapHandler<>();
         }
         return commandHandler;
     }
 
-    public MapHandler<InteractionEvent<Message>, InteractionReply> getMessageInteractionHandler() {
+    public PermissionMapHandler<InteractionEvent<Message>, InteractionReply> getMessageInteractionHandler() {
         if (messageInteractionHandler == null) {
-            messageInteractionHandler = new MapHandler<>();
+            messageInteractionHandler = new PermissionMapHandler<>();
         }
         return messageInteractionHandler;
     }
 
-    public MapHandler<InteractionEvent<Member>, InteractionReply> getMemberInteractionHandler() {
+    public PermissionMapHandler<InteractionEvent<Member>, InteractionReply> getMemberInteractionHandler() {
         if (memberInteractionHandler == null) {
-            memberInteractionHandler = new MapHandler<>();
+            memberInteractionHandler = new PermissionMapHandler<>();
         }
         return memberInteractionHandler;
     }

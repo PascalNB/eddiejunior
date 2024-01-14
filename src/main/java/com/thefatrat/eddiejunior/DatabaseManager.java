@@ -1,14 +1,19 @@
 package com.thefatrat.eddiejunior;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.pascalnb.dbwrapper.Mapper;
 import com.pascalnb.dbwrapper.Query;
 import com.pascalnb.dbwrapper.StringMapper;
 import com.pascalnb.dbwrapper.action.CompletedAction;
 import com.pascalnb.dbwrapper.action.DatabaseAction;
 import com.thefatrat.eddiejunior.components.impl.FaqComponent;
+import com.thefatrat.eddiejunior.components.impl.PollComponent;
+import com.thefatrat.eddiejunior.util.ObjectMapperProvider;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class DatabaseManager {
 
@@ -40,6 +45,18 @@ public class DatabaseManager {
 
     public static final Query SET_QUESTION = new Query(
         "INSERT INTO faq (server_id,q_number,value) VALUES(?,?,?) ON DUPLICATE KEY UPDATE value=?;"
+    );
+
+    public static final Query GET_POLLS = new Query(
+        "SELECT * FROM poll WHERE server_id=?;"
+    );
+
+    public static final Query SET_POLL = new Query(
+        "INSERT INTO poll (server_id,poll_id,value) VALUES(?,?,?) ON DUPLICATE KEY UPDATE value=?;"
+    );
+
+    public static final Query REMOVE_POLL = new Query(
+        "DELETE FROM poll WHERE server_id=? AND poll_id=?;"
     );
 
     private final String server;
@@ -126,9 +143,10 @@ public class DatabaseManager {
     public List<FaqComponent.Question> getQuestions() {
         return DatabaseAction.of(
                 GET_QUESTIONS.withArgs(server),
-                Mapper.allRows()
-            ).query()
-            .map(list -> list.stream()
+                Mapper.stream()
+            )
+            .query()
+            .map(stream -> stream
                 .map(tuple -> {
                     int id = Integer.parseInt(tuple.get("q_number"));
                     String json = tuple.get("value");
@@ -149,6 +167,52 @@ public class DatabaseManager {
         return DatabaseAction.of(
             SET_QUESTION.withArgs(server, id, json, json)
         ).execute();
+    }
+
+    public Map<String, PollComponent.Poll> getPolls() {
+        return DatabaseAction.of(
+                GET_POLLS.withArgs(server),
+                Mapper.stream()
+            )
+            .query()
+            .map(stream -> stream
+                .flatMap(tuple -> {
+                    String value = tuple.get("value");
+                    try {
+                        PollComponent.Poll poll = ObjectMapperProvider.OBJECT_MAPPER
+                            .readValue(value, PollComponent.Poll.class);
+                        return Stream.of(Map.entry(tuple.get("poll_id"), poll));
+                    } catch (JsonProcessingException e) {
+                        e.printStackTrace();
+                        return Stream.empty();
+                    }
+                })
+                .collect(Collectors.toMap(
+                    Map.Entry::getKey,
+                    Map.Entry::getValue
+                ))
+            )
+            .complete();
+    }
+
+    public CompletedAction<Void> setPoll(PollComponent.Poll poll) {
+        try {
+            String value = ObjectMapperProvider.OBJECT_MAPPER.writeValueAsString(poll);
+            return DatabaseAction.of(
+                    SET_POLL.withArgs(server, poll.getId(), value, value)
+                )
+                .execute();
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public CompletedAction<Void> removePoll(PollComponent.Poll poll) {
+        return DatabaseAction.of(
+                REMOVE_POLL.withArgs(server, poll.getId())
+            )
+            .execute();
     }
 
 }

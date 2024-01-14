@@ -8,13 +8,11 @@ import com.thefatrat.eddiejunior.components.Component;
 import com.thefatrat.eddiejunior.components.GlobalComponent;
 import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.entities.Interaction;
+import com.thefatrat.eddiejunior.entities.PermissionEntity;
 import com.thefatrat.eddiejunior.events.*;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotException;
-import com.thefatrat.eddiejunior.handlers.ComponentHandler;
-import com.thefatrat.eddiejunior.handlers.MapHandler;
-import com.thefatrat.eddiejunior.handlers.RequestHandler;
-import com.thefatrat.eddiejunior.handlers.SetHandler;
+import com.thefatrat.eddiejunior.handlers.*;
 import com.thefatrat.eddiejunior.reply.DefaultReply;
 import com.thefatrat.eddiejunior.reply.InteractionReply;
 import com.thefatrat.eddiejunior.reply.MenuReply;
@@ -45,6 +43,7 @@ public class Server {
     private final Map<String, MapHandler<CommandEvent, InteractionReply>> subCommandHandler = new HashMap<>();
     private TextChannel log = null;
     private Role manageRole = null;
+    private Role useRole = null;
 
     @NotNull
     @Contract(" -> new")
@@ -64,21 +63,56 @@ public class Server {
         return id;
     }
 
-    public void checkPermissions(@NotNull Member member) throws BotException {
-        if (member.hasPermission(Permission.ADMINISTRATOR)) {
-            return;
+    private void checkPermissions(@NotNull Member member, PermissionEntity.RequiredPermission requiredPermission) {
+        if (requiredPermission != null) {
+            if (member.hasPermission(Permission.ADMINISTRATOR)) {
+                return;
+            }
+
+            switch (requiredPermission) {
+                case MANAGE -> {
+                    if (manageRole != null && member.getRoles().contains(manageRole)) {
+                        return;
+                    }
+                }
+                case USE -> {
+                    if (manageRole != null && member.getRoles().contains(manageRole)
+                        || useRole != null && member.getRoles().contains(useRole)) {
+                        return;
+                    }
+                }
+            }
         }
-        if (manageRole == null || !member.getRoles().contains(manageRole)) {
-            throw new BotErrorException("No permission to interact");
-        }
+
+        throw new BotErrorException("No permission to interact");
+    }
+
+    public void checkCommandPermissions(@NotNull Member member, String command) throws BotException {
+        checkPermissions(member, handlerCollection.getCommandHandler().getRequiredPermission(command));
+    }
+
+    public void checkMessageInteractionPermissions(@NotNull Member member, String interaction) throws BotException {
+        checkPermissions(member, handlerCollection.getMessageInteractionHandler().getRequiredPermission(interaction));
+    }
+
+    public void checkMemberInteractionPermissions(@NotNull Member member, String interaction) throws BotException {
+        checkPermissions(member, handlerCollection.getMemberInteractionHandler().getRequiredPermission(interaction));
     }
 
     public Role getManageRole() {
         return manageRole;
     }
 
+    public Role getUseRole() {
+        return useRole;
+    }
+
     public void setManageRole(@Nullable Role manageRole) {
         this.manageRole = manageRole;
+    }
+
+    public void setUseRole(@Nullable Role useRole) {
+        this.useRole = useRole;
     }
 
     public List<Component> getComponents() {
@@ -114,6 +148,10 @@ public class Server {
                 Component instance = component.getDeclaredConstructor(Server.class).newInstance(this);
 
                 for (Command command : instance.getCommands()) {
+                    PermissionEntity.RequiredPermission minPermission = command.getRequiredPermission() == null
+                        ? PermissionEntity.RequiredPermission.USE
+                        : command.getRequiredPermission();
+
                     if (command.hasSubCommands()) {
                         command.setAction((c, reply) -> {
                             CommandEvent event = c.toSub();
@@ -124,7 +162,16 @@ public class Server {
                         subCommandHandler.put(command.getName(), mapHandler);
                         for (Command sub : command.getSubcommands()) {
                             mapHandler.addListener(sub.getName(), sub.getAction());
+
+                            String commandName = command.getName() + " " + sub.getName();
+                            if (sub.getRequiredPermission() != null) {
+                                getCommandHandler().addRequiredPermission(commandName, sub.getRequiredPermission());
+                            } else {
+                                getCommandHandler().addRequiredPermission(commandName, minPermission);
+                            }
                         }
+                    } else {
+                        getCommandHandler().addRequiredPermission(command.getName(), minPermission);
                     }
 
                     getCommandHandler().addListener(command.getName(), command.getAction());
@@ -132,10 +179,16 @@ public class Server {
 
                 for (Interaction<Message> interaction : instance.getMessageInteractions()) {
                     getMessageInteractionHandler().addListener(interaction.getName(), interaction.getAction());
+                    PermissionEntity.RequiredPermission permission = interaction.getRequiredPermission() == null
+                        ? PermissionEntity.RequiredPermission.USE : interaction.getRequiredPermission();
+                    getMessageInteractionHandler().addRequiredPermission(interaction.getName(), permission);
                 }
 
                 for (Interaction<Member> interaction : instance.getMemberInteractions()) {
                     getMemberInteractionHandler().addListener(interaction.getName(), interaction.getAction());
+                    PermissionEntity.RequiredPermission permission = interaction.getRequiredPermission() == null
+                        ? PermissionEntity.RequiredPermission.USE : interaction.getRequiredPermission();
+                    getMemberInteractionHandler().addRequiredPermission(interaction.getName(), permission);
                 }
 
                 this.components.put(instance.getId(), instance);
@@ -226,15 +279,15 @@ public class Server {
         return requestHandler;
     }
 
-    public MapHandler<CommandEvent, InteractionReply> getCommandHandler() {
+    public PermissionMapHandler<CommandEvent, InteractionReply> getCommandHandler() {
         return handlerCollection.getCommandHandler();
     }
 
-    public MapHandler<InteractionEvent<Message>, InteractionReply> getMessageInteractionHandler() {
+    public PermissionMapHandler<InteractionEvent<Message>, InteractionReply> getMessageInteractionHandler() {
         return handlerCollection.getMessageInteractionHandler();
     }
 
-    public MapHandler<InteractionEvent<Member>, InteractionReply> getMemberInteractionHandler() {
+    public PermissionMapHandler<InteractionEvent<Member>, InteractionReply> getMemberInteractionHandler() {
         return handlerCollection.getMemberInteractionHandler();
     }
 

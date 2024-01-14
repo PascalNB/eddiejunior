@@ -10,6 +10,7 @@ import com.thefatrat.eddiejunior.components.Component;
 import com.thefatrat.eddiejunior.components.GlobalComponent;
 import com.thefatrat.eddiejunior.components.RunnableComponent;
 import com.thefatrat.eddiejunior.entities.Command;
+import com.thefatrat.eddiejunior.entities.PermissionEntity;
 import com.thefatrat.eddiejunior.events.CommandEvent;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotException;
@@ -20,7 +21,6 @@ import com.thefatrat.eddiejunior.util.Colors;
 import com.thefatrat.eddiejunior.util.Icon;
 import com.thefatrat.eddiejunior.util.PermissionChecker;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.IMentionable;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.MessageEmbed;
@@ -60,49 +60,70 @@ public class ManagerComponent extends AbstractComponent implements GlobalCompone
             Role manageRole = getGuild().getRoleById(manageRoleId);
             getServer().setManageRole(manageRole);
         }
+        String useRoleId = getDatabaseManager().getSetting("userole");
+        if (useRoleId != null) {
+            Role useRole = getGuild().getRoleById(useRoleId);
+            getServer().setUseRole(useRole);
+        }
 
         addCommands(
             new Command("help", "show the available commands")
+                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
                 .addOptions(new OptionData(OptionType.STRING, "component", "component name", false))
                 .setAction(this::help),
 
             new Command("ping", "check the RTT of the connection in milliseconds")
+                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
                 .setAction(this::ping),
 
             new Command("enable", "enable a specific component by name")
+                .setRequiredPermission(PermissionEntity.RequiredPermission.MANAGE)
                 .addOptions(new OptionData(OptionType.STRING, "component", "component name", true))
                 .setAction(this::enableComponent),
 
             new Command("disable", "disable a specific component by name")
+                .setRequiredPermission(PermissionEntity.RequiredPermission.MANAGE)
                 .addOptions(new OptionData(OptionType.STRING, "component", "component name", true))
                 .setAction(this::disableComponent),
 
             new Command("components", "shows a list of all the components")
+                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
                 .setAction(this::listComponents),
 
             new Command("status", "shows the current status of the bot")
+                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
                 .addOptions(new OptionData(OptionType.STRING, "component", "component name", false))
                 .setAction(this::statusCommand),
 
             new Command("reload", "reload a component's commands")
+                .setRequiredPermission(PermissionEntity.RequiredPermission.MANAGE)
                 .addOptions(new OptionData(OptionType.STRING, "component", "component name", true))
                 .setAction(this::reloadComponent),
 
             new Command("log", "set the logging channel")
+                .setRequiredPermission(PermissionEntity.RequiredPermission.MANAGE)
                 .addOptions(new OptionData(OptionType.CHANNEL, "channel", "log channel", true)
                     .setChannelTypes(ChannelType.TEXT)
                 )
                 .setAction(this::setLogChannel),
 
             new Command("errorlog", "show the error log")
+                .setRequiredPermission(PermissionEntity.RequiredPermission.MANAGE)
                 .setAction(this::showErrorLog),
 
             new Command("vitals", "show system vitals")
+                .setRequiredPermission(PermissionEntity.RequiredPermission.MANAGE)
                 .setAction(this::getVitals),
 
-            new Command("setrole", "set the role that can use Eddie Junior")
+            new Command("setmanagerole", "set the role that can manage Eddie Junior")
+                .setRequiredPermission(PermissionEntity.RequiredPermission.ADMIN)
                 .addOptions(new OptionData(OptionType.ROLE, "role", "role", true))
-                .setAction(this::setRole)
+                .setAction(this::setManageRole),
+
+            new Command("setuserole", "set the role that can use Eddie Junior")
+                .setRequiredPermission(PermissionEntity.RequiredPermission.MANAGE)
+                .addOptions(new OptionData(OptionType.ROLE, "role", "role", true))
+                .setAction(this::setUseRole)
         );
     }
 
@@ -259,9 +280,13 @@ public class ManagerComponent extends AbstractComponent implements GlobalCompone
 
     private void reloadComponent(@NotNull CommandEvent command, @NotNull InteractionReply reply) {
         Component component = getComponentSafe(command.get("component").getAsString());
+        if (component instanceof GlobalComponent) {
+            throw new BotErrorException("Cannot reload this component");
+        }
         getServer().toggleComponent(component, false).queue(__ ->
             getServer().toggleComponent(component, true).queue()
         );
+        DatabaseManager.toggleComponent(getServer().getId(), component.getId(), true);
         reply.ok("Reloaded component `%s`", component.getId());
     }
 
@@ -329,19 +354,31 @@ public class ManagerComponent extends AbstractComponent implements GlobalCompone
             .build());
     }
 
-    private void setRole(CommandEvent command, InteractionReply reply) {
+    private void setManageRole(CommandEvent command, InteractionReply reply) {
         Role role = command.get("role").getAsRole();
 
         Member member = command.getMember();
-        if (!member.hasPermission(Permission.ADMINISTRATOR)) {
-            throw new BotWarningException("You need administrator permissions to use this command");
-        }
         if (getServer().getGuild().getPublicRole().equals(role)) {
-            throw new BotWarningException("Cannot set `@everyone` to allow the use of Eddie Junior");
+            throw new BotWarningException("Cannot set `@everyone` to allow the management of Eddie Junior");
         }
 
         getServer().setManageRole(role);
         getDatabaseManager().setSetting("managerole", role.getId());
+        reply.ok("Enabled role %s to manage Eddie Junior", role.getAsMention());
+        getServer().log(Colors.BLUE, member.getUser(), "Enabled role %s (`%s`) to manage Eddie Junior",
+            role.getAsMention(), role.getId());
+    }
+
+    private void setUseRole(CommandEvent command, InteractionReply reply) {
+        Role role = command.get("role").getAsRole();
+
+        Member member = command.getMember();
+        if (getServer().getGuild().getPublicRole().equals(role)) {
+            throw new BotWarningException("Cannot set `@everyone` to allow the use of Eddie Junior");
+        }
+
+        getServer().setUseRole(role);
+        getDatabaseManager().setSetting("userole", role.getId());
         reply.ok("Enabled role %s to use Eddie Junior", role.getAsMention());
         getServer().log(Colors.BLUE, member.getUser(), "Enabled role %s (`%s`) to use Eddie Junior",
             role.getAsMention(), role.getId());
@@ -374,12 +411,14 @@ public class ManagerComponent extends AbstractComponent implements GlobalCompone
                 Components enabled: %d
                 Uptime: %s
                 Log: %s
-                Role: %s
+                Manage role: %s
+                Use role: %s
                 """,
             count,
             Bot.getInstance().getUptime(),
             Optional.ofNullable(getServer().getLog()).map(IMentionable::getAsMention).orElse(null),
-            getServer().getManageRole());
+            getServer().getManageRole(),
+            getServer().getUseRole());
     }
 
 }

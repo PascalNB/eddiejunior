@@ -2,6 +2,7 @@ package com.thefatrat.eddiejunior.components.impl;
 
 import com.thefatrat.eddiejunior.components.AbstractComponent;
 import com.thefatrat.eddiejunior.entities.Command;
+import com.thefatrat.eddiejunior.entities.PermissionEntity;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotWarningException;
 import com.thefatrat.eddiejunior.reply.Reply;
@@ -53,10 +54,11 @@ public class SessionComponent extends AbstractComponent {
             }
         }
 
-        setComponentCommand();
+        setComponentCommand(PermissionEntity.RequiredPermission.MANAGE);
 
         addSubcommands(
             new Command("list", "list all sessions")
+                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
                 .setAction((command, reply) -> {
                     if (sessions.isEmpty()) {
                         throw new BotWarningException("There are no sessions added yet");
@@ -84,8 +86,8 @@ public class SessionComponent extends AbstractComponent {
 
                     reply.send(embedBuilder.build());
                 }),
-            new Command("add",
-                "add a channel to a session, creates a new session if it does not exist")
+
+            new Command("add", "add a channel to a session, creates a new session if it does not exist")
                 .addOptions(
                     new OptionData(OptionType.STRING, "session", "session name", true)
                         .setRequiredLength(3, 20),
@@ -161,8 +163,7 @@ public class SessionComponent extends AbstractComponent {
                     reply.ok("Removed message from channel %s for session `%s`", channel.getAsMention(), session);
                 }),
 
-            new Command("remove",
-                "removes a channel from a session, removes the session if no channels are left")
+            new Command("remove", "removes a channel from a session, removes the session if no channels are left")
                 .addOptions(
                     new OptionData(OptionType.STRING, "session", "session name", true)
                         .setRequiredLength(3, 20),
@@ -194,7 +195,9 @@ public class SessionComponent extends AbstractComponent {
                         reply.ok("Session `%s` has been removed", string);
                     }
                 }),
+
             new Command("show", "shows the channels of the given session")
+                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
                 .addOptions(new OptionData(OptionType.STRING, "session", "session name", true)
                     .setRequiredLength(3, 20)
                 )
@@ -239,6 +242,7 @@ public class SessionComponent extends AbstractComponent {
                         .build()
                     );
                 }),
+
             new Command("open", "opens channels of a session")
                 .addOptions(new OptionData(OptionType.STRING, "session", "session name", true)
                     .setRequiredLength(3, 20)
@@ -251,6 +255,7 @@ public class SessionComponent extends AbstractComponent {
                     getServer().log(Colors.GREEN, command.getMember().getUser(), "Opened session `%s`", session);
                     openSession(session, reply);
                 }),
+
             new Command("close", "closes channels of a session")
                 .addOptions(new OptionData(OptionType.STRING, "session", "session name", true)
                     .setRequiredLength(3, 20)
@@ -264,7 +269,6 @@ public class SessionComponent extends AbstractComponent {
                     closeSession(session, reply);
                 })
         );
-
     }
 
     public void openSession(String session, Reply reply) {

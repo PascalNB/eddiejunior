@@ -258,7 +258,7 @@ public class Bot extends ListenerAdapter {
         try {
             String interaction = event.getName();
             Server server = servers.get(guild.getId());
-            server.checkPermissions(Objects.requireNonNull(event.getMember()));
+            server.checkMessageInteractionPermissions(Objects.requireNonNull(event.getMember()), interaction);
             server.getMessageInteractionHandler()
                 .handle(interaction, new InteractionEvent<>(message, event.getMember()), reply);
         } catch (BotException e) {
@@ -281,7 +281,7 @@ public class Bot extends ListenerAdapter {
         try {
             String interaction = event.getName();
             Server server = servers.get(guild.getId());
-            server.checkPermissions(Objects.requireNonNull(event.getMember()));
+            server.checkMemberInteractionPermissions(Objects.requireNonNull(event.getMember()), interaction);
             server.getMemberInteractionHandler()
                 .handle(interaction, new InteractionEvent<>(member, event.getMember()), reply);
         } catch (BotException e) {
@@ -306,12 +306,11 @@ public class Bot extends ListenerAdapter {
 
         InteractionReply reply = new InteractionReply(event);
 
-        CommandEvent commandEvent = new CommandEvent(event.getName(), event.getSubcommandName(),
-            options, event.getGuildChannel(), Objects.requireNonNull(event.getMember()));
-
         try {
             Server server = servers.get(guild.getId());
-            server.checkPermissions(event.getMember());
+            server.checkCommandPermissions(Objects.requireNonNull(event.getMember()), event.getName());
+            CommandEvent commandEvent = new CommandEvent(
+                event.getName(), event.getSubcommandName(), options, event.getGuildChannel(), event.getMember());
             server.getCommandHandler().handle(event.getName(), commandEvent, reply);
         } catch (BotException e) {
             reply.hide();

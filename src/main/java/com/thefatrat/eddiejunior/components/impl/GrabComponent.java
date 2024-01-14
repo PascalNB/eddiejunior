@@ -3,6 +3,7 @@ package com.thefatrat.eddiejunior.components.impl;
 import com.thefatrat.eddiejunior.components.AbstractComponent;
 import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.entities.Interaction;
+import com.thefatrat.eddiejunior.entities.PermissionEntity;
 import com.thefatrat.eddiejunior.events.CommandEvent;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotWarningException;
@@ -47,7 +48,7 @@ public class GrabComponent extends AbstractComponent {
     public GrabComponent(Server server) {
         super(server, NAME);
 
-        setComponentCommand();
+        setComponentCommand(PermissionEntity.RequiredPermission.USE);
 
         addSubcommands(
             new Command("servericon", "Get the server icon")
@@ -416,6 +417,7 @@ public class GrabComponent extends AbstractComponent {
 
         addMessageInteractions(
             new Interaction<Message>("sticker")
+                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
                 .setAction((event, reply) -> {
                     List<StickerItem> stickers = event.getEntity().getStickers();
 

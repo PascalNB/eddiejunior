@@ -3,6 +3,7 @@ package com.thefatrat.eddiejunior.components.impl;
 import com.thefatrat.eddiejunior.components.AbstractComponent;
 import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.entities.Interaction;
+import com.thefatrat.eddiejunior.entities.PermissionEntity;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotWarningException;
 import com.thefatrat.eddiejunior.sources.Server;
@@ -33,7 +34,7 @@ public class MessageComponent extends AbstractComponent {
     public MessageComponent(Server server) {
         super(server, "Message");
 
-        setComponentCommand();
+        setComponentCommand(PermissionEntity.RequiredPermission.MANAGE);
 
         addSubcommands(
             new Command("edit", "edit a message sent by me")
@@ -78,6 +79,7 @@ public class MessageComponent extends AbstractComponent {
                 }),
 
             new Command("send", "send a message in a given channel")
+                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
                 .addOptions(
                     new OptionData(OptionType.CHANNEL, "channel", "text channel", true)
                         .setChannelTypes(ChannelType.TEXT, ChannelType.VOICE, ChannelType.NEWS,
@@ -144,6 +146,7 @@ public class MessageComponent extends AbstractComponent {
                 }),
 
             new Command("embed", "send a new embedded message in the given channel")
+                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
                 .addOptions(new OptionData(OptionType.CHANNEL, "channel", "channel", true)
                     .setChannelTypes(ChannelType.TEXT, ChannelType.VOICE, ChannelType.NEWS,
                         ChannelType.GUILD_PUBLIC_THREAD, ChannelType.GUILD_PRIVATE_THREAD))

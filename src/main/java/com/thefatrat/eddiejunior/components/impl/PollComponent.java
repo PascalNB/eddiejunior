@@ -1,8 +1,10 @@
 package com.thefatrat.eddiejunior.components.impl;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.thefatrat.eddiejunior.components.AbstractComponent;
 import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.entities.Interaction;
+import com.thefatrat.eddiejunior.entities.PermissionEntity;
 import com.thefatrat.eddiejunior.events.ButtonEvent;
 import com.thefatrat.eddiejunior.events.CommandEvent;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
@@ -41,7 +43,9 @@ public class PollComponent extends AbstractComponent {
     public PollComponent(Server server) {
         super(server, "Poll");
 
-        setComponentCommand();
+        polls.putAll(getDatabaseManager().getPolls());
+
+        setComponentCommand(PermissionEntity.RequiredPermission.MANAGE);
 
         addSubcommands(
             new Command("new", "create a new poll")
@@ -63,6 +67,7 @@ public class PollComponent extends AbstractComponent {
                 .setAction(this::getPollResults),
 
             new Command("peek", "show current poll results without closing the poll")
+                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
                 .addOptions(new OptionData(OptionType.STRING, "url", "message url", true))
                 .setAction(this::getPollInfo)
         );
@@ -70,10 +75,13 @@ public class PollComponent extends AbstractComponent {
         getServer().getButtonHandler().addListener(this::castVote);
 
         addMessageInteractions(
-            new Interaction<Message>("close").setAction((e, r) -> closePoll(e.getEntity(), r)),
-            new Interaction<Message>("peek").setAction((e, r) -> showPoll(e.getEntity(), r))
+            new Interaction<Message>("close")
+                .setRequiredPermission(PermissionEntity.RequiredPermission.MANAGE)
+                .setAction((e, r) -> closePoll(e.getEntity(), r)),
+            new Interaction<Message>("peek")
+                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
+                .setAction((e, r) -> showPoll(e.getEntity(), r))
         );
-
     }
 
     /**
@@ -197,7 +205,9 @@ public class PollComponent extends AbstractComponent {
 
         int maxPicks = command.hasOption("picks") ? command.get("picks").getAsInt() : 1;
         Arrays.sort(options, String.CASE_INSENSITIVE_ORDER);
-        polls.put(message.getId(), new Poll(maxPicks, options));
+        Poll poll = new Poll(message.getId(), maxPicks, options);
+        polls.put(message.getId(), poll);
+        getDatabaseManager().setPoll(poll);
 
         List<ActionRow> rows = new ArrayList<>();
         for (int i = 0; i < buttons.size(); i += 5) {
@@ -239,6 +249,7 @@ public class PollComponent extends AbstractComponent {
         String vote = split[2];
         Poll poll = polls.get(pollId);
         int votesLeft = poll.addVote(event.getActor().getId(), vote);
+        getDatabaseManager().setPoll(poll);
         reply.hide();
         reply.ok("Successfully voted for %s, you have %d votes left", vote, votesLeft);
     }
@@ -265,6 +276,7 @@ public class PollComponent extends AbstractComponent {
 
         Poll poll = polls.get(message.getId());
         polls.remove(message.getId());
+        getDatabaseManager().removePoll(poll);
 
         MessageEditBuilder edit = MessageEditBuilder.fromMessage(message)
             .setComponents()
@@ -306,13 +318,15 @@ public class PollComponent extends AbstractComponent {
         showPoll(message, reply);
     }
 
-    private static class Poll {
+    public static class Poll {
 
+        private final String id;
         private final Set<String> choices = new HashSet<>();
         private final Map<String, Set<String>> votes = new HashMap<>();
         private final int maxPicks;
 
-        public Poll(int maxPicks, String @NotNull ... choices) {
+        public Poll(String id, int maxPicks, String @NotNull ... choices) {
+            this.id = id;
             this.maxPicks = maxPicks;
             Collections.addAll(this.choices, choices);
         }
@@ -338,6 +352,7 @@ public class PollComponent extends AbstractComponent {
             return maxPicks - userVotes.size();
         }
 
+        @JsonIgnore
         public Map<String, Integer> getResults() {
             Map<String, Integer> results = new HashMap<>();
             choices.forEach(choice -> results.put(choice, 0));
@@ -349,6 +364,10 @@ public class PollComponent extends AbstractComponent {
             }
 
             return results;
+        }
+
+        public String getId() {
+            return id;
         }
 
         @Override

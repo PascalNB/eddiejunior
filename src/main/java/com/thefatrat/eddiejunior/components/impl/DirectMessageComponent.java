@@ -3,6 +3,7 @@ package com.thefatrat.eddiejunior.components.impl;
 import com.thefatrat.eddiejunior.components.AbstractComponent;
 import com.thefatrat.eddiejunior.components.RunnableComponent;
 import com.thefatrat.eddiejunior.entities.Command;
+import com.thefatrat.eddiejunior.entities.PermissionEntity;
 import com.thefatrat.eddiejunior.events.CommandEvent;
 import com.thefatrat.eddiejunior.events.GenericEvent;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
@@ -59,16 +60,18 @@ public abstract class DirectMessageComponent extends AbstractComponent implement
         String confirmationString = getDatabaseManager().getSetting("confirmationmessage");
         confirmation = URLUtil.getMessageFromString(confirmationString, getGuild());
 
-        setComponentCommand();
+        setComponentCommand(PermissionEntity.RequiredPermission.MANAGE);
 
         addSubcommands(
             new Command("start", "starts the component")
+                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
                 .addOptions(new OptionData(OptionType.CHANNEL, "channel", "channel destination")
                     .setChannelTypes(ChannelType.TEXT)
                 )
                 .setAction(this::startCommand),
 
             new Command("stop", "stops the component")
+                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
                 .setAction(this::stopCommand),
 
             new Command("destination", "sets the destination channel")

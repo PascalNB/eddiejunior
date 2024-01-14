@@ -12,7 +12,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.BiConsumer;
 
-public class Command {
+public class Command implements PermissionEntity {
 
     private final String name;
     private final String description;
@@ -20,11 +20,17 @@ public class Command {
     private final List<OptionData> options = new ArrayList<>();
     private final List<Command> subcommands = new ArrayList<>();
     private final List<Permission> permissions = new ArrayList<>();
+    private RequiredPermission requiredPermission = null;
 
     public Command(String name, String description) {
         this.name = name;
         this.description = description;
         permissions.add(Permission.USE_APPLICATION_COMMANDS);
+    }
+
+    public Command setRequiredPermission(RequiredPermission requiredPermission) {
+        this.requiredPermission = requiredPermission;
+        return this;
     }
 
     @Contract("_ -> this")
@@ -89,6 +95,11 @@ public class Command {
 
     public boolean hasSubCommands() {
         return !subcommands.isEmpty();
+    }
+
+    @Override
+    public RequiredPermission getRequiredPermission() {
+        return requiredPermission;
     }
 
 }

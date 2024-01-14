@@ -1,6 +1,7 @@
 package com.thefatrat.eddiejunior.components.impl;
 
 import com.thefatrat.eddiejunior.entities.Command;
+import com.thefatrat.eddiejunior.entities.PermissionEntity;
 import com.thefatrat.eddiejunior.events.ButtonEvent;
 import com.thefatrat.eddiejunior.events.CommandEvent;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
@@ -54,6 +55,7 @@ public class FanMailComponent extends DirectMessageComponent {
                 .setAction(this::setTimeout),
 
             new Command("reset", "allow submissions for users again")
+                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
                 .addOptions(new OptionData(OptionType.USER, "user", "user", true))
                 .setAction(this::resetSubmission),
 
