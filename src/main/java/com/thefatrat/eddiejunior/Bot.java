@@ -305,10 +305,12 @@ public class Bot extends ListenerAdapter {
         }
 
         InteractionReply reply = new InteractionReply(event);
+        String fullCommandName = event.getName() + (event.getSubcommandName() == null
+            ? "" : " " + event.getSubcommandName());
 
         try {
             Server server = servers.get(guild.getId());
-            server.checkCommandPermissions(Objects.requireNonNull(event.getMember()), event.getName());
+            server.checkCommandPermissions(Objects.requireNonNull(event.getMember()), fullCommandName);
             CommandEvent commandEvent = new CommandEvent(
                 event.getName(), event.getSubcommandName(), options, event.getGuildChannel(), event.getMember());
             server.getCommandHandler().handle(event.getName(), commandEvent, reply);

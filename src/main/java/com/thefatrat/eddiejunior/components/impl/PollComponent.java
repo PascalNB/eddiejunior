@@ -320,10 +320,12 @@ public class PollComponent extends AbstractComponent {
 
     public static class Poll {
 
-        private final String id;
+        private String id;
         private final Set<String> choices = new HashSet<>();
         private final Map<String, Set<String>> votes = new HashMap<>();
-        private final int maxPicks;
+        private int maxPicks;
+
+        private Poll() {}
 
         public Poll(String id, int maxPicks, String @NotNull ... choices) {
             this.id = id;
