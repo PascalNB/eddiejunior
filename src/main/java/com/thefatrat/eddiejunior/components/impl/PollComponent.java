@@ -20,6 +20,7 @@ import com.thefatrat.eddiejunior.util.URLUtil;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
@@ -31,19 +32,55 @@ import net.dv8tion.jda.api.interactions.components.buttons.ButtonStyle;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageEditBuilder;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class PollComponent extends AbstractComponent {
 
     private final Map<String, Poll> polls = new HashMap<>();
+    private final ScheduledExecutorService executorService;
 
     public PollComponent(Server server) {
         super(server, "Poll");
 
         polls.putAll(getDatabaseManager().getPolls());
+        LocalDateTime now = LocalDateTime.now();
+        executorService = Executors.newScheduledThreadPool(1);
+        for (Poll poll : polls.values()) {
+            if (poll.expiry == null) {
+                continue;
+            }
+
+            Message message = URLUtil.getMessageFromString(poll.channelId + "_" + poll.id, getGuild());
+            if (message == null) {
+                getDatabaseManager().removePoll(poll);
+                return;
+            }
+
+            Duration duration;
+
+            if (now.isAfter(poll.expiry)) {
+                duration = Duration.ZERO;
+            } else {
+                duration = Duration.between(now, poll.expiry);
+            }
+
+            executorService.schedule(() -> {
+                if (polls.containsKey(poll.id)) {
+                    this.closePoll(message, null);
+                }
+            }, duration.getSeconds(), TimeUnit.SECONDS);
+        }
 
         setComponentCommand(PermissionEntity.RequiredPermission.MANAGE);
 
@@ -53,6 +90,7 @@ public class PollComponent extends AbstractComponent {
                     new OptionData(OptionType.STRING, "text", "text", true)
                         .setMaxLength(1000),
                     new OptionData(OptionType.STRING, "options", "options seperated by commas", true),
+                    new OptionData(OptionType.STRING, "expiry", "time the poll expires in (?d ?h ?m ?s)", false),
                     new OptionData(OptionType.INTEGER, "picks", "maximum number of options a user can choose", false)
                         .setMinValue(1)
                         .setMaxValue(100),
@@ -113,7 +151,16 @@ public class PollComponent extends AbstractComponent {
 
         Consumer<Message> consumer = message -> {
             try {
-                this.createPoll(message, command);
+                Duration duration = null;
+                if (command.hasOption("expiry")) {
+                    String timeString = command.get("expiry").getAsString();
+                    duration = formatTime(timeString);
+                    if (duration == null) {
+                        throw new BotErrorException("Invalid duration: `%s", timeString);
+                    }
+                }
+
+                this.createPoll(message, command, duration);
             } catch (BotException e) {
                 message.editMessageEmbeds(new EmbedBuilder()
                         .setColor(e.getColor())
@@ -144,7 +191,7 @@ public class PollComponent extends AbstractComponent {
      * @param command command
      * @throws BotException when something went wrong
      */
-    private void createPoll(Message message, CommandEvent command) throws BotException {
+    private void createPoll(Message message, CommandEvent command, Duration expiry) throws BotException {
         MessageEditBuilder edit = MessageEditBuilder.fromMessage(message);
         List<Button> buttons = new ArrayList<>();
         Set<String> ids = new HashSet<>();
@@ -205,9 +252,8 @@ public class PollComponent extends AbstractComponent {
 
         int maxPicks = command.hasOption("picks") ? command.get("picks").getAsInt() : 1;
         Arrays.sort(options, String.CASE_INSENSITIVE_ORDER);
-        Poll poll = new Poll(message.getId(), maxPicks, options);
+        Poll poll = new Poll(message, maxPicks, options);
         polls.put(message.getId(), poll);
-        getDatabaseManager().setPoll(poll);
 
         List<ActionRow> rows = new ArrayList<>();
         for (int i = 0; i < buttons.size(); i += 5) {
@@ -226,6 +272,23 @@ public class PollComponent extends AbstractComponent {
         }
 
         edit.setComponents(rows);
+
+        if (expiry != null) {
+            poll.expiry = LocalDateTime.now().plus(expiry);
+            MessageEmbed embed = new EmbedBuilder(edit.getEmbeds().get(0))
+                .setTimestamp(poll.expiry.atOffset(OffsetDateTime.now().getOffset()))
+                .build();
+            edit.setEmbeds(embed);
+
+            executorService.schedule(() -> {
+                if (polls.containsKey(poll.id)) {
+                    this.closePoll(message, null);
+                }
+            }, expiry.getSeconds(), TimeUnit.SECONDS);
+        }
+
+        getDatabaseManager().setPoll(poll);
+
         message.editMessage(edit.build()).queue();
     }
 
@@ -265,7 +328,7 @@ public class PollComponent extends AbstractComponent {
         closePoll(message, reply);
     }
 
-    private void closePoll(Message message, InteractionReply reply) {
+    private void closePoll(Message message, @Nullable InteractionReply reply) {
         if (!message.getAuthor().getId().equals(getGuild().getSelfMember().getId())) {
             throw new BotErrorException("Message was not sent by me");
         }
@@ -290,8 +353,10 @@ public class PollComponent extends AbstractComponent {
             );
         message.editMessage(edit.build()).queue();
 
-        reply.hide();
-        reply.ok("Poll closed");
+        if (reply != null) {
+            reply.hide();
+            reply.ok("Poll closed");
+        }
     }
 
     private void showPoll(Message message, InteractionReply reply) {
@@ -321,14 +386,17 @@ public class PollComponent extends AbstractComponent {
     public static class Poll {
 
         private String id;
+        private String channelId;
         private final Set<String> choices = new HashSet<>();
         private final Map<String, Set<String>> votes = new HashMap<>();
+        private LocalDateTime expiry;
         private int maxPicks;
 
         private Poll() {}
 
-        public Poll(String id, int maxPicks, String @NotNull ... choices) {
-            this.id = id;
+        public Poll(Message message, int maxPicks, String @NotNull ... choices) {
+            this.id = message.getId();
+            this.channelId = message.getChannelId();
             this.maxPicks = maxPicks;
             Collections.addAll(this.choices, choices);
         }
@@ -426,6 +494,41 @@ public class PollComponent extends AbstractComponent {
             }
         }
         return result.toString();
+    }
+
+    private static final Pattern timeCheckRegex = Pattern.compile("^(?:\\d+[dhms] ?)+$");
+    private static final Pattern timeRegex = Pattern.compile("(\\d+)([dhms]) ?");
+
+    public static Duration formatTime(String input) {
+        if (!timeCheckRegex.matcher(input).find()) {
+            return null;
+        }
+
+        List<Map.Entry<String, String>> list = timeRegex.matcher(input).results()
+            .map(result -> Map.entry(result.group(1), result.group(2)))
+            .toList();
+
+        Duration duration = Duration.ZERO;
+
+        for (Map.Entry<String, String> entry : list) {
+            String numString = entry.getKey();
+            String timeUnit = entry.getValue();
+
+            long num = Long.parseLong(numString);
+
+            duration = switch (timeUnit) {
+                case "d" -> duration.plusDays(num);
+                case "h" -> duration.plusHours(num);
+                case "m" -> duration.plusMinutes(num);
+                case "s" -> duration.plusSeconds(num);
+                default -> null;
+            };
+            if (duration == null) {
+                return null;
+            }
+        }
+
+        return duration;
     }
 
 }

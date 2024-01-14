@@ -5,7 +5,6 @@ import com.thefatrat.eddiejunior.exceptions.BotException;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import org.jetbrains.annotations.Contract;
@@ -82,7 +81,7 @@ public final class URLUtil {
             return null;
         }
         String[] split = messageString.split("_", 2);
-        TextChannel channel = guild.getTextChannelById(split[0]);
+        MessageChannel channel = guild.getChannelById(MessageChannel.class, split[0]);
         if (channel == null) {
             return null;
         }
