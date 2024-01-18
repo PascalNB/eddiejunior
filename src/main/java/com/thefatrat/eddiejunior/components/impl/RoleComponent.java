@@ -16,6 +16,7 @@ import com.thefatrat.eddiejunior.util.PermissionChecker;
 import com.thefatrat.eddiejunior.util.URLUtil;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.entities.Icon;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Role;
@@ -37,6 +38,7 @@ public class RoleComponent extends AbstractComponent {
 
     public static final String NAME = "Role";
     private final Set<String> roles;
+    private static final Set<String> FILE_MIMES = Set.of("image/jpg", "image/png", "image/jpeg");
 
     public RoleComponent(Server server) {
         super(server, NAME);
@@ -87,7 +89,15 @@ public class RoleComponent extends AbstractComponent {
                     new OptionData(OptionType.ROLE, "role", "role", true),
                     new OptionData(OptionType.ROLE, "role2", "role2", false)
                 )
-                .setAction(this::toggleRole)
+                .setAction(this::toggleRole),
+
+            new Command("seticon", "set a role's icon")
+                .setRequiredPermission(PermissionEntity.RequiredPermission.MANAGE)
+                .addOptions(
+                    new OptionData(OptionType.ROLE, "role", "role", true),
+                    new OptionData(OptionType.ATTACHMENT, "icon", "icon", true)
+                )
+                .setAction(this::setRoleIcon)
         );
     }
 
@@ -326,6 +336,39 @@ public class RoleComponent extends AbstractComponent {
             }
         }
 
+    }
+
+    private void setRoleIcon(CommandEvent command, InteractionReply reply) {
+        if (!PermissionUtil.checkPermission(getGuild().getSelfMember(), Permission.MANAGE_ROLES)) {
+            throw new BotErrorException("Permission `%s` required", Permission.MANAGE_ROLES.getName());
+        }
+        if (getGuild().getBoostTier().ordinal() < 2) {
+            throw new BotErrorException("Server needs tier 2 boosting");
+        }
+
+        Role role = command.get("role").getAsRole();
+        if (!PermissionUtil.canInteract(getGuild().getSelfMember(), role)) {
+            throw new BotErrorException("Cannot modify role %s", role.getAsMention());
+        }
+
+        Message.Attachment attachment = command.get("icon").getAsAttachment();
+        if (attachment.getSize() > 256 * 1024) {
+            throw new BotWarningException("Attachment size cannot be larger than 264KB");
+        }
+        if (!attachment.isImage() || !FILE_MIMES.contains(attachment.getContentType())) {
+            throw new BotErrorException("Only PNG or JPG allowed");
+        }
+
+        Icon icon = attachment.getProxy()
+            .downloadAsIcon()
+            .join();
+
+        if (icon == null) {
+            return;
+        }
+
+        role.getManager().setIcon(icon).complete();
+        reply.ok("Icon of role %s set", role.getAsMention());
     }
 
     @Override
