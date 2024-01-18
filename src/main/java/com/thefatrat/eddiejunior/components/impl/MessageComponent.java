@@ -25,7 +25,11 @@ import net.dv8tion.jda.api.interactions.components.text.TextInput;
 import net.dv8tion.jda.api.interactions.components.text.TextInputStyle;
 import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
+import net.dv8tion.jda.api.utils.messages.MessageEditBuilder;
+import net.dv8tion.jda.api.utils.messages.MessageEditData;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -147,9 +151,11 @@ public class MessageComponent extends AbstractComponent {
 
             new Command("embed", "send a new embedded message in the given channel")
                 .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
-                .addOptions(new OptionData(OptionType.CHANNEL, "channel", "channel", true)
-                    .setChannelTypes(ChannelType.TEXT, ChannelType.VOICE, ChannelType.NEWS,
-                        ChannelType.GUILD_PUBLIC_THREAD, ChannelType.GUILD_PRIVATE_THREAD))
+                .addOptions(
+                    new OptionData(OptionType.CHANNEL, "channel", "channel", true)
+                        .setChannelTypes(ChannelType.TEXT, ChannelType.VOICE, ChannelType.NEWS,
+                            ChannelType.GUILD_PUBLIC_THREAD, ChannelType.GUILD_PRIVATE_THREAD)
+                )
                 .setAction((command, reply) -> {
                     MessageChannel channel = command.get("channel").getAsChannel().asGuildMessageChannel();
 
@@ -186,6 +192,77 @@ public class MessageComponent extends AbstractComponent {
 
                     reply.sendModal(
                         getRequestManager().createModal("message_embed", "Send message embed", metadata)
+                            .addActionRow(title)
+                            .addActionRow(thumbnail)
+                            .addActionRow(description)
+                            .addActionRow(image)
+                            .build()
+                    );
+                }),
+
+            new Command("editembed", "edit the first embed in the given message")
+                .setRequiredPermission(PermissionEntity.RequiredPermission.MANAGE)
+                .addOptions(new OptionData(OptionType.STRING, "message", "message jump url", true))
+                .setAction((command, reply) -> {
+                    String url = command.get("message").getAsString();
+                    Message message = URLUtil.messageFromURL(url, getGuild());
+
+                    if (!message.getAuthor().getId().equals(getGuild().getSelfMember().getId())) {
+                        throw new BotErrorException("Message was not sent by me");
+                    }
+
+                    if (!message.getChannel().asGuildMessageChannel().canTalk()) {
+                        throw new BotErrorException("cannot talk in the given channel");
+                    }
+
+                    if (message.getEmbeds().isEmpty()) {
+                        throw new BotWarningException("given message does not have embeds");
+                    }
+
+                    MessageEmbed embed = message.getEmbeds().get(0);
+
+                    Map<String, Object> metadata = Map.of(
+                        "channel", message.getChannel().getId(),
+                        "message", message.getId()
+                    );
+
+                    TextInput title = TextInput.create("embed_title", "Title", TextInputStyle.SHORT)
+                        .setRequiredRange(0, MessageEmbed.TITLE_MAX_LENGTH)
+                        .setValue(embed.getTitle())
+                        .setRequired(false)
+                        .build();
+
+                    TextInput thumbnail = TextInput.create("embed_thumbnail", "Thumbnail URL",
+                            TextInputStyle.SHORT)
+                        .setRequiredRange(0, MessageEmbed.URL_MAX_LENGTH)
+                        .setValue(
+                            Optional.ofNullable(embed.getThumbnail())
+                                .map(MessageEmbed.Thumbnail::getUrl)
+                                .orElse(null)
+                        )
+                        .setRequired(false)
+                        .build();
+
+                    TextInput description = TextInput.create("embed_desc", "Description",
+                            TextInputStyle.PARAGRAPH)
+                        .setRequiredRange(0, Math.min(TextInput.MAX_VALUE_LENGTH, MessageEmbed.DESCRIPTION_MAX_LENGTH))
+                        .setValue(embed.getDescription())
+                        .setRequired(false)
+                        .build();
+
+                    TextInput image = TextInput.create("embed_image", "Image URL",
+                            TextInputStyle.SHORT)
+                        .setRequiredRange(0, MessageEmbed.URL_MAX_LENGTH)
+                        .setValue(
+                            Optional.ofNullable(embed.getImage())
+                                .map(MessageEmbed.ImageInfo::getUrl)
+                                .orElse(null)
+                        )
+                        .setRequired(false)
+                        .build();
+
+                    reply.sendModal(
+                        getRequestManager().createModal("message_embed_edit", "Edit message embed", metadata)
                             .addActionRow(title)
                             .addActionRow(thumbnail)
                             .addActionRow(description)
@@ -380,6 +457,67 @@ public class MessageComponent extends AbstractComponent {
             reply.hide();
             reply.ok("Message has been edited");
             getServer().log(event.getMember().getUser(), "Edited message in %s (`%s`)\n(%s)",
+                channel.getAsMention(), channel.getId(), message.getJumpUrl());
+        });
+
+        getServer().getModalHandler().addListener("message_embed_edit", (event, reply) -> {
+            String channelId = (String) event.getMetadata().get("channel");
+            String messageId = (String) event.getMetadata().get("message");
+
+            MessageChannel channel = getGuild().getChannelById(MessageChannel.class, channelId);
+            if (channel == null) {
+                throw new BotErrorException("Message could not be edited");
+            }
+
+            if (!channel.canTalk()) {
+                throw new BotErrorException("Insufficient permissions");
+            }
+
+            Message message = channel.retrieveMessageById(messageId)
+                .onErrorMap(e -> null)
+                .complete();
+
+            if (message == null) {
+                throw new BotErrorException("Message could not be edited");
+            }
+
+            List<MessageEmbed> embeds = new ArrayList<>(message.getEmbeds());
+            MessageEmbed newEmbed;
+            try {
+                newEmbed = new EmbedBuilder(embeds.get(0))
+                    .setTitle(event.getValues().get("embed_title").getAsString())
+                    .setDescription(event.getValues().get("embed_desc").getAsString())
+                    .setImage(
+                        Optional.of(event.getValues().get("embed_image").getAsString())
+                            .filter(s -> !s.isEmpty())
+                            .orElse(null)
+                    )
+                    .setThumbnail(
+                        Optional.of(event.getValues().get("embed_thumbnail").getAsString())
+                            .filter(s -> !s.isEmpty())
+                            .orElse(null)
+                    )
+                    .build();
+            } catch (Exception e) {
+                throw new BotErrorException(e.getMessage());
+            }
+            embeds.set(0, newEmbed);
+
+            MessageEditData editData = MessageEditBuilder.fromMessage(message)
+                .setEmbeds(embeds)
+                .build();
+
+            Message response = message.editMessage(editData)
+                .onErrorMap(e -> null)
+                .complete();
+
+            if (response == null) {
+                throw new BotErrorException("Message could not be edited");
+            }
+
+            reply.hide();
+            reply.ok("Message embed has been edited");
+            getServer().log(event.getMember().getUser(), "Edited message embed in %s (`%s`)\n(%s)",
                 channel.getAsMention(), channel.getId(), message.getJumpUrl());
         });
     }
