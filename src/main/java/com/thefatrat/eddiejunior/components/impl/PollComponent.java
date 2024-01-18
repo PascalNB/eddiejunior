@@ -113,9 +113,6 @@ public class PollComponent extends AbstractComponent {
         getServer().getButtonHandler().addListener(this::castVote);
 
         addMessageInteractions(
-            new Interaction<Message>("close")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.MANAGE)
-                .setAction((e, r) -> closePoll(e.getEntity(), r)),
             new Interaction<Message>("peek")
                 .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
                 .setAction((e, r) -> showPoll(e.getEntity(), r))
