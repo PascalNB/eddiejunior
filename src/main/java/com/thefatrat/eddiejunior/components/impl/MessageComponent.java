@@ -28,12 +28,11 @@ import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import net.dv8tion.jda.api.utils.messages.MessageEditBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageEditData;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public class MessageComponent extends AbstractComponent {
+
+    private final Map<String, Message> clipboard = new HashMap<>();
 
     public MessageComponent(Server server) {
         super(server, "Message");
@@ -269,12 +268,32 @@ public class MessageComponent extends AbstractComponent {
                             .addActionRow(image)
                             .build()
                     );
+                }),
+
+            new Command("paste", "paste the copied message")
+                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
+                .setAction((command, reply) -> {
+                    Message message = this.clipboard.get(command.getMember().getId());
+                    if (message == null) {
+                        throw new BotWarningException("Clipboard is empty");
+                    }
+                    if (!command.getChannel().canTalk()) {
+                        throw new BotErrorException("Cannot talk in the given channel");
+                    }
+                    try {
+                        command.getChannel().sendMessage(MessageCreateData.fromMessage(message)).queue();
+                    } catch (Exception e) {
+                        throw new BotWarningException(e.getMessage());
+                    }
+                    reply.hide();
+                    reply.ok("Pasted!");
                 })
         );
 
         addMessageInteractions(
             new Interaction<Message>("edit")
                 .addPermissions(Permission.MESSAGE_MANAGE)
+                .setRequiredPermission(PermissionEntity.RequiredPermission.MANAGE)
                 .setAction((event, reply) -> {
                     Message message = event.getEntity();
 
@@ -307,6 +326,18 @@ public class MessageComponent extends AbstractComponent {
                             .addActionRow(input)
                             .build()
                     );
+                }),
+
+            new Interaction<Message>("copy")
+                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
+                .setAction((event, reply) -> {
+                    Message message = event.getEntity();
+                    clipboard.put(
+                        event.getMember().getId(),
+                        message
+                    );
+                    reply.hide();
+                    reply.ok("Copied!");
                 })
         );
 
