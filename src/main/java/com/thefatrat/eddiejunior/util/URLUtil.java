@@ -59,7 +59,7 @@ public final class URLUtil {
         if (!guild.getId().equals(jump[0])) {
             throw new BotErrorException("Please reference a message from this server");
         }
-        MessageChannel channel = guild.getTextChannelById(jump[1]);
+        MessageChannel channel = guild.getChannelById(MessageChannel.class, jump[1]);
         if (channel == null) {
             throw new BotErrorException("Channel of referenced message not found");
         }

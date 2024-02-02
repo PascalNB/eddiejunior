@@ -162,7 +162,7 @@ public class GrabComponent extends AbstractComponent {
                             embed.addField("Nickname", nick, false);
                         }
 
-                        if (member.getRoles().size() > 0) {
+                        if (!member.getRoles().isEmpty()) {
                             List<net.dv8tion.jda.api.entities.Role> roles = member.getRoles();
                             List<String> mentions = new ArrayList<>(roles.size());
                             for (Role role : roles) {
@@ -206,11 +206,15 @@ public class GrabComponent extends AbstractComponent {
                     for (Permission permission : permissions) {
                         permissionNames.add('`' + permission.getName() + '`');
                     }
+
+                    String hexColor = String.format("#%6s", Integer.toHexString(role.getColorRaw()))
+                        .replace(' ', '0');
+
                     EmbedBuilder embed = new EmbedBuilder()
                         .setColor(role.getColor())
                         .setTitle(role.getName())
                         .setDescription(role.getAsMention())
-                        .addField("Color", '#' + Integer.toHexString(role.getColorRaw()), true)
+                        .addField("Color", hexColor, true)
                         .addField("Permissions", String.join(", ", permissionNames.toArray(new String[0])), false);
 
                     RoleIcon icon = role.getIcon();
