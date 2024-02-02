@@ -16,10 +16,7 @@ import com.thefatrat.eddiejunior.util.PermissionChecker;
 import com.thefatrat.eddiejunior.util.URLUtil;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
-import net.dv8tion.jda.api.entities.Icon;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
@@ -91,6 +88,10 @@ public class RoleComponent extends AbstractComponent {
                 )
                 .setAction(this::toggleRole),
 
+            new Command("list", "list all the toggleable roles")
+                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
+                .setAction(this::listToggles),
+
             new Command("seticon", "set a role's icon")
                 .setRequiredPermission(PermissionEntity.RequiredPermission.MANAGE)
                 .addOptions(
@@ -99,6 +100,26 @@ public class RoleComponent extends AbstractComponent {
                 )
                 .setAction(this::setRoleIcon)
         );
+    }
+
+    private void listToggles(CommandEvent command, InteractionReply reply) {
+        if (roles.isEmpty()) {
+            throw new BotWarningException("List of toggleable roles is empty");
+        }
+
+        StringBuilder builder = new StringBuilder();
+
+        for (String role : roles) {
+            builder.append("<@&").append(role).append(">\n");
+        }
+
+        String content = builder.deleteCharAt(builder.length() - 1).toString();
+
+        reply.send(new EmbedBuilder()
+            .setTitle("Toggleable roles")
+            .setDescription(content)
+            .setColor(Colors.TRANSPARENT)
+            .build());
     }
 
     /**
@@ -369,6 +390,11 @@ public class RoleComponent extends AbstractComponent {
 
         role.getManager().setIcon(icon).complete();
         reply.ok("Icon of role %s set", role.getAsMention());
+        getServer().log(command.getMember().getUser(), "Changed role icon of %s (`%s`):%n%s",
+            role.getAsMention(), role.getId(),
+            Optional.ofNullable(role.getIcon())
+                .map(RoleIcon::getIconUrl)
+                .orElse("null"));
     }
 
     @Override
