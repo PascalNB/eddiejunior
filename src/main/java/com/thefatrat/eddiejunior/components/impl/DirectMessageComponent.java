@@ -81,6 +81,7 @@ public abstract class DirectMessageComponent extends AbstractComponent implement
                 .setAction(this::setDestination),
 
             new Command("blacklist", "manages the blacklist")
+                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
                 .addOptions(new OptionData(OptionType.STRING, "action", "action", true)
                     .addChoice("add", "add")
                     .addChoice("remove", "remove")

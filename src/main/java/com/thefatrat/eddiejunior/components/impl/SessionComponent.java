@@ -244,6 +244,7 @@ public class SessionComponent extends AbstractComponent {
                 }),
 
             new Command("open", "opens channels of a session")
+                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
                 .addOptions(new OptionData(OptionType.STRING, "session", "session name", true)
                     .setRequiredLength(3, 20)
                 )
@@ -257,6 +258,7 @@ public class SessionComponent extends AbstractComponent {
                 }),
 
             new Command("close", "closes channels of a session")
+                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
                 .addOptions(new OptionData(OptionType.STRING, "session", "session name", true)
                     .setRequiredLength(3, 20)
                 )
