@@ -354,6 +354,7 @@ public abstract class DirectMessageComponent extends AbstractComponent implement
         if (autoRun) {
             getDatabaseManager().setSetting("running", "false");
         }
+        getServer().log(Colors.RED, "Component `%s` stopped", getId());
     }
 
     public void start(Reply reply) {
@@ -362,6 +363,7 @@ public abstract class DirectMessageComponent extends AbstractComponent implement
         if (autoRun) {
             getDatabaseManager().setSetting("running", "true");
         }
+        getServer().log(Colors.GREEN, "Component `%s` started", getId());
     }
 
     public final void setDestination(String destination) {

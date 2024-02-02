@@ -126,7 +126,7 @@ public class EventComponent extends AbstractComponent {
 
             if (link.component() != null && component != null && !component.isRunning()) {
                 component.start(Reply.EMPTY);
-                getServer().log(Colors.GREEN, "Component `%s` started running", link.component());
+                getServer().log(Colors.GREEN, "Component `%s` started running automatically", link.component());
             }
 
         } else {
@@ -141,7 +141,7 @@ public class EventComponent extends AbstractComponent {
 
             if (link.component() != null && component != null) {
                 component.stop(Reply.EMPTY);
-                getServer().log(Colors.RED, "Component `%s` stopped running", link.component());
+                getServer().log(Colors.RED, "Component `%s` stopped running automatically", link.component());
             }
         }
     }
