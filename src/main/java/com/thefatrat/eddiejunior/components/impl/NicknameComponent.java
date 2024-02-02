@@ -81,7 +81,7 @@ public class NicknameComponent extends AbstractComponent {
         Member member = event.getEntity();
         String nickname = member.getEffectiveName();
 
-        if (pattern.matcher(nickname).find() && getGuild().getSelfMember().canInteract(member)) {
+        if (getGuild().getSelfMember().canInteract(member) && pattern.matcher(nickname).find()) {
             String replacement;
             if ("username".equals(this.replacement)) {
                 replacement = member.getUser().getName();
