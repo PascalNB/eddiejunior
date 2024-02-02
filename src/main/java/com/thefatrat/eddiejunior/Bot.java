@@ -11,6 +11,7 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
+import net.dv8tion.jda.api.entities.channel.unions.GuildChannelUnion;
 import net.dv8tion.jda.api.events.channel.update.ChannelUpdateArchivedEvent;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.events.guild.GuildLeaveEvent;
@@ -27,6 +28,8 @@ import net.dv8tion.jda.api.events.interaction.component.EntitySelectInteractionE
 import net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.session.ReadyEvent;
+import net.dv8tion.jda.api.events.stage.StageInstanceCreateEvent;
+import net.dv8tion.jda.api.events.stage.StageInstanceDeleteEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.components.selections.SelectOption;
@@ -397,8 +400,30 @@ public class Bot extends ListenerAdapter {
             return;
         }
 
+        GuildChannelUnion guildChannelUnion = event.getEntity().getChannel();
+        if (guildChannelUnion != null && guildChannelUnion.getType().equals(ChannelType.STAGE)) {
+            return;
+        }
+
         EventEvent eventEvent = new EventEvent(event.getEntity().getName(), event.getEntity().getDescription(),
             event.getNewStatus(), event.getOldStatus());
+        getServer(event.getGuild().getId()).getEventHandler().handle(eventEvent, null);
+    }
+
+    @Override
+    public void onStageInstanceCreate(@NotNull StageInstanceCreateEvent event) {
+        EventEvent eventEvent = new EventEvent(event.getInstance().getTopic(), null,
+            ScheduledEvent.Status.ACTIVE,
+            ScheduledEvent.Status.SCHEDULED);
+        getServer(event.getGuild().getId()).getEventHandler().handle(eventEvent, null);
+    }
+
+    @Override
+    public void onStageInstanceDelete(@NotNull StageInstanceDeleteEvent event) {
+        EventEvent eventEvent = new EventEvent(event.getInstance().getTopic(), null,
+            ScheduledEvent.Status.COMPLETED,
+            ScheduledEvent.Status.ACTIVE
+        );
         getServer(event.getGuild().getId()).getEventHandler().handle(eventEvent, null);
     }
 
