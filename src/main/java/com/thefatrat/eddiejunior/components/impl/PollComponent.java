@@ -23,7 +23,9 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
+import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.components.ActionRow;
@@ -107,7 +109,15 @@ public class PollComponent extends AbstractComponent {
             new Command("peek", "show current poll results without closing the poll")
                 .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
                 .addOptions(new OptionData(OptionType.STRING, "url", "message url", true))
-                .setAction(this::getPollInfo)
+                .setAction(this::getPollInfo),
+
+            new Command("list", "list all open polls")
+                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
+                .setAction(this::listPolls),
+
+            new Command("recheck", "recheck open polls")
+                .setRequiredPermission(PermissionEntity.RequiredPermission.MANAGE)
+                .setAction(this::recheckPolls)
         );
 
         getServer().getButtonHandler().addListener(this::castVote);
@@ -117,6 +127,78 @@ public class PollComponent extends AbstractComponent {
                 .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
                 .setAction((e, r) -> showPoll(e.getEntity(), r))
         );
+    }
+
+    private void listPolls(CommandEvent command, InteractionReply reply) {
+        if (polls.isEmpty()) {
+            throw new BotWarningException("There are no open polls");
+        }
+
+        final StringBuilder builder = new StringBuilder();
+
+        polls.forEach((id, poll) ->
+            builder.append(Message.JUMP_URL.formatted(getGuild().getId(), poll.channelId, poll.id)).append("\n")
+        );
+
+        String list = builder.deleteCharAt(builder.length() - 1).toString();
+
+        reply.send(new EmbedBuilder()
+            .setTitle("Open polls")
+            .setDescription(list)
+            .setColor(Colors.TRANSPARENT)
+            .build());
+    }
+
+    private void recheckPolls(CommandEvent command, InteractionReply reply) {
+        if (polls.isEmpty()) {
+            throw new BotWarningException("There are no open polls");
+        }
+
+        reply.defer();
+
+        List<Poll> toRemove = new ArrayList<>();
+
+        polls.forEach((id, poll) -> {
+            MessageChannel messageChannel = getGuild().getChannelById(MessageChannel.class, poll.channelId);
+            if (messageChannel == null) {
+                toRemove.add(poll);
+                return;
+            }
+            try {
+                Message message = messageChannel.retrieveMessageById(poll.id)
+                    .onErrorMap(__ -> null)
+                    .complete();
+                if (message == null) {
+                    toRemove.add(poll);
+                }
+            } catch (InsufficientPermissionException e) {
+                toRemove.add(poll);
+            }
+        });
+
+        toRemove.forEach(poll -> {
+            polls.remove(poll.id);
+            getDatabaseManager().removePoll(poll);
+        });
+
+        if (polls.isEmpty()) {
+            reply.send(new BotWarningException("No open polls found"));
+            return;
+        }
+
+        final StringBuilder builder = new StringBuilder();
+
+        polls.forEach((id, poll) ->
+            builder.append(Message.JUMP_URL.formatted(getGuild().getId(), poll.channelId, poll.id)).append("\n")
+        );
+
+        String list = builder.deleteCharAt(builder.length() - 1).toString();
+
+        reply.send(new EmbedBuilder()
+            .setTitle("Open polls")
+            .setDescription(list)
+            .setColor(Colors.TRANSPARENT)
+            .build());
     }
 
     /**
@@ -205,7 +287,7 @@ public class PollComponent extends AbstractComponent {
 
             Button temp = EmojiUtil.formatButton("p", option, ButtonStyle.SECONDARY);
             String label;
-            if ("".equals(temp.getLabel())) {
+            if (temp.getLabel().isEmpty()) {
                 if (Objects.requireNonNull(temp.getEmoji()).getType().equals(Emoji.Type.UNICODE)) {
                     String codepoints = temp.getEmoji().asUnicode().getAsCodepoints();
 
@@ -243,7 +325,7 @@ public class PollComponent extends AbstractComponent {
             );
         }
 
-        if (buttons.size() == 0) {
+        if (buttons.isEmpty()) {
             throw new BotWarningException("Cannot create an empty poll");
         }
 
@@ -311,7 +393,11 @@ public class PollComponent extends AbstractComponent {
         int votesLeft = poll.addVote(event.getActor().getId(), vote);
         getDatabaseManager().setPoll(poll);
         reply.hide();
-        reply.ok("Successfully voted for %s, you have %d votes left", vote, votesLeft);
+        if (votesLeft == -1) {
+            reply.ok("Successfully changed your vote to %s", vote);
+        } else {
+            reply.ok("Successfully voted for %s, you have %d votes left", vote, votesLeft);
+        }
     }
 
     /**
@@ -389,6 +475,7 @@ public class PollComponent extends AbstractComponent {
         private LocalDateTime expiry;
         private int maxPicks;
 
+        @SuppressWarnings("unused")
         private Poll() {}
 
         public Poll(Message message, int maxPicks, String @NotNull ... choices) {
@@ -406,6 +493,15 @@ public class PollComponent extends AbstractComponent {
                 userVotes.add(vote);
                 votes.put(user, userVotes);
                 return maxPicks - userVotes.size();
+            }
+
+            if (maxPicks == 1) {
+                if (userVotes.contains(vote)) {
+                    throw new BotWarningException("Already voted for %s", vote);
+                }
+                userVotes.clear();
+                userVotes.add(vote);
+                return -1;
             }
 
             if (userVotes.size() >= maxPicks) {
