@@ -388,13 +388,14 @@ public class RoleComponent extends AbstractComponent {
             return;
         }
 
-        role.getManager().setIcon(icon).complete();
-        reply.ok("Icon of role %s set", role.getAsMention());
-        getServer().log(command.getMember().getUser(), "Changed role icon of %s (`%s`):%n%s",
-            role.getAsMention(), role.getId(),
-            Optional.ofNullable(role.getIcon())
-                .map(RoleIcon::getIconUrl)
-                .orElse("null"));
+        role.getManager().setIcon(icon).queue(__ -> {
+            reply.ok("Icon of role %s set", role.getAsMention());
+            getServer().log(command.getMember().getUser(), "Changed role icon of %s (`%s`):%n%s",
+                role.getAsMention(), role.getId(),
+                Optional.ofNullable(role.getIcon())
+                    .map(RoleIcon::getIconUrl)
+                    .orElse("null"));
+        });
     }
 
     @Override
