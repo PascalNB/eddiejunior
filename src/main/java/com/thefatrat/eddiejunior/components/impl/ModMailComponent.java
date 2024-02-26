@@ -415,7 +415,7 @@ public class ModMailComponent extends DirectMessageComponent {
         String topic = String.format("t%d-%s", threadId, subject);
         topic = topic.substring(0, Math.min(topic.length(), 100));
 
-        ThreadChannel thread = destination.createThreadChannel(topic, privateThreads).complete();
+        ThreadChannel thread = destination.createThreadChannel(topic, privateThreads).setInvitable(false).complete();
         String urls = "";
         if (!attachments.isEmpty()) {
             List<String> list = new ArrayList<>();
