@@ -17,6 +17,7 @@ import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.ForumChannel;
 import net.dv8tion.jda.api.entities.channel.forums.ForumPost;
+import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
@@ -343,7 +344,7 @@ public class MessageComponent extends AbstractComponent {
 
         getServer().getModalHandler().addListener("message_send", (event, reply) -> {
             String channelId = (String) event.getMetadata().get("channel");
-            MessageChannel channel = getGuild().getChannelById(MessageChannel.class, channelId);
+            MessageChannel channel = getGuild().getChannelById(GuildMessageChannel.class, channelId);
 
             if (channel == null) {
                 throw new BotErrorException("Message channel with id `%s` not found", channelId);
@@ -382,7 +383,7 @@ public class MessageComponent extends AbstractComponent {
         getServer().getModalHandler().addListener("message_embed", (event, reply) -> {
             String channelId = (String) event.getMetadata().get("channel");
 
-            MessageChannel channel = getGuild().getChannelById(MessageChannel.class, channelId);
+            MessageChannel channel = getGuild().getChannelById(GuildMessageChannel.class, channelId);
             if (channel == null) {
                 throw new BotErrorException("Message channel with id `%s` not found", channelId);
             }
@@ -459,7 +460,7 @@ public class MessageComponent extends AbstractComponent {
             String channelId = (String) event.getMetadata().get("channel");
             String messageId = (String) event.getMetadata().get("message");
 
-            MessageChannel channel = getGuild().getChannelById(MessageChannel.class, channelId);
+            MessageChannel channel = getGuild().getChannelById(GuildMessageChannel.class, channelId);
             if (channel == null) {
                 throw new BotErrorException("Message could not be edited");
             }
@@ -495,7 +496,7 @@ public class MessageComponent extends AbstractComponent {
             String channelId = (String) event.getMetadata().get("channel");
             String messageId = (String) event.getMetadata().get("message");
 
-            MessageChannel channel = getGuild().getChannelById(MessageChannel.class, channelId);
+            MessageChannel channel = getGuild().getChannelById(GuildMessageChannel.class, channelId);
             if (channel == null) {
                 throw new BotErrorException("Message could not be edited");
             }

@@ -23,6 +23,7 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
@@ -159,7 +160,7 @@ public class PollComponent extends AbstractComponent {
         List<Poll> toRemove = new ArrayList<>();
 
         polls.forEach((id, poll) -> {
-            MessageChannel messageChannel = getGuild().getChannelById(MessageChannel.class, poll.channelId);
+            MessageChannel messageChannel = getGuild().getChannelById(GuildMessageChannel.class, poll.channelId);
             if (messageChannel == null) {
                 toRemove.add(poll);
                 return;

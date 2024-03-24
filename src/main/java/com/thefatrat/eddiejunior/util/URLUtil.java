@@ -5,6 +5,7 @@ import com.thefatrat.eddiejunior.exceptions.BotException;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import org.jetbrains.annotations.Contract;
@@ -59,7 +60,7 @@ public final class URLUtil {
         if (!guild.getId().equals(jump[0])) {
             throw new BotErrorException("Please reference a message from this server");
         }
-        MessageChannel channel = guild.getChannelById(MessageChannel.class, jump[1]);
+        MessageChannel channel = guild.getChannelById(GuildMessageChannel.class, jump[1]);
         if (channel == null) {
             throw new BotErrorException("Channel of referenced message not found");
         }
@@ -81,7 +82,7 @@ public final class URLUtil {
             return null;
         }
         String[] split = messageString.split("_", 2);
-        MessageChannel channel = guild.getChannelById(MessageChannel.class, split[0]);
+        MessageChannel channel = guild.getChannelById(GuildMessageChannel.class, split[0]);
         if (channel == null) {
             return null;
         }
