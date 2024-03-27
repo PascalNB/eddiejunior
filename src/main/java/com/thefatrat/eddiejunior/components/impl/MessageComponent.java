@@ -516,19 +516,15 @@ public class MessageComponent extends AbstractComponent {
             List<MessageEmbed> embeds = new ArrayList<>(message.getEmbeds());
             MessageEmbed newEmbed;
             try {
+                String title = event.getValues().get("embed_title").getAsString();
+                String description = event.getValues().get("embed_desc").getAsString();
+                String image = event.getValues().get("embed_image").getAsString();
+                String thumbnail = event.getValues().get("embed_thumbnail").getAsString();
                 newEmbed = new EmbedBuilder(embeds.get(0))
-                    .setTitle(event.getValues().get("embed_title").getAsString())
-                    .setDescription(event.getValues().get("embed_desc").getAsString())
-                    .setImage(
-                        Optional.of(event.getValues().get("embed_image").getAsString())
-                            .filter(s -> !s.isEmpty())
-                            .orElse(null)
-                    )
-                    .setThumbnail(
-                        Optional.of(event.getValues().get("embed_thumbnail").getAsString())
-                            .filter(s -> !s.isEmpty())
-                            .orElse(null)
-                    )
+                    .setTitle(title.isEmpty() ? null : title)
+                    .setDescription(description.isEmpty() ? null : description)
+                    .setImage(image.isEmpty() ? null : image)
+                    .setThumbnail(thumbnail.isEmpty() ? null : thumbnail)
                     .build();
             } catch (Exception e) {
                 throw new BotErrorException(e.getMessage());
