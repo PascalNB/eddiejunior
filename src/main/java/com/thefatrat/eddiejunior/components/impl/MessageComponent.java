@@ -25,11 +25,17 @@ import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.components.text.TextInput;
 import net.dv8tion.jda.api.interactions.components.text.TextInputStyle;
 import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
+import net.dv8tion.jda.api.utils.FileUpload;
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import net.dv8tion.jda.api.utils.messages.MessageEditBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageEditData;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
+
+import static com.thefatrat.eddiejunior.components.impl.RoleComponent.FILE_MIMES;
 
 public class MessageComponent extends AbstractComponent {
 
@@ -121,15 +127,28 @@ public class MessageComponent extends AbstractComponent {
                 }),
 
             new Command("post", "create a new forum post in the given channel")
-                .addOptions(new OptionData(OptionType.CHANNEL, "channel", "forum channel", true)
-                    .setChannelTypes(ChannelType.FORUM)
+                .addOptions(
+                    new OptionData(OptionType.CHANNEL, "channel", "forum channel", true)
+                        .setChannelTypes(ChannelType.FORUM),
+                    new OptionData(OptionType.ATTACHMENT, "image", "image", false)
                 )
                 .setAction((command, reply) -> {
+                    Message.Attachment attachment = null;
+                    if (command.hasOption("image")) {
+                        attachment = command.get("image").getAsAttachment();
+                        if (attachment.getSize() > 10 * 1024 * 1024) {
+                            throw new BotWarningException("Attachment size cannot be larger than 10MB");
+                        }
+                        if (!attachment.isImage() || !FILE_MIMES.contains(attachment.getContentType())) {
+                            throw new BotErrorException("Only PNG or JPG allowed");
+                        }
+                    }
+
                     ForumChannel channel = command.get("channel").getAsChannel().asForumChannel();
 
-                    Map<String, Object> metadata = Map.of(
-                        "channel", channel.getId()
-                    );
+                    Map<String, Object> metadata = new HashMap<>();
+                    metadata.put("channel", channel.getId());
+                    metadata.put("attachment", attachment);
 
                     TextInput title = TextInput.create("post_title", "Title",
                             TextInputStyle.SHORT)
@@ -138,7 +157,7 @@ public class MessageComponent extends AbstractComponent {
 
                     TextInput body = TextInput.create("post_body", "Text",
                             TextInputStyle.PARAGRAPH)
-                        .setRequiredRange(1, 2048)
+                        .setRequiredRange(1, Message.MAX_CONTENT_LENGTH)
                         .build();
 
                     reply.sendModal(
@@ -212,7 +231,7 @@ public class MessageComponent extends AbstractComponent {
                     }
 
                     if (!message.getChannel().asGuildMessageChannel().canTalk()) {
-                        throw new BotErrorException("cannot talk in the given channel");
+                        throw new BotErrorException("Cannot talk in the given channel");
                     }
 
                     if (message.getEmbeds().isEmpty()) {
@@ -329,6 +348,76 @@ public class MessageComponent extends AbstractComponent {
                     );
                 }),
 
+            new Interaction<Message>("editembed")
+                .addPermissions(Permission.MESSAGE_MANAGE)
+                .setRequiredPermission(PermissionEntity.RequiredPermission.MANAGE)
+                .setAction((event, reply) -> {
+                    Message message = event.getEntity();
+
+                    if (!message.getAuthor().getId().equals(getGuild().getSelfMember().getId())) {
+                        throw new BotErrorException("Message was not sent by me");
+                    }
+
+                    if (!message.getChannel().asGuildMessageChannel().canTalk()) {
+                        throw new BotErrorException("Cannot talk in the given channel");
+                    }
+
+                    if (message.getEmbeds().isEmpty()) {
+                        throw new BotWarningException("given message does not have embeds");
+                    }
+
+                    MessageEmbed embed = message.getEmbeds().get(0);
+
+                    Map<String, Object> metadata = Map.of(
+                        "channel", message.getChannel().getId(),
+                        "message", message.getId()
+                    );
+
+                    TextInput title = TextInput.create("embed_title", "Title", TextInputStyle.SHORT)
+                        .setRequiredRange(0, MessageEmbed.TITLE_MAX_LENGTH)
+                        .setValue(embed.getTitle())
+                        .setRequired(false)
+                        .build();
+
+                    TextInput thumbnail = TextInput.create("embed_thumbnail", "Thumbnail URL",
+                            TextInputStyle.SHORT)
+                        .setRequiredRange(0, MessageEmbed.URL_MAX_LENGTH)
+                        .setValue(
+                            Optional.ofNullable(embed.getThumbnail())
+                                .map(MessageEmbed.Thumbnail::getUrl)
+                                .orElse(null)
+                        )
+                        .setRequired(false)
+                        .build();
+
+                    TextInput description = TextInput.create("embed_desc", "Description",
+                            TextInputStyle.PARAGRAPH)
+                        .setRequiredRange(0, Math.min(TextInput.MAX_VALUE_LENGTH, MessageEmbed.DESCRIPTION_MAX_LENGTH))
+                        .setValue(embed.getDescription())
+                        .setRequired(false)
+                        .build();
+
+                    TextInput image = TextInput.create("embed_image", "Image URL",
+                            TextInputStyle.SHORT)
+                        .setRequiredRange(0, MessageEmbed.URL_MAX_LENGTH)
+                        .setValue(
+                            Optional.ofNullable(embed.getImage())
+                                .map(MessageEmbed.ImageInfo::getUrl)
+                                .orElse(null)
+                        )
+                        .setRequired(false)
+                        .build();
+
+                    reply.sendModal(
+                        getRequestManager().createModal("message_embed_edit", "Edit message embed", metadata)
+                            .addActionRow(title)
+                            .addActionRow(thumbnail)
+                            .addActionRow(description)
+                            .addActionRow(image)
+                            .build()
+                    );
+                }),
+
             new Interaction<Message>("copy")
                 .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
                 .setAction((event, reply) -> {
@@ -430,6 +519,9 @@ public class MessageComponent extends AbstractComponent {
         });
 
         getServer().getModalHandler().addListener("message_post", (event, reply) -> {
+            reply.hide();
+            reply.defer();
+
             String channelId = (String) event.getMetadata().get("channel");
 
             ForumChannel channel = getGuild().getForumChannelById(channelId);
@@ -442,15 +534,33 @@ public class MessageComponent extends AbstractComponent {
             String title = event.getValues().get("post_title").getAsString();
             String body = event.getValues().get("post_body").getAsString();
 
-            MessageCreateData message = MessageCreateData.fromContent(body);
-            ForumPost response = channel.createForumPost(title, message)
-                .onErrorMap(e -> null)
-                .complete();
+            MessageCreateBuilder builder = new MessageCreateBuilder()
+                .setContent(body);
+
+            Message.Attachment attachment = (Message.Attachment) event.getMetadata().get("attachment");
+            ForumPost response = null;
+            boolean attachmentSuccess = false;
+            if (attachment != null) {
+                try (InputStream inputStream = attachment.getProxy().download().join()) {
+                    builder.setFiles(FileUpload.fromData(inputStream, attachment.getFileName()));
+
+                    response = channel.createForumPost(title, builder.build())
+                        .onErrorMap(e -> null)
+                        .complete();
+                    attachmentSuccess = response != null;
+                } catch (IOException ignore) {
+                }
+            }
+            if (!attachmentSuccess) {
+                response = channel.createForumPost(title, builder.build())
+                    .onErrorMap(e -> null)
+                    .complete();
+            }
 
             if (response == null) {
                 throw new BotErrorException("Message could not be posted");
             }
-            reply.hide();
+
             reply.ok("Message posted in %s\n%s", channel.getAsMention(), response.getMessage().getJumpUrl());
             getServer().log(event.getMember().getUser(), "Sent custom post in %s (`%s`)\n%s",
                 channel.getAsMention(), channel.getId(), response.getMessage().getJumpUrl());

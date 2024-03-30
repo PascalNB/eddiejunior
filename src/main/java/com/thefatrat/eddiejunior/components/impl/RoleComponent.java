@@ -35,7 +35,7 @@ public class RoleComponent extends AbstractComponent {
 
     public static final String NAME = "Role";
     private final Set<String> roles;
-    private static final Set<String> FILE_MIMES = Set.of("image/jpg", "image/png", "image/jpeg");
+    public static final Set<String> FILE_MIMES = Set.of("image/jpg", "image/png", "image/jpeg");
 
     public RoleComponent(Server server) {
         super(server, NAME);
