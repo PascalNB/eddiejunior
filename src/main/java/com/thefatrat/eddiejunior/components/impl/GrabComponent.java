@@ -3,7 +3,7 @@ package com.thefatrat.eddiejunior.components.impl;
 import com.thefatrat.eddiejunior.components.AbstractComponent;
 import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.entities.Interaction;
-import com.thefatrat.eddiejunior.entities.PermissionEntity;
+import com.thefatrat.eddiejunior.entities.UserRole;
 import com.thefatrat.eddiejunior.events.CommandEvent;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotWarningException;
@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class GrabComponent extends AbstractComponent {
 
@@ -48,7 +49,7 @@ public class GrabComponent extends AbstractComponent {
     public GrabComponent(Server server) {
         super(server, NAME);
 
-        setComponentCommand(PermissionEntity.RequiredPermission.USE);
+        setComponentCommand(UserRole.USE);
 
         addSubcommands(
             new Command("servericon", "Get the server icon")
@@ -416,12 +417,26 @@ public class GrabComponent extends AbstractComponent {
                     } catch (IOException e) {
                         throw new BotErrorException("Error: %s", e.getMessage());
                     }
-                })
+                }),
+
+            new Command("roles", "list all the roles in this server")
+                .setAction((command, reply) ->
+                    reply.send(new EmbedBuilder()
+                        .setDescription(
+                            getGuild().getRoles()
+                                .stream()
+                                .map(Role::getAsMention)
+                                .collect(Collectors.joining("\n"))
+                        )
+                        .setColor(Colors.TRANSPARENT)
+                        .build()
+                    )
+                )
         );
 
         addMessageInteractions(
             new Interaction<Message>("sticker")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
+                .setRequiredUserRole(UserRole.USE)
                 .setAction((event, reply) -> {
                     List<StickerItem> stickers = event.getEntity().getStickers();
 

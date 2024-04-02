@@ -10,12 +10,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.BiConsumer;
 
-public class Interaction<E> implements PermissionEntity {
+public class Interaction<E> implements UserRoleEntity<Interaction<E>> {
 
     private String name;
     private BiConsumer<InteractionEvent<E>, InteractionReply> action = (e, r) -> {};
     private final List<Permission> permissions = new ArrayList<>();
-    private RequiredPermission requiredPermission = null;
+    private UserRole userRole = null;
 
     public Interaction(String name) {this.name = name;}
 
@@ -46,14 +46,15 @@ public class Interaction<E> implements PermissionEntity {
         return permissions;
     }
 
-    public Interaction<E> setRequiredPermission(RequiredPermission requiredPermission) {
-        this.requiredPermission = requiredPermission;
+    @Override
+    public Interaction<E> setRequiredUserRole(UserRole userRole) {
+        this.userRole = userRole;
         return this;
     }
 
     @Override
-    public RequiredPermission getRequiredPermission() {
-        return requiredPermission;
+    public UserRole getRequiredUserRole() {
+        return userRole;
     }
 
 }

@@ -2,7 +2,7 @@ package com.thefatrat.eddiejunior.components.impl;
 
 import com.thefatrat.eddiejunior.components.AbstractComponent;
 import com.thefatrat.eddiejunior.entities.Command;
-import com.thefatrat.eddiejunior.entities.PermissionEntity;
+import com.thefatrat.eddiejunior.entities.UserRole;
 import com.thefatrat.eddiejunior.events.ButtonEvent;
 import com.thefatrat.eddiejunior.events.CommandEvent;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
@@ -43,7 +43,7 @@ public class RoleComponent extends AbstractComponent {
         List<String> roles = getDatabaseManager().getSettings("toggle");
         this.roles = new HashSet<>(roles);
 
-        setComponentCommand(PermissionEntity.RequiredPermission.MANAGE);
+        setComponentCommand(UserRole.MANAGE);
 
         getServer().getButtonHandler().addListener(this::handleButton);
 
@@ -80,7 +80,7 @@ public class RoleComponent extends AbstractComponent {
                 .setAction(this::setRoleToggle),
 
             new Command("toggle", "toggle the role of a user")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
+                .setRequiredUserRole(UserRole.USE)
                 .addOptions(
                     new OptionData(OptionType.USER, "user", "user", true),
                     new OptionData(OptionType.ROLE, "role", "role", true),
@@ -89,11 +89,11 @@ public class RoleComponent extends AbstractComponent {
                 .setAction(this::toggleRole),
 
             new Command("list", "list all the toggleable roles")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
+                .setRequiredUserRole(UserRole.USE)
                 .setAction(this::listToggles),
 
             new Command("seticon", "set a role's icon")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.MANAGE)
+                .setRequiredUserRole(UserRole.MANAGE)
                 .addOptions(
                     new OptionData(OptionType.ROLE, "role", "role", true),
                     new OptionData(OptionType.ATTACHMENT, "icon", "icon", true)

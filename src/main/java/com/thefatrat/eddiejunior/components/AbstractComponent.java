@@ -4,7 +4,7 @@ import com.pascalnb.dbwrapper.StringMapper;
 import com.thefatrat.eddiejunior.DatabaseManager;
 import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.entities.Interaction;
-import com.thefatrat.eddiejunior.entities.PermissionEntity;
+import com.thefatrat.eddiejunior.entities.UserRole;
 import com.thefatrat.eddiejunior.sources.Server;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
@@ -82,11 +82,10 @@ public abstract class AbstractComponent implements Component {
      *
      * @param permissions the default permissions the command requires
      */
-    protected final void setComponentCommand(PermissionEntity.RequiredPermission requiredPermission,
-        Permission... permissions) {
+    protected final void setComponentCommand(UserRole userRole, Permission... permissions) {
         if (componentCommand == null) {
             componentCommand = new Command(getId(), "component command")
-                .setRequiredPermission(requiredPermission)
+                .setRequiredUserRole(userRole)
                 .addPermissions(permissions);
             commands.add(componentCommand);
         }

@@ -12,7 +12,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.BiConsumer;
 
-public class Command implements PermissionEntity {
+public class Command implements UserRoleEntity<Command> {
 
     private final String name;
     private final String description;
@@ -20,7 +20,7 @@ public class Command implements PermissionEntity {
     private final List<OptionData> options = new ArrayList<>();
     private final List<Command> subcommands = new ArrayList<>();
     private final List<Permission> permissions = new ArrayList<>();
-    private RequiredPermission requiredPermission = null;
+    private UserRole userRole = null;
 
     public Command(String name, String description) {
         this.name = name;
@@ -28,8 +28,9 @@ public class Command implements PermissionEntity {
         permissions.add(Permission.USE_APPLICATION_COMMANDS);
     }
 
-    public Command setRequiredPermission(RequiredPermission requiredPermission) {
-        this.requiredPermission = requiredPermission;
+    @Override
+    public Command setRequiredUserRole(UserRole userRole) {
+        this.userRole = userRole;
         return this;
     }
 
@@ -98,8 +99,8 @@ public class Command implements PermissionEntity {
     }
 
     @Override
-    public RequiredPermission getRequiredPermission() {
-        return requiredPermission;
+    public UserRole getRequiredUserRole() {
+        return userRole;
     }
 
 }

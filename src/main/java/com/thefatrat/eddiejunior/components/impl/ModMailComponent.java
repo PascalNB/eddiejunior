@@ -2,7 +2,7 @@ package com.thefatrat.eddiejunior.components.impl;
 
 import com.pascalnb.dbwrapper.StringMapper;
 import com.thefatrat.eddiejunior.entities.Command;
-import com.thefatrat.eddiejunior.entities.PermissionEntity;
+import com.thefatrat.eddiejunior.entities.UserRole;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotWarningException;
 import com.thefatrat.eddiejunior.reply.MenuReply;
@@ -159,7 +159,7 @@ public class ModMailComponent extends DirectMessageComponent {
                 }),
 
             new Command("archive", "archives the current ticket thread")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
+                .setRequiredUserRole(UserRole.USE)
                 .setAction((command, reply) -> {
                     if (!command.getChannel().getType().equals(ChannelType.GUILD_PRIVATE_THREAD)
                         && !command.getChannel().getType().equals(ChannelType.GUILD_PUBLIC_THREAD)) {

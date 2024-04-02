@@ -4,7 +4,7 @@ import com.thefatrat.eddiejunior.components.AbstractComponent;
 import com.thefatrat.eddiejunior.components.Component;
 import com.thefatrat.eddiejunior.components.RunnableComponent;
 import com.thefatrat.eddiejunior.entities.Command;
-import com.thefatrat.eddiejunior.entities.PermissionEntity;
+import com.thefatrat.eddiejunior.entities.UserRole;
 import com.thefatrat.eddiejunior.events.CommandEvent;
 import com.thefatrat.eddiejunior.events.EventEvent;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
@@ -47,7 +47,7 @@ public class EventComponent extends AbstractComponent {
 
         getServer().getEventHandler().addListener((e, r) -> this.processEvent(e));
 
-        setComponentCommand(PermissionEntity.RequiredPermission.MANAGE);
+        setComponentCommand(UserRole.MANAGE);
 
         addSubcommands(
             new Command("link", "link a session to a keyword in an event name")
@@ -63,7 +63,7 @@ public class EventComponent extends AbstractComponent {
                 .setAction(this::removeLink),
 
             new Command("list", "show the list of links")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
+                .setRequiredUserRole(UserRole.USE)
                 .setAction((c, r) -> this.listAllLinks(r))
         );
     }

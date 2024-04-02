@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.thefatrat.eddiejunior.components.AbstractComponent;
 import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.entities.Interaction;
-import com.thefatrat.eddiejunior.entities.PermissionEntity;
+import com.thefatrat.eddiejunior.entities.UserRole;
 import com.thefatrat.eddiejunior.events.ButtonEvent;
 import com.thefatrat.eddiejunior.events.CommandEvent;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
@@ -85,7 +85,7 @@ public class PollComponent extends AbstractComponent {
             }, duration.getSeconds(), TimeUnit.SECONDS);
         }
 
-        setComponentCommand(PermissionEntity.RequiredPermission.MANAGE);
+        setComponentCommand(UserRole.MANAGE);
 
         addSubcommands(
             new Command("new", "create a new poll")
@@ -108,16 +108,16 @@ public class PollComponent extends AbstractComponent {
                 .setAction(this::getPollResults),
 
             new Command("peek", "show current poll results without closing the poll")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
+                .setRequiredUserRole(UserRole.USE)
                 .addOptions(new OptionData(OptionType.STRING, "url", "message url", true))
                 .setAction(this::getPollInfo),
 
             new Command("list", "list all open polls")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
+                .setRequiredUserRole(UserRole.USE)
                 .setAction(this::listPolls),
 
             new Command("recheck", "recheck open polls")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.MANAGE)
+                .setRequiredUserRole(UserRole.MANAGE)
                 .setAction(this::recheckPolls)
         );
 
@@ -125,7 +125,7 @@ public class PollComponent extends AbstractComponent {
 
         addMessageInteractions(
             new Interaction<Message>("peek")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
+                .setRequiredUserRole(UserRole.USE)
                 .setAction((e, r) -> showPoll(e.getEntity(), r))
         );
     }

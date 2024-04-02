@@ -3,7 +3,7 @@ package com.thefatrat.eddiejunior.components.impl;
 import com.thefatrat.eddiejunior.components.AbstractComponent;
 import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.entities.Interaction;
-import com.thefatrat.eddiejunior.entities.PermissionEntity;
+import com.thefatrat.eddiejunior.entities.UserRole;
 import com.thefatrat.eddiejunior.events.CommandEvent;
 import com.thefatrat.eddiejunior.events.InteractionEvent;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
@@ -35,12 +35,12 @@ public class HoistComponent extends AbstractComponent {
 
         addCommands(
             new Command("hoist", "hoist or unhoist a role")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
+                .setRequiredUserRole(UserRole.USE)
                 .addOptions(new OptionData(OptionType.ROLE, "role", "role", true))
                 .setAction(this::hoistCommand),
 
             new Command("hoistable", "toggle a role to be hoisted or unhoisted by the hoist command")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.MANAGE)
+                .setRequiredUserRole(UserRole.MANAGE)
                 .addPermissions(Permission.MANAGE_ROLES)
                 .addOptions(new OptionData(OptionType.ROLE, "role", "role", true))
                 .setAction(this::toggleHoistable)

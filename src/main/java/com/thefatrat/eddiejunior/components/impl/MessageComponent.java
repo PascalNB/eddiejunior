@@ -3,7 +3,7 @@ package com.thefatrat.eddiejunior.components.impl;
 import com.thefatrat.eddiejunior.components.AbstractComponent;
 import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.entities.Interaction;
-import com.thefatrat.eddiejunior.entities.PermissionEntity;
+import com.thefatrat.eddiejunior.entities.UserRole;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotWarningException;
 import com.thefatrat.eddiejunior.sources.Server;
@@ -39,12 +39,12 @@ import static com.thefatrat.eddiejunior.components.impl.RoleComponent.FILE_MIMES
 
 public class MessageComponent extends AbstractComponent {
 
-    private final Map<String, Message> clipboard = new HashMap<>();
+    private static final Map<String, Message> CLIPBOARD = new HashMap<>();
 
     public MessageComponent(Server server) {
         super(server, "Message");
 
-        setComponentCommand(PermissionEntity.RequiredPermission.MANAGE);
+        setComponentCommand(UserRole.MANAGE);
 
         addSubcommands(
             new Command("edit", "edit a message sent by me")
@@ -89,7 +89,7 @@ public class MessageComponent extends AbstractComponent {
                 }),
 
             new Command("send", "send a message in a given channel")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
+                .setRequiredUserRole(UserRole.USE)
                 .addOptions(
                     new OptionData(OptionType.CHANNEL, "channel", "text channel", true)
                         .setChannelTypes(ChannelType.TEXT, ChannelType.VOICE, ChannelType.NEWS,
@@ -169,7 +169,7 @@ public class MessageComponent extends AbstractComponent {
                 }),
 
             new Command("embed", "send a new embedded message in the given channel")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
+                .setRequiredUserRole(UserRole.USE)
                 .addOptions(
                     new OptionData(OptionType.CHANNEL, "channel", "channel", true)
                         .setChannelTypes(ChannelType.TEXT, ChannelType.VOICE, ChannelType.NEWS,
@@ -220,7 +220,7 @@ public class MessageComponent extends AbstractComponent {
                 }),
 
             new Command("editembed", "edit the first embed in the given message")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.MANAGE)
+                .setRequiredUserRole(UserRole.MANAGE)
                 .addOptions(new OptionData(OptionType.STRING, "message", "message jump url", true))
                 .setAction((command, reply) -> {
                     String url = command.get("message").getAsString();
@@ -291,9 +291,9 @@ public class MessageComponent extends AbstractComponent {
                 }),
 
             new Command("paste", "paste the copied message")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
+                .setRequiredUserRole(UserRole.USE)
                 .setAction((command, reply) -> {
-                    Message message = this.clipboard.get(command.getMember().getId());
+                    Message message = CLIPBOARD.get(command.getMember().getId());
                     if (message == null) {
                         throw new BotWarningException("Clipboard is empty");
                     }
@@ -307,13 +307,24 @@ public class MessageComponent extends AbstractComponent {
                     }
                     reply.hide();
                     reply.ok("Pasted!");
+                }),
+
+            new Command("clipboard", "see the copied message on your clipboard")
+                .setRequiredUserRole(UserRole.USE)
+                .setAction((command, reply) -> {
+                    Message message = CLIPBOARD.get(command.getMember().getId());
+                    if (message == null) {
+                        throw new BotWarningException("Clipboard is empty");
+                    }
+                    reply.hide();
+                    reply.send(MessageCreateData.fromMessage(message));
                 })
         );
 
         addMessageInteractions(
             new Interaction<Message>("edit")
                 .addPermissions(Permission.MESSAGE_MANAGE)
-                .setRequiredPermission(PermissionEntity.RequiredPermission.MANAGE)
+                .setRequiredUserRole(UserRole.MANAGE)
                 .setAction((event, reply) -> {
                     Message message = event.getEntity();
 
@@ -350,7 +361,7 @@ public class MessageComponent extends AbstractComponent {
 
             new Interaction<Message>("editembed")
                 .addPermissions(Permission.MESSAGE_MANAGE)
-                .setRequiredPermission(PermissionEntity.RequiredPermission.MANAGE)
+                .setRequiredUserRole(UserRole.MANAGE)
                 .setAction((event, reply) -> {
                     Message message = event.getEntity();
 
@@ -419,10 +430,10 @@ public class MessageComponent extends AbstractComponent {
                 }),
 
             new Interaction<Message>("copy")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
+                .setRequiredUserRole(UserRole.USE)
                 .setAction((event, reply) -> {
                     Message message = event.getEntity();
-                    clipboard.put(
+                    CLIPBOARD.put(
                         event.getMember().getId(),
                         message
                     );

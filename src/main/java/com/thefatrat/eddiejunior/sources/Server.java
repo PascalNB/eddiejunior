@@ -8,7 +8,7 @@ import com.thefatrat.eddiejunior.components.Component;
 import com.thefatrat.eddiejunior.components.GlobalComponent;
 import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.entities.Interaction;
-import com.thefatrat.eddiejunior.entities.PermissionEntity;
+import com.thefatrat.eddiejunior.entities.UserRole;
 import com.thefatrat.eddiejunior.events.*;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotException;
@@ -63,13 +63,13 @@ public class Server {
         return id;
     }
 
-    private void checkPermissions(@NotNull Member member, PermissionEntity.RequiredPermission requiredPermission) {
-        if (requiredPermission != null) {
+    private void checkPermissions(@NotNull Member member, UserRole userRole) {
+        if (userRole != null) {
             if (member.hasPermission(Permission.ADMINISTRATOR)) {
                 return;
             }
 
-            switch (requiredPermission) {
+            switch (userRole) {
                 case MANAGE -> {
                     if (manageRole != null && member.getRoles().contains(manageRole)) {
                         return;
@@ -148,9 +148,9 @@ public class Server {
                 Component instance = component.getDeclaredConstructor(Server.class).newInstance(this);
 
                 for (Command command : instance.getCommands()) {
-                    PermissionEntity.RequiredPermission minPermission = command.getRequiredPermission() == null
-                        ? PermissionEntity.RequiredPermission.USE
-                        : command.getRequiredPermission();
+                    UserRole minPermission = command.getRequiredUserRole() == null
+                        ? UserRole.USE
+                        : command.getRequiredUserRole();
 
                     if (command.hasSubCommands()) {
                         command.setAction((c, reply) -> {
@@ -164,8 +164,8 @@ public class Server {
                             mapHandler.addListener(sub.getName(), sub.getAction());
 
                             String commandName = command.getName() + " " + sub.getName();
-                            if (sub.getRequiredPermission() != null) {
-                                getCommandHandler().addRequiredPermission(commandName, sub.getRequiredPermission());
+                            if (sub.getRequiredUserRole() != null) {
+                                getCommandHandler().addRequiredPermission(commandName, sub.getRequiredUserRole());
                             } else {
                                 getCommandHandler().addRequiredPermission(commandName, minPermission);
                             }
@@ -179,15 +179,15 @@ public class Server {
 
                 for (Interaction<Message> interaction : instance.getMessageInteractions()) {
                     getMessageInteractionHandler().addListener(interaction.getName(), interaction.getAction());
-                    PermissionEntity.RequiredPermission permission = interaction.getRequiredPermission() == null
-                        ? PermissionEntity.RequiredPermission.USE : interaction.getRequiredPermission();
+                    UserRole permission = interaction.getRequiredUserRole() == null
+                        ? UserRole.USE : interaction.getRequiredUserRole();
                     getMessageInteractionHandler().addRequiredPermission(interaction.getName(), permission);
                 }
 
                 for (Interaction<Member> interaction : instance.getMemberInteractions()) {
                     getMemberInteractionHandler().addListener(interaction.getName(), interaction.getAction());
-                    PermissionEntity.RequiredPermission permission = interaction.getRequiredPermission() == null
-                        ? PermissionEntity.RequiredPermission.USE : interaction.getRequiredPermission();
+                    UserRole permission = interaction.getRequiredUserRole() == null
+                        ? UserRole.USE : interaction.getRequiredUserRole();
                     getMemberInteractionHandler().addRequiredPermission(interaction.getName(), permission);
                 }
 

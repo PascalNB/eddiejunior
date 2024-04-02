@@ -10,7 +10,7 @@ import com.thefatrat.eddiejunior.components.Component;
 import com.thefatrat.eddiejunior.components.GlobalComponent;
 import com.thefatrat.eddiejunior.components.RunnableComponent;
 import com.thefatrat.eddiejunior.entities.Command;
-import com.thefatrat.eddiejunior.entities.PermissionEntity;
+import com.thefatrat.eddiejunior.entities.UserRole;
 import com.thefatrat.eddiejunior.events.CommandEvent;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotException;
@@ -68,60 +68,60 @@ public class ManagerComponent extends AbstractComponent implements GlobalCompone
 
         addCommands(
             new Command("help", "show the available commands")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
+                .setRequiredUserRole(UserRole.USE)
                 .addOptions(new OptionData(OptionType.STRING, "component", "component name", false))
                 .setAction(this::help),
 
             new Command("ping", "check the RTT of the connection in milliseconds")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
+                .setRequiredUserRole(UserRole.USE)
                 .setAction(this::ping),
 
             new Command("enable", "enable a specific component by name")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.MANAGE)
+                .setRequiredUserRole(UserRole.MANAGE)
                 .addOptions(new OptionData(OptionType.STRING, "component", "component name", true))
                 .setAction(this::enableComponent),
 
             new Command("disable", "disable a specific component by name")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.MANAGE)
+                .setRequiredUserRole(UserRole.MANAGE)
                 .addOptions(new OptionData(OptionType.STRING, "component", "component name", true))
                 .setAction(this::disableComponent),
 
             new Command("components", "shows a list of all the components")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
+                .setRequiredUserRole(UserRole.USE)
                 .setAction(this::listComponents),
 
             new Command("status", "shows the current status of the bot")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
+                .setRequiredUserRole(UserRole.USE)
                 .addOptions(new OptionData(OptionType.STRING, "component", "component name", false))
                 .setAction(this::statusCommand),
 
             new Command("reload", "reload a component's commands")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.MANAGE)
+                .setRequiredUserRole(UserRole.MANAGE)
                 .addOptions(new OptionData(OptionType.STRING, "component", "component name", true))
                 .setAction(this::reloadComponent),
 
             new Command("log", "set the logging channel")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.MANAGE)
+                .setRequiredUserRole(UserRole.MANAGE)
                 .addOptions(new OptionData(OptionType.CHANNEL, "channel", "log channel", true)
                     .setChannelTypes(ChannelType.TEXT)
                 )
                 .setAction(this::setLogChannel),
 
             new Command("errorlog", "show the error log")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.MANAGE)
+                .setRequiredUserRole(UserRole.MANAGE)
                 .setAction(this::showErrorLog),
 
             new Command("vitals", "show system vitals")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.MANAGE)
+                .setRequiredUserRole(UserRole.MANAGE)
                 .setAction(this::getVitals),
 
             new Command("setmanagerole", "set the role that can manage Eddie Junior")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.ADMIN)
+                .setRequiredUserRole(UserRole.ADMIN)
                 .addOptions(new OptionData(OptionType.ROLE, "role", "role", true))
                 .setAction(this::setManageRole),
 
             new Command("setuserole", "set the role that can use Eddie Junior")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.MANAGE)
+                .setRequiredUserRole(UserRole.MANAGE)
                 .addOptions(new OptionData(OptionType.ROLE, "role", "role", true))
                 .setAction(this::setUseRole)
         );

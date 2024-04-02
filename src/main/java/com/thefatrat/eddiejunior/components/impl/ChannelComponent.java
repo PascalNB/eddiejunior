@@ -2,7 +2,7 @@ package com.thefatrat.eddiejunior.components.impl;
 
 import com.thefatrat.eddiejunior.components.AbstractComponent;
 import com.thefatrat.eddiejunior.entities.Command;
-import com.thefatrat.eddiejunior.entities.PermissionEntity;
+import com.thefatrat.eddiejunior.entities.UserRole;
 import com.thefatrat.eddiejunior.events.CommandEvent;
 import com.thefatrat.eddiejunior.reply.InteractionReply;
 import com.thefatrat.eddiejunior.sources.Server;
@@ -22,7 +22,7 @@ public class ChannelComponent extends AbstractComponent {
 
         addCommands(
             new Command("slowmode", "set the slow mode for the current channel")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.MANAGE)
+                .setRequiredUserRole(UserRole.MANAGE)
                 .addOptions(
                     new OptionData(OptionType.INTEGER, "time", "time in seconds", true)
                         .setMaxValue(ISlowmodeChannel.MAX_SLOWMODE)

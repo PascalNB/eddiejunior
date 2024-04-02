@@ -1,7 +1,7 @@
 package com.thefatrat.eddiejunior.components.impl;
 
 import com.thefatrat.eddiejunior.entities.Command;
-import com.thefatrat.eddiejunior.entities.PermissionEntity;
+import com.thefatrat.eddiejunior.entities.UserRole;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotWarningException;
 import com.thefatrat.eddiejunior.reply.MenuReply;
@@ -95,7 +95,7 @@ public class FeedbackComponent extends DirectMessageComponent {
                 }),
 
             new Command("removesubmission", "remove a user's submission")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
+                .setRequiredUserRole(UserRole.USE)
                 .addOptions(
                     new OptionData(OptionType.USER, "user", "user", true),
                     new OptionData(OptionType.BOOLEAN, "reset", "let user submit again", true)
@@ -127,7 +127,7 @@ public class FeedbackComponent extends DirectMessageComponent {
                 }),
 
             new Command("reset", "allow submissions for users again")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
+                .setRequiredUserRole(UserRole.USE)
                 .addOptions(new OptionData(OptionType.USER, "user", "user", false))
                 .setAction((command, reply) -> {
                     if (!isRunning()) {

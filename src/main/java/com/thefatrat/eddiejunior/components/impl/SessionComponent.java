@@ -2,7 +2,7 @@ package com.thefatrat.eddiejunior.components.impl;
 
 import com.thefatrat.eddiejunior.components.AbstractComponent;
 import com.thefatrat.eddiejunior.entities.Command;
-import com.thefatrat.eddiejunior.entities.PermissionEntity;
+import com.thefatrat.eddiejunior.entities.UserRole;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotWarningException;
 import com.thefatrat.eddiejunior.reply.Reply;
@@ -54,11 +54,11 @@ public class SessionComponent extends AbstractComponent {
             }
         }
 
-        setComponentCommand(PermissionEntity.RequiredPermission.MANAGE);
+        setComponentCommand(UserRole.MANAGE);
 
         addSubcommands(
             new Command("list", "list all sessions")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
+                .setRequiredUserRole(UserRole.USE)
                 .setAction((command, reply) -> {
                     if (sessions.isEmpty()) {
                         throw new BotWarningException("There are no sessions added yet");
@@ -197,7 +197,7 @@ public class SessionComponent extends AbstractComponent {
                 }),
 
             new Command("show", "shows the channels of the given session")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
+                .setRequiredUserRole(UserRole.USE)
                 .addOptions(new OptionData(OptionType.STRING, "session", "session name", true)
                     .setRequiredLength(3, 20)
                 )
@@ -244,7 +244,7 @@ public class SessionComponent extends AbstractComponent {
                 }),
 
             new Command("open", "opens channels of a session")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
+                .setRequiredUserRole(UserRole.USE)
                 .addOptions(new OptionData(OptionType.STRING, "session", "session name", true)
                     .setRequiredLength(3, 20)
                 )
@@ -258,7 +258,7 @@ public class SessionComponent extends AbstractComponent {
                 }),
 
             new Command("close", "closes channels of a session")
-                .setRequiredPermission(PermissionEntity.RequiredPermission.USE)
+                .setRequiredUserRole(UserRole.USE)
                 .addOptions(new OptionData(OptionType.STRING, "session", "session name", true)
                     .setRequiredLength(3, 20)
                 )
