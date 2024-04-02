@@ -230,8 +230,11 @@ public class Server {
     }
 
     public void log(int color, User user, String message, Object... args) {
+        if (log == null) {
+            return;
+        }
         synchronized (log) {
-            if (log == null || !log.canTalk()) {
+            if (!log.canTalk()) {
                 return;
             }
             log.sendMessageEmbeds(new EmbedBuilder()
@@ -250,8 +253,11 @@ public class Server {
     }
 
     public void log(int color, String message, Object... args) {
+        if (log == null) {
+            return;
+        }
         synchronized (log) {
-            if (log == null || !log.canTalk()) {
+            if (!log.canTalk()) {
                 return;
             }
             log.sendMessageEmbeds(new EmbedBuilder()
