@@ -301,7 +301,11 @@ public class MessageComponent extends AbstractComponent {
                         throw new BotErrorException("Cannot talk in the given channel");
                     }
                     try {
-                        command.getChannel().sendMessage(MessageCreateData.fromMessage(message)).queue();
+                        command.getChannel().sendMessage(MessageCreateData.fromMessage(message)).queue(m ->
+                            getServer().log(command.getMember().getUser(),
+                                "Sent custom message in %s (`%s`)%n%s", message.getChannel().getAsMention(),
+                                message.getChannelId(), message.getJumpUrl())
+                        );
                     } catch (Exception e) {
                         throw new BotWarningException(e.getMessage());
                     }
@@ -475,8 +479,8 @@ public class MessageComponent extends AbstractComponent {
                 throw new BotErrorException("Message could not be sent");
             }
             reply.hide();
-            reply.ok("Message sent in %s\n%s", channel.getAsMention(), response.getJumpUrl());
-            getServer().log(event.getMember().getUser(), "Sent custom message in %s (`%s`)\n%s",
+            reply.ok("Message sent in %s%n%s", channel.getAsMention(), response.getJumpUrl());
+            getServer().log(event.getMember().getUser(), "Sent custom message in %s (`%s`)%n%s",
                 channel.getAsMention(), channel.getId(), response.getJumpUrl());
         });
 
@@ -524,8 +528,8 @@ public class MessageComponent extends AbstractComponent {
             Message response = channel.sendMessageEmbeds(builder.build()).complete();
 
             reply.hide();
-            reply.ok("Message embed sent in %s\n%s", channel.getAsMention(), response.getJumpUrl());
-            getServer().log(event.getMember().getUser(), "Sent custom embedded message in %s (`%s`)\n%s",
+            reply.ok("Message embed sent in %s%n%s", channel.getAsMention(), response.getJumpUrl());
+            getServer().log(event.getMember().getUser(), "Sent custom embedded message in %s (`%s`)%n%s",
                 channel.getAsMention(), channel.getId(), response.getJumpUrl());
         });
 
@@ -572,8 +576,8 @@ public class MessageComponent extends AbstractComponent {
                 throw new BotErrorException("Message could not be posted");
             }
 
-            reply.ok("Message posted in %s\n%s", channel.getAsMention(), response.getMessage().getJumpUrl());
-            getServer().log(event.getMember().getUser(), "Sent custom post in %s (`%s`)\n%s",
+            reply.ok("Message posted in %s%n%s", channel.getAsMention(), response.getMessage().getJumpUrl());
+            getServer().log(event.getMember().getUser(), "Sent custom post in %s (`%s`)%n%s",
                 channel.getAsMention(), channel.getId(), response.getMessage().getJumpUrl());
         });
 
@@ -609,7 +613,7 @@ public class MessageComponent extends AbstractComponent {
 
             reply.hide();
             reply.ok("Message has been edited");
-            getServer().log(event.getMember().getUser(), "Edited message in %s (`%s`)\n(%s)",
+            getServer().log(event.getMember().getUser(), "Edited message in %s (`%s`)%n%s",
                 channel.getAsMention(), channel.getId(), message.getJumpUrl());
         });
 
@@ -666,7 +670,7 @@ public class MessageComponent extends AbstractComponent {
 
             reply.hide();
             reply.ok("Message embed has been edited");
-            getServer().log(event.getMember().getUser(), "Edited message embed in %s (`%s`)\n(%s)",
+            getServer().log(event.getMember().getUser(), "Edited message embed in %s (`%s`)%n%s",
                 channel.getAsMention(), channel.getId(), message.getJumpUrl());
         });
     }
