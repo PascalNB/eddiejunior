@@ -196,7 +196,7 @@ public class FeedbackComponent extends DirectMessageComponent {
 
                         domains.clear();
                         getDatabaseManager().removeSetting("domains")
-                            .queue(c ->
+                            .async(c ->
                                 reply.ok("Domain whitelist cleared")
                             );
                         return;
@@ -290,7 +290,7 @@ public class FeedbackComponent extends DirectMessageComponent {
 
                         filetypes.clear();
                         getDatabaseManager().removeSetting("filetypes")
-                            .queue(c -> reply.ok("Filetype list cleared"));
+                            .async(c -> reply.ok("Filetype list cleared"));
                         return;
                     }
 

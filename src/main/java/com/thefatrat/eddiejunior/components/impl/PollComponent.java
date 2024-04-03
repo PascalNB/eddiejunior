@@ -13,10 +13,7 @@ import com.thefatrat.eddiejunior.exceptions.BotWarningException;
 import com.thefatrat.eddiejunior.reply.InteractionReply;
 import com.thefatrat.eddiejunior.reply.MenuReply;
 import com.thefatrat.eddiejunior.sources.Server;
-import com.thefatrat.eddiejunior.util.Colors;
-import com.thefatrat.eddiejunior.util.EmojiUtil;
-import com.thefatrat.eddiejunior.util.PermissionChecker;
-import com.thefatrat.eddiejunior.util.URLUtil;
+import com.thefatrat.eddiejunior.util.*;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -41,6 +38,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -50,7 +48,7 @@ import java.util.stream.Collectors;
 
 public class PollComponent extends AbstractComponent {
 
-    private final Map<String, Poll> polls = new HashMap<>();
+    private final Map<String, Poll> polls = new ConcurrentHashMap<>();
     private final ScheduledExecutorService executorService;
 
     public PollComponent(Server server) {
@@ -58,13 +56,13 @@ public class PollComponent extends AbstractComponent {
 
         polls.putAll(getDatabaseManager().getPolls());
         LocalDateTime now = LocalDateTime.now();
-        executorService = Executors.newScheduledThreadPool(1);
+        executorService = Executors.newSingleThreadScheduledExecutor();
         for (Poll poll : polls.values()) {
             if (poll.expiry == null) {
                 continue;
             }
 
-            Message message = URLUtil.getMessageFromString(poll.channelId + "_" + poll.id, getGuild());
+            Message message = URLUtil.getMessage(poll.channelId, poll.id, getGuild());
             if (message == null) {
                 getDatabaseManager().removePoll(poll);
                 return;
@@ -182,24 +180,7 @@ public class PollComponent extends AbstractComponent {
             getDatabaseManager().removePoll(poll);
         });
 
-        if (polls.isEmpty()) {
-            reply.send(new BotWarningException("No open polls found"));
-            return;
-        }
-
-        final StringBuilder builder = new StringBuilder();
-
-        polls.forEach((id, poll) ->
-            builder.append(Message.JUMP_URL.formatted(getGuild().getId(), poll.channelId, poll.id)).append("\n")
-        );
-
-        String list = builder.deleteCharAt(builder.length() - 1).toString();
-
-        reply.send(new EmbedBuilder()
-            .setTitle("Open polls")
-            .setDescription(list)
-            .setColor(Colors.TRANSPARENT)
-            .build());
+        listPolls(command, reply);
     }
 
     /**
@@ -379,26 +360,28 @@ public class PollComponent extends AbstractComponent {
      * @param reply reply
      */
     private void castVote(ButtonEvent<Member> event, MenuReply reply) {
-        String label = event.getButtonId();
-        if (!label.startsWith("poll-")) {
-            return;
-        }
-        String[] split = label.split("-", 3);
-        String pollId = split[1];
-        if (!polls.containsKey(pollId)) {
-            throw new BotErrorException("Unknown poll");
-        }
+        RunUtil.run(() -> {
+            String label = event.getButtonId();
+            if (!label.startsWith("poll-")) {
+                return;
+            }
+            String[] split = label.split("-", 3);
+            String pollId = split[1];
+            if (!polls.containsKey(pollId)) {
+                throw new BotErrorException("Unknown poll");
+            }
 
-        String vote = split[2];
-        Poll poll = polls.get(pollId);
-        int votesLeft = poll.addVote(event.getActor().getId(), vote);
-        getDatabaseManager().setPoll(poll);
-        reply.hide();
-        if (votesLeft == -1) {
-            reply.ok("Successfully changed your vote to %s", vote);
-        } else {
-            reply.ok("Successfully voted for %s, you have %d votes left", vote, votesLeft);
-        }
+            String vote = split[2];
+            Poll poll = polls.get(pollId);
+            int votesLeft = poll.addVote(event.getActor().getId(), vote);
+            getDatabaseManager().setPoll(poll);
+            reply.hide();
+            if (votesLeft == -1) {
+                reply.ok("Successfully changed your vote to %s", vote);
+            } else {
+                reply.ok("Successfully voted for %s, you have %d votes left", vote, votesLeft);
+            }
+        });
     }
 
     /**
@@ -486,7 +469,7 @@ public class PollComponent extends AbstractComponent {
             Collections.addAll(this.choices, choices);
         }
 
-        public int addVote(String user, String vote) {
+        public synchronized int addVote(String user, String vote) {
             Set<String> userVotes = votes.get(user);
 
             if (userVotes == null) {
@@ -517,7 +500,7 @@ public class PollComponent extends AbstractComponent {
         }
 
         @JsonIgnore
-        public Map<String, Integer> getResults() {
+        public synchronized Map<String, Integer> getResults() {
             Map<String, Integer> results = new HashMap<>();
             choices.forEach(choice -> results.put(choice, 0));
 
@@ -535,7 +518,7 @@ public class PollComponent extends AbstractComponent {
         }
 
         @Override
-        public String toString() {
+        public synchronized String toString() {
             Map<String, Integer> results = getResults();
             List<String> resultStrings = new ArrayList<>(results.size());
 

@@ -1,5 +1,7 @@
 package com.thefatrat.eddiejunior;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.AbstractMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -39,7 +41,7 @@ public class TimedMap<K, V> extends AbstractMap<K, V> {
     }
 
     @Override
-    public Set<Entry<K, V>> entrySet() {
+    public @NotNull Set<Entry<K, V>> entrySet() {
         return map.entrySet().stream()
             .map(entry -> Map.entry(entry.getKey(), entry.getValue().getKey()))
             .collect(Collectors.toSet());

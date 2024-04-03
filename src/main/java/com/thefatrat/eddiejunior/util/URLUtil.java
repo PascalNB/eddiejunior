@@ -77,18 +77,28 @@ public final class URLUtil {
     }
 
     @Nullable
-    public static Message getMessageFromString(@Nullable String messageString, Guild guild) {
+    public static Message getMessage(@NotNull MessageChannel channel, @NotNull String messageId) {
+        return channel.retrieveMessageById(messageId)
+            .onErrorMap(e -> null)
+            .complete();
+    }
+
+    @Nullable
+    public static Message getMessage(@NotNull String channelId, @NotNull String messageId, @NotNull Guild guild) {
+        MessageChannel channel = guild.getChannelById(GuildMessageChannel.class, channelId);
+        if (channel == null) {
+            return null;
+        }
+        return getMessage(channel, messageId);
+    }
+
+    @Nullable
+    public static Message getMessageFromString(@Nullable String messageString, @NotNull Guild guild) {
         if (messageString == null) {
             return null;
         }
         String[] split = messageString.split("_", 2);
-        MessageChannel channel = guild.getChannelById(GuildMessageChannel.class, split[0]);
-        if (channel == null) {
-            return null;
-        }
-        return channel.retrieveMessageById(split[1])
-            .onErrorMap(e -> null)
-            .complete();
+        return getMessage(split[0], split[1], guild);
     }
 
 }

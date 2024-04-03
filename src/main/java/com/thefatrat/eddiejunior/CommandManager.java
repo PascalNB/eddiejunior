@@ -186,7 +186,7 @@ public class CommandManager {
             }
             actions.add(jda.upsertCommand(command).onSuccess(this::addRetrievedDefaultCommand));
         }
-        return actions.size() == 0 ? new CompletedRestAction<>(jda, List.of()) : RestAction.allOf(actions);
+        return actions.isEmpty() ? new CompletedRestAction<>(jda, List.of()) : RestAction.allOf(actions);
     }
 
     @CheckReturnValue
@@ -219,7 +219,7 @@ public class CommandManager {
             }
             actions.add(guild.upsertCommand(command).onSuccess(c -> this.addRetrievedServerCommand(guildId, c)));
         }
-        return actions.size() == 0 ? new CompletedRestAction<>(jda, List.of()) : RestAction.allOf(actions);
+        return actions.isEmpty() ? new CompletedRestAction<>(jda, Collections.emptyList()) : RestAction.allOf(actions);
     }
 
     @CheckReturnValue

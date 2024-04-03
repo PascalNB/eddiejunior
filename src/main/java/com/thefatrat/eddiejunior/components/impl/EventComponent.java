@@ -34,15 +34,9 @@ public class EventComponent extends AbstractComponent {
     public EventComponent(Server server) {
         super(server, "Event");
 
-        Base64.Decoder decoder = Base64.getDecoder();
-
         for (String linkString : getDatabaseManager().getSettings("link")) {
-            String[] split = linkString.split("-", 3);
-            String keyword = new String(decoder.decode(split[0]));
-            String session = "null".equals(split[1]) ? null : new String(decoder.decode(split[1]));
-            String component = "null".equals(split[2]) ? null : new String(decoder.decode(split[2]));
-            Link link = new Link(keyword, session, component);
-            links.put(keyword, link);
+            Link link = Link.fromString(linkString);
+            links.put(link.keyword, link);
         }
 
         getServer().getEventHandler().addListener((e, r) -> this.processEvent(e));
@@ -251,6 +245,15 @@ public class EventComponent extends AbstractComponent {
     }
 
     private record Link(String keyword, @Nullable String session, @Nullable String component) {
+
+        public static Link fromString(String string) {
+            Base64.Decoder decoder = Base64.getDecoder();
+            String[] split = string.split("-", 3);
+            String keyword = new String(decoder.decode(split[0]));
+            String session = "null".equals(split[1]) ? null : new String(decoder.decode(split[1]));
+            String component = "null".equals(split[2]) ? null : new String(decoder.decode(split[2]));
+            return new Link(keyword, session, component);
+        }
 
         @Override
         public String toString() {

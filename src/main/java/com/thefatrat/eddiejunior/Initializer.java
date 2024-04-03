@@ -10,6 +10,7 @@ import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 
 import java.io.*;
+import java.nio.file.Path;
 import java.util.Properties;
 
 public class Initializer {
@@ -25,8 +26,9 @@ public class Initializer {
     private Initializer() {
         try {
             File jarPath = new File(Initializer.class.getProtectionDomain().getCodeSource().getLocation().getPath());
-            String propertiesPath = jarPath.getParentFile().getAbsolutePath();
-            properties.load(new FileInputStream(propertiesPath + "/config.cfg"));
+            Path propertiesPath = jarPath.getParentFile().toPath().toAbsolutePath();
+            File configFile = propertiesPath.resolve("config.cfg").toFile();
+            properties.load(new FileInputStream(configFile));
 
         } catch (FileNotFoundException __) {
             try (InputStream config = Initializer.class.getClassLoader().getResourceAsStream("config.cfg")) {
@@ -34,6 +36,7 @@ public class Initializer {
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
+
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

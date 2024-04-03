@@ -20,7 +20,7 @@ import com.thefatrat.eddiejunior.util.Colors;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.*;
-import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.interactions.components.selections.SelectOption;
 import net.dv8tion.jda.api.requests.RestAction;
 import org.jetbrains.annotations.Contract;
@@ -31,6 +31,7 @@ import javax.annotation.CheckReturnValue;
 import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class Server {
 
@@ -41,7 +42,7 @@ public class Server {
     private final Map<String, Component> components = new HashMap<>();
     private final RequestManager requestManager = new RequestManager();
     private final Map<String, MapHandler<CommandEvent, InteractionReply>> subCommandHandler = new HashMap<>();
-    private TextChannel log = null;
+    private final AtomicReference<MessageChannel> log = new AtomicReference<>(null);
     private Role manageRole = null;
     private Role useRole = null;
 
@@ -220,32 +221,33 @@ public class Server {
         return set;
     }
 
-    public void setLog(TextChannel log) {
-        this.log = log;
+    public void setLog(MessageChannel log) {
+        this.log.set(log);
     }
 
     @Nullable
-    public TextChannel getLog() {
-        return log;
+    public MessageChannel getLog() {
+        return log.get();
     }
 
     public void log(int color, User user, String message, Object... args) {
-        if (log == null) {
+        MessageChannel log = this.log.get();
+        if (log == null || !log.canTalk()) {
             return;
         }
-        synchronized (log) {
-            if (!log.canTalk()) {
-                return;
-            }
-            log.sendMessageEmbeds(new EmbedBuilder()
-                .setColor(color)
-                .setDescription(String.format("%s ", user.getAsMention()) +
-                    String.format(message, args))
-                .setFooter(user.getId(), user.getEffectiveAvatarUrl())
-                .setTimestamp(Instant.now())
-                .build()
-            ).queue();
+        EmbedBuilder builder = new EmbedBuilder()
+            .setColor(color)
+            .setTimestamp(Instant.now());
+
+        String description = String.format(message, args);
+        if (user != null) {
+            description = user.getAsMention() + ": " + description;
+            builder.setFooter(user.getId(), user.getEffectiveAvatarUrl());
         }
+
+        builder.setDescription(description);
+
+        log.sendMessageEmbeds(builder.build()).queue();
     }
 
     public void log(User user, String message, Object... args) {
@@ -253,24 +255,11 @@ public class Server {
     }
 
     public void log(int color, String message, Object... args) {
-        if (log == null) {
-            return;
-        }
-        synchronized (log) {
-            if (!log.canTalk()) {
-                return;
-            }
-            log.sendMessageEmbeds(new EmbedBuilder()
-                .setColor(color)
-                .setDescription(String.format(message, args))
-                .setTimestamp(Instant.now())
-                .build()
-            ).queue();
-        }
+        log(color, null, message, args);
     }
 
     public void log(String message, Object... args) {
-        log(Colors.TRANSPARENT, message, args);
+        log(Colors.TRANSPARENT, null, message, args);
     }
 
     public RequestManager getRequestManager() {

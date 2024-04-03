@@ -237,7 +237,7 @@ public abstract class DirectMessageComponent extends AbstractComponent implement
 
             blacklist.clear();
             getDatabaseManager().removeSetting("blacklist")
-                .queue(c ->
+                .async(c ->
                     reply.ok("Blacklist cleared")
                 );
             return;

@@ -4,8 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.pascalnb.dbwrapper.Mapper;
 import com.pascalnb.dbwrapper.Query;
 import com.pascalnb.dbwrapper.StringMapper;
-import com.pascalnb.dbwrapper.action.CompletedAction;
 import com.pascalnb.dbwrapper.action.DatabaseAction;
+import com.pascalnb.dbwrapper.action.Promise;
 import com.thefatrat.eddiejunior.components.impl.FaqComponent;
 import com.thefatrat.eddiejunior.components.impl.PollComponent;
 import com.thefatrat.eddiejunior.util.ObjectMapperProvider;
@@ -15,6 +15,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@SuppressWarnings("UnusedReturnValue")
 public class DatabaseManager {
 
     private static final Query GET_COMPONENT_ENABLED = new Query(
@@ -86,39 +87,39 @@ public class DatabaseManager {
                 }
                 return map;
             })
-            .complete();
+            .await();
     }
 
-    public CompletedAction<Void> removeSetting(String setting) {
+    public Promise<Void> removeSetting(String setting) {
         return DatabaseAction.of(REMOVE_SETTING.withArgs(server, component, setting)).execute();
     }
 
-    public CompletedAction<Void> removeSetting(String setting, @NotNull String value) {
+    public Promise<Void> removeSetting(String setting, @NotNull String value) {
         return DatabaseAction.of(REMOVE_SETTING_VALUE.withArgs(server, component, setting, value)).execute();
     }
 
-    public CompletedAction<Void> setSetting(String setting, @NotNull Object value) {
+    public Promise<Void> setSetting(String setting, @NotNull Object value) {
         return DatabaseAction.allOf(
             DatabaseAction.of(REMOVE_SETTING.withArgs(server, component, setting)),
             DatabaseAction.of(ADD_SETTING.withArgs(server, component, setting, value))
         ).execute();
     }
 
-    public CompletedAction<Void> addSetting(String setting, String value) {
+    public Promise<Void> addSetting(String setting, String value) {
         return DatabaseAction.of(ADD_SETTING.withArgs(server, component, setting, value)).execute();
     }
 
     public String getSetting(String setting) {
         return DatabaseAction.of(GET_SETTINGS.withArgs(server, component, setting))
             .query(Mapper.stringValue())
-            .complete();
+            .await();
     }
 
     @SuppressWarnings("unchecked")
     public <T> T getSettingOrDefault(String setting, @NotNull T defaultValue) {
         return (T) DatabaseAction.of(GET_SETTINGS.withArgs(server, component, setting))
             .query(Mapper.toPrimitive(defaultValue.getClass()).orDefault(defaultValue))
-            .complete();
+            .await();
     }
 
     public List<String> getSettings(String setting) {
@@ -127,16 +128,16 @@ public class DatabaseManager {
                 Mapper.stringList()
             )
             .query()
-            .complete();
+            .await();
     }
 
     public static boolean isComponentEnabled(String serverId, String componentId) {
         return DatabaseAction.of(GET_COMPONENT_ENABLED.withArgs(serverId, componentId))
             .query(table -> !table.isEmpty() && "1".equals(table.get(0).get(0)))
-            .complete();
+            .await();
     }
 
-    public static CompletedAction<Void> toggleComponent(String serverId, String componentId, boolean enable) {
+    public static Promise<Void> toggleComponent(String serverId, String componentId, boolean enable) {
         return DatabaseAction.of(TOGGLE_COMPONENT.withArgs(serverId, componentId, enable, enable)).execute();
     }
 
@@ -146,7 +147,7 @@ public class DatabaseManager {
                 Mapper.stream()
             )
             .query()
-            .map(stream -> stream
+            .then(stream -> stream
                 .map(tuple -> {
                     int id = Integer.parseInt(tuple.get("q_number"));
                     String json = tuple.get("value");
@@ -154,16 +155,16 @@ public class DatabaseManager {
                 })
                 .toList()
             )
-            .complete();
+            .await();
     }
 
-    public CompletedAction<Void> removeQuestion(int id) {
+    public Promise<Void> removeQuestion(int id) {
         return DatabaseAction.of(
             REMOVE_QUESTION.withArgs(server, id)
         ).execute();
     }
 
-    public CompletedAction<Void> setQuestion(int id, String json) {
+    public Promise<Void> setQuestion(int id, String json) {
         return DatabaseAction.of(
             SET_QUESTION.withArgs(server, id, json, json)
         ).execute();
@@ -175,7 +176,7 @@ public class DatabaseManager {
                 Mapper.stream()
             )
             .query()
-            .map(stream -> stream
+            .then(stream -> stream
                 .flatMap(tuple -> {
                     String value = tuple.get("value");
                     try {
@@ -192,10 +193,10 @@ public class DatabaseManager {
                     Map.Entry::getValue
                 ))
             )
-            .complete();
+            .await();
     }
 
-    public CompletedAction<Void> setPoll(PollComponent.Poll poll) {
+    public Promise<Void> setPoll(PollComponent.Poll poll) {
         try {
             String value = ObjectMapperProvider.OBJECT_MAPPER.writeValueAsString(poll);
             return DatabaseAction.of(
@@ -208,7 +209,7 @@ public class DatabaseManager {
         }
     }
 
-    public CompletedAction<Void> removePoll(PollComponent.Poll poll) {
+    public Promise<Void> removePoll(PollComponent.Poll poll) {
         return DatabaseAction.of(
                 REMOVE_POLL.withArgs(server, poll.getId())
             )

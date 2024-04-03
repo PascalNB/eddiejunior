@@ -5,7 +5,7 @@ import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.entities.UserRole;
 import com.thefatrat.eddiejunior.events.CommandEvent;
 import com.thefatrat.eddiejunior.events.GenericEvent;
-import com.thefatrat.eddiejunior.exceptions.BotWarningException;
+import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.reply.InteractionReply;
 import com.thefatrat.eddiejunior.sources.Server;
 import net.dv8tion.jda.api.entities.Member;
@@ -69,7 +69,7 @@ public class NicknameComponent extends AbstractComponent {
             getServer().log(command.getMember().getUser(), "Set nickname regex pattern to `%s`", regex);
 
         } catch (PatternSyntaxException e) {
-            throw new BotWarningException("Invalid regex pattern");
+            throw new BotErrorException("Invalid regex pattern");
         }
     }
 
