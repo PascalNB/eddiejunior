@@ -5,8 +5,10 @@ import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.entities.UserRole;
 import com.thefatrat.eddiejunior.events.ButtonEvent;
 import com.thefatrat.eddiejunior.events.CommandEvent;
+import com.thefatrat.eddiejunior.events.ModalEvent;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotWarningException;
+import com.thefatrat.eddiejunior.reply.DefaultReply;
 import com.thefatrat.eddiejunior.reply.InteractionReply;
 import com.thefatrat.eddiejunior.reply.MenuReply;
 import com.thefatrat.eddiejunior.sources.Server;
@@ -25,6 +27,10 @@ import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.components.ActionRow;
 import net.dv8tion.jda.api.interactions.components.LayoutComponent;
 import net.dv8tion.jda.api.interactions.components.buttons.ButtonStyle;
+import net.dv8tion.jda.api.interactions.components.text.TextInput;
+import net.dv8tion.jda.api.interactions.components.text.TextInputStyle;
+import net.dv8tion.jda.api.interactions.modals.Modal;
+import net.dv8tion.jda.api.managers.RoleManager;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import net.dv8tion.jda.internal.utils.PermissionUtil;
@@ -36,12 +42,23 @@ public class RoleComponent extends AbstractComponent {
     public static final String NAME = "Role";
     private final Set<String> roles;
     public static final Set<String> FILE_MIMES = Set.of("image/jpg", "image/png", "image/jpeg");
+    private Role startRange = null;
+    private Role endRange = null;
 
     public RoleComponent(Server server) {
         super(server, NAME);
 
         List<String> roles = getDatabaseManager().getSettings("toggle");
         this.roles = new HashSet<>(roles);
+
+        String startRangeId = getDatabaseManager().getSetting("startrange");
+        if (startRangeId != null) {
+            this.startRange = getGuild().getRoleById(startRangeId);
+        }
+        String endRangeId = getDatabaseManager().getSetting("endrange");
+        if (endRangeId != null) {
+            this.endRange = getGuild().getRoleById(endRangeId);
+        }
 
         setComponentCommand(UserRole.MANAGE);
 
@@ -98,8 +115,30 @@ public class RoleComponent extends AbstractComponent {
                     new OptionData(OptionType.ROLE, "role", "role", true),
                     new OptionData(OptionType.ATTACHMENT, "icon", "icon", true)
                 )
-                .setAction(this::setRoleIcon)
+                .setAction(this::setRoleIcon),
+
+            new Command("modify", "modify the given role")
+                .setRequiredUserRole(UserRole.USE)
+                .addOptions(
+                    new OptionData(OptionType.ROLE, "role", "role", true)
+                )
+                .setAction(this::modifyRoleCommand),
+
+            new Command("setmodifyrange", "set the range of roles that are automatically enabled to be modifiable")
+                .setRequiredUserRole(UserRole.MANAGE)
+                .addPermissions(Permission.MANAGE_ROLES)
+                .addOptions(
+                    new OptionData(OptionType.ROLE, "from", "starting role, inclusive", true),
+                    new OptionData(OptionType.ROLE, "to", "ending role, exclusive", true)
+                )
+                .setAction(this::setModifyRange),
+
+            new Command("listmodifyrange", "list all roles that are automatically enabled to be modifiable")
+                .setRequiredUserRole(UserRole.USE)
+                .setAction(this::listModifyRange)
         );
+
+        getServer().getModalHandler().addListener("role-modify", this::modifyRole);
     }
 
     private void listToggles(CommandEvent command, InteractionReply reply) {
@@ -395,6 +434,111 @@ public class RoleComponent extends AbstractComponent {
                 Optional.ofNullable(role.getIcon())
                     .map(RoleIcon::getIconUrl)
                     .orElse("null"));
+        });
+    }
+
+    private void modifyRoleCommand(CommandEvent command, InteractionReply reply) {
+        Role role = command.get("role").getAsRole();
+        int position = role.getPosition();
+
+        if (position > startRange.getPosition() || position <= endRange.getPosition()) {
+            throw new BotWarningException("Role is not included in the modifiable range");
+        }
+
+        TextInput nameInput = TextInput.create("name", "Name", TextInputStyle.SHORT)
+            .setValue(role.getName())
+            .setRequiredRange(1, 128)
+            .build();
+
+        String colorHex = String.format("%6s", Integer.toHexString(role.getColorRaw()))
+            .replace(' ', '0');
+
+        TextInput colorInput = TextInput.create("color", "Color", TextInputStyle.SHORT)
+            .setValue(colorHex)
+            .setRequiredRange(6, 6)
+            .build();
+
+        Modal modal = getRequestManager().createModal(
+                "role-modify",
+                "Modify Role",
+                Map.of("role", role)
+            )
+            .addActionRow(nameInput)
+            .addActionRow(colorInput)
+            .build();
+
+        reply.sendModal(modal);
+    }
+
+    private void setModifyRange(CommandEvent command, InteractionReply reply) {
+        Role start = command.get("from").getAsRole();
+        Role end = command.get("to").getAsRole();
+
+        PermissionChecker.requireMemberPermission(command.getMember(), Permission.MANAGE_ROLES);
+
+        if (start.getPosition() <= end.getPosition()) {
+            throw new BotWarningException("Start role should be listed higher than the end role");
+        }
+
+        this.startRange = start;
+        this.endRange = end;
+        getDatabaseManager().setSetting("startrange", start.getId());
+        getDatabaseManager().setSetting("endrange", end.getId());
+
+        reply.ok("Set the modifiable range: %s to %s", start.getAsMention(), end.getAsMention());
+        getServer().log(command.getMember().getUser(), "Set the modifiable role range: %s (`%s`) to %s (`%s`)",
+            start.getAsMention(), start.getId(), end.getAsMention(), end.getId());
+    }
+
+    private void listModifyRange(CommandEvent _command, InteractionReply reply) {
+        if (startRange == null || endRange == null) {
+            throw new BotWarningException("Range not set");
+        }
+
+        int start = startRange.getPosition();
+        int end = endRange.getPosition();
+
+        StringBuilder builder = new StringBuilder();
+
+        for (Role role : getGuild().getRoles()) {
+            if (role.getPosition() <= start && role.getPosition() > end) {
+                builder.append(role.getAsMention()).append("\n");
+            }
+        }
+
+        if (builder.isEmpty()) {
+            throw new BotErrorException("No roles found (this shouldn't happen)");
+        }
+        builder.deleteCharAt(builder.length() - 1);
+
+        reply.send(builder.toString());
+    }
+
+    private void modifyRole(ModalEvent event, DefaultReply reply) {
+        reply.defer();
+        Role role = (Role) event.getMetadata().get("role");
+
+        String name = event.getValues().get("name").getAsString();
+        String color = event.getValues().get("color").getAsString();
+        int colorInt;
+        try {
+            colorInt = Integer.parseInt(color, 16);
+        } catch (NumberFormatException e) {
+            throw new BotErrorException("Invalid color hex");
+        }
+
+        RoleManager manager = role.getManager();
+
+        if (!name.equals(role.getName())) {
+            manager = manager.setName(name);
+        }
+        if (colorInt != role.getColorRaw()) {
+            manager = manager.setColor(colorInt);
+        }
+        manager.queue(callback -> {
+            reply.ok("Role %s modified", role.getAsMention());
+            getServer().log(event.getMember().getUser(),
+                "Modified role %s (`%s`)", role.getAsMention(), role.getId());
         });
     }
 

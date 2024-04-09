@@ -25,4 +25,12 @@ public final class PermissionChecker {
         }
     }
 
+    public static void requireMemberPermission(Member member, Permission... permissions) {
+        for (Permission permission : permissions) {
+            if (!PermissionUtil.checkPermission(member, permission)) {
+                throw new BotErrorException("Requires permission `%s`", permission.getName());
+            }
+        }
+    }
+
 }
