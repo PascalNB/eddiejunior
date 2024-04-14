@@ -257,12 +257,14 @@ public class PollComponent extends AbstractComponent {
         List<Button> buttons = new ArrayList<>();
         Set<String> ids = new HashSet<>();
 
-        String[] options = command.get("options").getAsString().split(", *");
+        String[] options = splitWithEscape(command.get("options").getAsString(), ',');
+        List<String> escapedOptions = new ArrayList<>();
 
         for (String option : options) {
             if (option.isBlank()) {
                 continue;
             }
+            option = unescape(option.trim());
             if (option.length() > Button.LABEL_MAX_LENGTH) {
                 throw new BotWarningException("Option `%s` is too long", option);
             }
@@ -305,6 +307,7 @@ public class PollComponent extends AbstractComponent {
             buttons.add(
                 EmojiUtil.formatButton("poll-" + id, option, ButtonStyle.SECONDARY)
             );
+            escapedOptions.add(option);
         }
 
         if (buttons.isEmpty()) {
@@ -312,8 +315,9 @@ public class PollComponent extends AbstractComponent {
         }
 
         int maxPicks = command.hasOption("picks") ? command.get("picks").getAsInt() : 1;
-        Arrays.sort(options, String.CASE_INSENSITIVE_ORDER);
-        Poll poll = new Poll(message, maxPicks, options);
+        String[] escaped = escapedOptions.toArray(String[]::new);
+        Arrays.sort(escaped, String.CASE_INSENSITIVE_ORDER);
+        Poll poll = new Poll(message, maxPicks, escaped);
         polls.put(message.getId(), poll);
 
         List<ActionRow> rows = new ArrayList<>();
@@ -525,7 +529,8 @@ public class PollComponent extends AbstractComponent {
             long total = results.entrySet().stream()
                 .sorted(Comparator.comparingInt(e -> -e.getValue()))
                 .mapToInt(e -> {
-                    resultStrings.add(String.format("- **%s**: `%d`", e.getKey(), e.getValue()));
+                    String label = e.getKey().replace("\\", "\\\\");
+                    resultStrings.add(String.format("- **%s**: `%d`", label, e.getValue()));
                     return e.getValue();
                 })
                 .sum();
@@ -571,6 +576,33 @@ public class PollComponent extends AbstractComponent {
             }
         }
         return result.toString();
+    }
+
+    private static String[] splitWithEscape(@NotNull String string, char delimiter) {
+        final StringBuilder builder = new StringBuilder();
+        List<String> result = new ArrayList<>();
+        boolean escape = false;
+
+        for (char c : string.toCharArray()) {
+            if (c == delimiter) {
+                if (escape) {
+                    builder.append(c);
+                    escape = false;
+                } else {
+                    result.add(builder.toString());
+                    builder.setLength(0);
+                }
+            } else if (c == '\\') {
+                escape = !escape;
+                builder.append(c);
+            } else {
+                escape = false;
+                builder.append(c);
+            }
+        }
+
+        result.add(builder.toString());
+        return result.toArray(String[]::new);
     }
 
     private static final Pattern timeCheckRegex = Pattern.compile("^(?:\\d+[dhms] ?)+$");

@@ -109,7 +109,7 @@ public class EventComponent extends AbstractComponent {
         }
 
         if (start) {
-            if (link.session() != null && sessionComponent != null && sessionComponent.isEnabled()
+            if (sessionComponent != null && sessionComponent.isEnabled()
                 && sessionComponent.isSession(link.session())) {
                 try {
                     getServer().log(Colors.GREEN, "Opened session `%s`", link.session());
@@ -118,13 +118,13 @@ public class EventComponent extends AbstractComponent {
                 }
             }
 
-            if (link.component() != null && component != null && !component.isRunning()) {
+            if (component != null && !component.isRunning()) {
                 component.start(Reply.EMPTY);
                 getServer().log(Colors.GREEN, "Component `%s` started running automatically", link.component());
             }
 
         } else {
-            if (link.session() != null && sessionComponent != null && sessionComponent.isEnabled()
+            if (sessionComponent != null && sessionComponent.isEnabled()
                 && sessionComponent.isSession(link.session())) {
                 try {
                     getServer().log(Colors.RED, "Closed session `%s`", link.session());
@@ -133,7 +133,7 @@ public class EventComponent extends AbstractComponent {
                 }
             }
 
-            if (link.component() != null && component != null) {
+            if (component != null && component.isRunning()) {
                 component.stop(Reply.EMPTY);
                 getServer().log(Colors.RED, "Component `%s` stopped running automatically", link.component());
             }

@@ -349,21 +349,26 @@ public abstract class DirectMessageComponent extends AbstractComponent implement
     protected abstract void handleDirect(Message message, MenuReply reply);
 
     public void stop(Reply reply) {
-        getServer().getDirectMessageHandler().removeListener(this);
-        this.running = false;
-        if (autoRun) {
-            getDatabaseManager().setSetting("running", "false");
+        if (this.running) {
+            this.running = false;
+            getServer().getDirectMessageHandler().removeListener(this);
+
+            if (autoRun) {
+                getDatabaseManager().setSetting("running", "false");
+            }
+            getServer().log(Colors.RED, "Component `%s` stopped", getId());
         }
-        getServer().log(Colors.RED, "Component `%s` stopped", getId());
     }
 
     public void start(Reply reply) {
-        this.running = true;
-        getServer().getDirectMessageHandler().addListener(this, alt, this::receive);
-        if (autoRun) {
-            getDatabaseManager().setSetting("running", "true");
+        if (!this.running) {
+            this.running = true;
+            getServer().getDirectMessageHandler().addListener(this, alt, this::receive);
+            if (autoRun) {
+                getDatabaseManager().setSetting("running", "true");
+            }
+            getServer().log(Colors.GREEN, "Component `%s` started", getId());
         }
-        getServer().log(Colors.GREEN, "Component `%s` started", getId());
     }
 
     public final void setDestination(String destination) {
