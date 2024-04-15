@@ -113,7 +113,7 @@ public class RoleComponent extends AbstractComponent {
                 .setRequiredUserRole(UserRole.MANAGE)
                 .addOptions(
                     new OptionData(OptionType.ROLE, "role", "role", true),
-                    new OptionData(OptionType.ATTACHMENT, "icon", "icon", true)
+                    new OptionData(OptionType.ATTACHMENT, "icon", "icon", false)
                 )
                 .setAction(this::setRoleIcon),
 
@@ -409,6 +409,15 @@ public class RoleComponent extends AbstractComponent {
         Role role = command.get("role").getAsRole();
         if (!PermissionUtil.canInteract(getGuild().getSelfMember(), role)) {
             throw new BotErrorException("Cannot modify role %s", role.getAsMention());
+        }
+
+        if (!command.hasOption("icon")) {
+            role.getManager().setIcon((Icon) null).queue(__ -> {
+                reply.ok("Icon of role %s removed", role.getAsMention());
+                getServer().log(command.getMember().getUser(), "Removed role icon of %s (`%s`)",
+                    role.getAsMention(), role.getId());
+            });
+            return;
         }
 
         Message.Attachment attachment = command.get("icon").getAsAttachment();
