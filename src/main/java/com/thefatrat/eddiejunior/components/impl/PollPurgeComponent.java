@@ -8,6 +8,7 @@ import com.thefatrat.eddiejunior.events.MessageEvent;
 import com.thefatrat.eddiejunior.reply.InteractionReply;
 import com.thefatrat.eddiejunior.sources.Server;
 import com.thefatrat.eddiejunior.util.Colors;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Role;
@@ -57,6 +58,7 @@ public class PollPurgeComponent extends AbstractComponent {
     private void handleMessage(MessageEvent event, Void reply) {
         if (!isEnabled()
             || event.getMessage().getPoll() == null
+            || event.getMember().hasPermission(Permission.ADMINISTRATOR)
             || exclusion != null && event.getMember().getRoles().stream()
             .anyMatch(role -> exclusion.equals(role.getId()))) {
             return;
