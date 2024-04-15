@@ -65,7 +65,8 @@ public class Initializer {
             RoleComponent.class,
             HoistComponent.class,
             MessageComponent.class,
-            NicknameComponent.class
+            NicknameComponent.class,
+            PollPurgeComponent.class
         );
 
         jda = JDABuilder.createLight(token,
@@ -73,12 +74,14 @@ public class Initializer {
                 GatewayIntent.GUILD_MEMBERS,
                 GatewayIntent.GUILD_VOICE_STATES,
                 GatewayIntent.MESSAGE_CONTENT,
-                GatewayIntent.SCHEDULED_EVENTS
+                GatewayIntent.SCHEDULED_EVENTS,
+                GatewayIntent.GUILD_MESSAGES
             )
             .setMemberCachePolicy(MemberCachePolicy.VOICE)
             .enableCache(CacheFlag.VOICE_STATE, CacheFlag.MEMBER_OVERRIDES, CacheFlag.SCHEDULED_EVENTS,
                 CacheFlag.ROLE_TAGS)
             .setRawEventsEnabled(false)
+            .setEventPassthrough(false)
             .addEventListeners(Bot.getInstance())
             .build();
 

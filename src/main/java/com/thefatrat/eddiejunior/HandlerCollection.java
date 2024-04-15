@@ -25,6 +25,7 @@ public class HandlerCollection<V> {
     private MapHandler<SelectEvent<SelectOption>, MenuReply> stringSelectHandler;
     private MapHandler<SelectEvent<IMentionable>, MenuReply> entitySelectHandler;
     private MapHandler<GenericEvent<?>, Void> genericHandler;
+    private SetHandler<MessageEvent, Void> messageHandler;
 
     public PermissionMapHandler<CommandEvent, InteractionReply> getCommandHandler() {
         if (commandHandler == null) {
@@ -102,6 +103,13 @@ public class HandlerCollection<V> {
         }
         //noinspection unchecked,rawtypes
         return (MapHandler) genericHandler;
+    }
+
+    public <T> SetHandler<MessageEvent, Void> getMessageHandler() {
+        if (messageHandler == null) {
+            messageHandler = new SetHandler<>();
+        }
+        return messageHandler;
     }
 
 }

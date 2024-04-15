@@ -314,4 +314,8 @@ public class Server {
         return handlerCollection.getGenericHandler();
     }
 
+    public SetHandler<MessageEvent, Void> getMessageHandler() {
+        return handlerCollection.getMessageHandler();
+    }
+
 }

@@ -366,7 +366,15 @@ public class Bot extends ListenerAdapter {
 
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
-        if (event.isFromGuild() || event.getAuthor().isBot() || event.getAuthor().isSystem()) {
+        if (event.getAuthor().isBot() || event.getAuthor().isSystem()) {
+            return;
+        }
+
+        if (event.isFromGuild()) {
+            Guild guild = Objects.requireNonNull(event.getGuild());
+            MessageEvent messageEvent = new MessageEvent(event.getMember(), event.getMessage());
+
+            servers.get(guild.getId()).getMessageHandler().handle(messageEvent, null);
             return;
         }
 
