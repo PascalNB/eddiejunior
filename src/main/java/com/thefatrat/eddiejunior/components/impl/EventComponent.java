@@ -255,7 +255,7 @@ public class EventComponent extends AbstractComponent {
             String keyword = new String(decoder.decode(split[0]));
             String session = "null".equals(split[1]) ? null : new String(decoder.decode(split[1]));
             String component = "null".equals(split[2]) ? null : new String(decoder.decode(split[2]));
-            boolean autoStop = split.length == 4 && new String(decoder.decode(split[3])).equals("1");
+            boolean autoStop = split.length < 4 || new String(decoder.decode(split[3])).equals("1");
             return new Link(keyword, session, component, autoStop);
         }
 
