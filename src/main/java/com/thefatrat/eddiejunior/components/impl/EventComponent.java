@@ -48,7 +48,8 @@ public class EventComponent extends AbstractComponent {
                 .addOptions(
                     new OptionData(OptionType.STRING, "keyword", "event name keyword", true),
                     new OptionData(OptionType.STRING, "session", "session", false),
-                    new OptionData(OptionType.STRING, "component", "runnable component", false)
+                    new OptionData(OptionType.STRING, "component", "runnable component", false),
+                    new OptionData(OptionType.BOOLEAN, "autostop", "stop the component automatically", false)
                 )
                 .setAction(this::createLink),
 
@@ -133,7 +134,7 @@ public class EventComponent extends AbstractComponent {
                 }
             }
 
-            if (component != null && component.isRunning()) {
+            if (link.autoStop() && component != null && component.isRunning()) {
                 component.stop(Reply.EMPTY);
                 getServer().log(Colors.RED, "Component `%s` stopped running automatically", link.component());
             }
@@ -184,7 +185,9 @@ public class EventComponent extends AbstractComponent {
             }
         }
 
-        Link link = new Link(keyword, session, component);
+        boolean autoStop = !command.hasOption("autostop") || command.get("autostop").getAsBoolean();
+
+        Link link = new Link(keyword, session, component, autoStop);
         getDatabaseManager().addSetting("link", link.toString());
         links.put(keyword, link);
         reply.ok("Linked keyword `%s`", keyword);
@@ -222,8 +225,8 @@ public class EventComponent extends AbstractComponent {
 
         int i = 0;
         for (Link link : links.values()) {
-            array[i] = String.format("Keyword: `%s`%nSession: `%s`%nComponent: `%s`",
-                link.keyword(), link.session(), link.component());
+            array[i] = String.format("Keyword: `%s`%nSession: `%s`%nComponent: `%s`%nAuto stop: `%s`",
+                link.keyword(), link.session(), link.component(), link.autoStop());
             ++i;
         }
 
@@ -244,25 +247,27 @@ public class EventComponent extends AbstractComponent {
             isEnabled(), links.size());
     }
 
-    private record Link(String keyword, @Nullable String session, @Nullable String component) {
+    private record Link(String keyword, @Nullable String session, @Nullable String component, boolean autoStop) {
 
         public static Link fromString(String string) {
             Base64.Decoder decoder = Base64.getDecoder();
-            String[] split = string.split("-", 3);
+            String[] split = string.split("-", 4);
             String keyword = new String(decoder.decode(split[0]));
             String session = "null".equals(split[1]) ? null : new String(decoder.decode(split[1]));
             String component = "null".equals(split[2]) ? null : new String(decoder.decode(split[2]));
-            return new Link(keyword, session, component);
+            boolean autoStop = split.length == 4 && new String(decoder.decode(split[3])).equals("1");
+            return new Link(keyword, session, component, autoStop);
         }
 
         @Override
         public String toString() {
             Base64.Encoder encoder = Base64.getEncoder();
 
-            return String.format("%s-%s-%s",
+            return String.format("%s-%s-%s-%s",
                 encoder.encodeToString(keyword.getBytes()),
                 session == null ? "null" : encoder.encodeToString(session.getBytes()),
-                component == null ? "null" : encoder.encodeToString(component.getBytes()));
+                component == null ? "null" : encoder.encodeToString(component.getBytes()),
+                encoder.encodeToString((autoStop ? "1" : "0").getBytes()));
         }
 
     }

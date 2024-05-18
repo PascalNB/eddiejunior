@@ -414,7 +414,7 @@ public class Bot extends ListenerAdapter {
         }
 
         EventEvent eventEvent = new EventEvent(event.getEntity().getName(), event.getEntity().getDescription(),
-            event.getNewStatus(), event.getOldStatus());
+            event.getNewStatus(), event.getOldStatus(), event.getEntity().getChannel());
         getServer(event.getGuild().getId()).getEventHandler().handle(eventEvent, null);
     }
 
@@ -422,7 +422,9 @@ public class Bot extends ListenerAdapter {
     public void onStageInstanceCreate(@NotNull StageInstanceCreateEvent event) {
         EventEvent eventEvent = new EventEvent(event.getInstance().getTopic(), null,
             ScheduledEvent.Status.ACTIVE,
-            ScheduledEvent.Status.SCHEDULED);
+            ScheduledEvent.Status.SCHEDULED,
+            event.getChannel()
+        );
         getServer(event.getGuild().getId()).getEventHandler().handle(eventEvent, null);
     }
 
@@ -430,8 +432,10 @@ public class Bot extends ListenerAdapter {
     public void onStageInstanceDelete(@NotNull StageInstanceDeleteEvent event) {
         EventEvent eventEvent = new EventEvent(event.getInstance().getTopic(), null,
             ScheduledEvent.Status.COMPLETED,
-            ScheduledEvent.Status.ACTIVE
+            ScheduledEvent.Status.ACTIVE,
+            event.getChannel()
         );
+
         getServer(event.getGuild().getId()).getEventHandler().handle(eventEvent, null);
     }
 

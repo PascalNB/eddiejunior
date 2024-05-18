@@ -222,7 +222,6 @@ public class ManagerComponent extends AbstractComponent implements GlobalCompone
             .setColor(Colors.TRANSPARENT)
             .setTitle("Components");
 
-        int empty = 0;
         for (Component component : getServer().getComponents()) {
             if (component instanceof GlobalComponent) {
                 continue;
@@ -244,12 +243,6 @@ public class ManagerComponent extends AbstractComponent implements GlobalCompone
             String title = component.getId().substring(0, 1).toUpperCase(Locale.ROOT)
                 + component.getId().substring(1);
             embed.addField(title, builder.toString(), true);
-            empty++;
-        }
-
-        empty = (3 - empty % 3) % 3;
-        for (int i = 0; i < empty; i++) {
-            embed.addBlankField(true);
         }
 
         reply.send(embed.build());
@@ -327,13 +320,13 @@ public class ManagerComponent extends AbstractComponent implements GlobalCompone
         String vitals = String.format(Locale.ROOT, """
                 System: `%s`
                 OS: `%s`
-                                            
+                                
                 CPU: `%s`
                 - Cores: `%d`
                 - Usage: `%.2f%%`
                 - Speed: `%d MHz`
                 - Temp: `%.2f °C`
-                                            
+                                
                 Memory: `%d / %d MB`
                 """,
             info.getHardware().getComputerSystem().getModel(),

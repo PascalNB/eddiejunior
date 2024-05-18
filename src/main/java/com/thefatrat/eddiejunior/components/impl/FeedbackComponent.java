@@ -355,6 +355,24 @@ public class FeedbackComponent extends DirectMessageComponent {
                         channel.getAsMention(), channel.getId());
                 }),
 
+            new Command("list", "list all feedback submissions")
+                .setAction((command, reply) -> {
+                    if (submissions.isEmpty()) {
+                        throw new BotErrorException("There are no feedback submissions currently in queue");
+                    }
+
+                    StringBuilder builder = new StringBuilder();
+
+                    for (Submission submission : submissions) {
+                        builder.append(submission.member().getAsMention()).append("\n");
+                    }
+
+                    builder.deleteCharAt(builder.length() - 1);
+
+                    reply.hide();
+                    reply.send(builder.toString());
+                }),
+
             new Command("voicechannel", "set voice channel that users need to be connected to")
                 .addOptions(
                     new OptionData(OptionType.CHANNEL, "channel", "channel", false)
@@ -403,9 +421,16 @@ public class FeedbackComponent extends DirectMessageComponent {
                 PermissionChecker.requireSend(channel);
                 Submission submission = null;
 
+                AudioChannel audioChannel = voiceChannel == null ? null :
+                    getGuild().getChannelById(AudioChannel.class, voiceChannel);
+
                 while (!submissions.isEmpty()) {
                     Collections.shuffle(submissions);
                     submission = submissions.remove(0);
+
+                    if (audioChannel == null) {
+                        break;
+                    }
 
                     GuildVoiceState voiceState = submission.member().getVoiceState();
                     if (voiceState == null) {
@@ -544,6 +569,9 @@ public class FeedbackComponent extends DirectMessageComponent {
                         throw new BotWarningException("You are not connected to the voice channel");
                     }
                 }
+            } else {
+                voiceChannel = null;
+                getDatabaseManager().removeSetting("voicechannel");
             }
         }
 
@@ -699,13 +727,14 @@ public class FeedbackComponent extends DirectMessageComponent {
                 Enabled: %b
                 Running: %b
                 Submissions: %d
+                Submissions in queue: %d
                 Destination: %s
                 Win channel: %s
                 Win role: %s
                 Button channel: %s
                 Voice channel: %s
                 """,
-            isEnabled(), isRunning(), submissionCount, dest, win, winRole, butt, voice);
+            isEnabled(), isRunning(), submissionCount, submissions.size(), dest, win, winRole, butt, voice);
     }
 
     private record Submission(Member member, MessageCreateData submission) {
