@@ -432,14 +432,15 @@ public class FeedbackComponent extends DirectMessageComponent {
                         break;
                     }
 
-                    GuildVoiceState voiceState = submission.member().getVoiceState();
-                    if (voiceState == null) {
-                        break;
-                    }
+                    GuildVoiceState voiceState = getGuild().retrieveMemberVoiceState(submission.member())
+                        .onErrorMap(e -> null)
+                        .complete();
 
-                    AudioChannel connected = voiceState.getChannel();
-                    if (connected != null && connected.getId().equals(voiceChannel)) {
-                        break;
+                    if (voiceState != null) {
+                        AudioChannel connected = voiceState.getChannel();
+                        if (connected != null && connected.getId().equals(voiceChannel)) {
+                            break;
+                        }
                     }
 
                     getServer().log(Colors.GRAY, submission.member().getUser(),
@@ -562,12 +563,16 @@ public class FeedbackComponent extends DirectMessageComponent {
         if (voiceChannel != null) {
             AudioChannel audioChannel = getGuild().getChannelById(AudioChannel.class, voiceChannel);
             if (audioChannel != null) {
-                GuildVoiceState voiceState = member.getVoiceState();
+                GuildVoiceState voiceState = getGuild().retrieveMemberVoiceState(member)
+                    .onErrorMap(__ -> null)
+                    .complete();
                 if (voiceState != null) {
                     AudioChannel connected = voiceState.getChannel();
                     if (connected == null || !connected.getId().equals(voiceChannel)) {
                         throw new BotWarningException("You are not connected to the voice channel");
                     }
+                } else {
+                    throw new BotWarningException("You are not connected to the voice channel");
                 }
             } else {
                 voiceChannel = null;

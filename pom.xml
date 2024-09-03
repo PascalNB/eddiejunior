@@ -67,18 +67,25 @@
             </exclusions>
         </dependency>
 
-        <!--        https://mvnrepository.com/artifact/net.dv8tion/JDA-->
+        <!--        &lt;!&ndash; https://mvnrepository.com/artifact/net.dv8tion/JDA&ndash;&gt;-->
         <!--        <dependency>-->
         <!--            <groupId>net.dv8tion</groupId>-->
         <!--            <artifactId>JDA</artifactId>-->
-        <!--            <version>5.0.0-beta.21</version>-->
+        <!--            <version>5.1.0</version>-->
         <!--        </dependency>-->
 
         <dependency>
-            <groupId>com.github.DV8FromTheWorld</groupId>
+            <groupId>com.github.PascalNB</groupId>
             <artifactId>JDA</artifactId>
-            <version>a737645</version>
+            <version>86ab775</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>club.minnced</groupId>
+                    <artifactId>opus-java</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
+
 
         <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-simple -->
         <dependency>
