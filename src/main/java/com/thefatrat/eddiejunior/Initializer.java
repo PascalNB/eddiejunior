@@ -63,6 +63,7 @@ public class Initializer {
             ChannelComponent.class,
             GrabComponent.class,
             RoleComponent.class,
+            StickerComponent.class,
             HoistComponent.class,
             MessageComponent.class,
             NicknameComponent.class,
@@ -72,13 +73,14 @@ public class Initializer {
         jda = JDABuilder.createLight(token,
                 GatewayIntent.DIRECT_MESSAGES,
                 GatewayIntent.GUILD_MEMBERS,
-                GatewayIntent.GUILD_VOICE_STATES,
                 GatewayIntent.MESSAGE_CONTENT,
                 GatewayIntent.SCHEDULED_EVENTS,
                 GatewayIntent.GUILD_MESSAGES
             )
             .setMemberCachePolicy(MemberCachePolicy.VOICE)
-            .enableCache(CacheFlag.VOICE_STATE, CacheFlag.MEMBER_OVERRIDES, CacheFlag.SCHEDULED_EVENTS,
+            .enableCache(
+                CacheFlag.MEMBER_OVERRIDES,
+                CacheFlag.SCHEDULED_EVENTS,
                 CacheFlag.ROLE_TAGS)
             .setRawEventsEnabled(false)
             .setEventPassthrough(false)
