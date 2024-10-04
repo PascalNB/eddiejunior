@@ -11,18 +11,19 @@ import com.thefatrat.eddiejunior.util.Colors;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.MessageReference;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import org.jetbrains.annotations.NotNull;
 
-public class PollPurgeComponent extends AbstractComponent {
+public class ForwardPurgeComponent extends AbstractComponent {
 
     private String exclusion;
 
-    public PollPurgeComponent(@NotNull Server server) {
-        super(server, "poll-purge");
+    public ForwardPurgeComponent(@NotNull Server server) {
+        super(server, "forward-purge");
 
         exclusion = getDatabaseManager().getSetting("exclusionrole");
 
@@ -44,20 +45,28 @@ public class PollPurgeComponent extends AbstractComponent {
             exclusion = role.getId();
             getDatabaseManager().setSetting("exclusionrole", exclusion);
             reply.ok("Set the poll purge exclusion role to " + role.getAsMention());
-            getServer().log(command.getMember().getUser(), "Set the poll purge exclusion role to %s (`%s`)",
+            getServer().log(command.getMember().getUser(), "Set the forward purge exclusion role to %s (`%s`)",
                 role.getAsMention(), exclusion);
 
         } else {
             exclusion = null;
             getDatabaseManager().removeSetting("exclusionrole");
             reply.ok("Removed the poll purge exclusion role");
-            getServer().log(command.getMember().getUser(), "Removed the poll purge exclusion role");
+            getServer().log(command.getMember().getUser(), "Removed the forward purge exclusion role");
         }
     }
 
     private void handleMessage(MessageEvent event, Void reply) {
-        if (!isEnabled()
-            || event.getMessage().getPoll() == null
+        if (!isEnabled()) {
+            return;
+        }
+
+        MessageReference messageReference = event.getMessage().getMessageReference();
+        if (messageReference == null) {
+            return;
+        }
+
+        if (messageReference.getType() != MessageReference.MessageReferenceType.FORWARD
             || event.getMember().hasPermission(Permission.ADMINISTRATOR)
             || exclusion != null && event.getMember().getRoles().stream()
             .anyMatch(role -> exclusion.equals(role.getId()))) {
@@ -68,7 +77,7 @@ public class PollPurgeComponent extends AbstractComponent {
             Message message = event.getMessage();
             Member author = event.getMember();
             message.delete().queue(__ ->
-                getServer().log(Colors.RED, "Deleted poll by %s (`%s`) in %s (`%s`)",
+                getServer().log(Colors.RED, "Deleted forward by %s (`%s`) in %s (`%s`)",
                     author.getAsMention(), author.getId(),
                     message.getChannel().getAsMention(), message.getChannelId()
                 )

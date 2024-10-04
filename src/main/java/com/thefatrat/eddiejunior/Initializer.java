@@ -67,7 +67,7 @@ public class Initializer {
             HoistComponent.class,
             MessageComponent.class,
             NicknameComponent.class,
-            PollPurgeComponent.class
+            ForwardPurgeComponent.class
         );
 
         jda = JDABuilder.createLight(token,
