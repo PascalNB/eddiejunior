@@ -29,7 +29,7 @@ public class ForwardPurgeComponent extends AbstractComponent {
 
         setComponentCommand(UserRole.MANAGE);
         addSubcommands(
-            new Command("exclude", "set the role that should be allowed to create polls")
+            new Command("exclude", "set the role that should be allowed to forward messages")
                 .addOptions(
                     new OptionData(OptionType.ROLE, "role", "The exclusion role", false)
                 )
@@ -44,14 +44,14 @@ public class ForwardPurgeComponent extends AbstractComponent {
             Role role = command.get("role").getAsRole();
             exclusion = role.getId();
             getDatabaseManager().setSetting("exclusionrole", exclusion);
-            reply.ok("Set the poll purge exclusion role to " + role.getAsMention());
+            reply.ok("Set the forward purge exclusion role to " + role.getAsMention());
             getServer().log(command.getMember().getUser(), "Set the forward purge exclusion role to %s (`%s`)",
                 role.getAsMention(), exclusion);
 
         } else {
             exclusion = null;
             getDatabaseManager().removeSetting("exclusionrole");
-            reply.ok("Removed the poll purge exclusion role");
+            reply.ok("Removed the forward purge exclusion role");
             getServer().log(command.getMember().getUser(), "Removed the forward purge exclusion role");
         }
     }
