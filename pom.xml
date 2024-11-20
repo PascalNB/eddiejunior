@@ -53,6 +53,17 @@
         </repository>
     </repositories>
 
+    <dependencyManagement>
+        <dependencies>
+            <!-- https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java -->
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-java</artifactId>
+                <version>4.28.3</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
         <!-- https://mvnrepository.com/artifact/mysql/mysql-connector-java -->
         <dependency>
@@ -77,7 +88,7 @@
         <dependency>
             <groupId>com.github.PascalNB</groupId>
             <artifactId>JDA</artifactId>
-            <version>1d5839a</version>
+            <version>29c335d</version>
             <exclusions>
                 <exclusion>
                     <groupId>club.minnced</groupId>
