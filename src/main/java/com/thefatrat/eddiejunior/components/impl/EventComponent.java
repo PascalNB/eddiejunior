@@ -17,12 +17,17 @@ import com.thefatrat.eddiejunior.reply.Reply;
 import com.thefatrat.eddiejunior.sources.Server;
 import com.thefatrat.eddiejunior.util.Colors;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.GuildVoiceState;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.ScheduledEvent;
+import net.dv8tion.jda.api.entities.channel.ChannelType;
+import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.components.selections.SelectOption;
 import net.dv8tion.jda.api.interactions.components.selections.StringSelectMenu;
+import net.dv8tion.jda.api.requests.RestAction;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -65,7 +70,14 @@ public class EventComponent extends AbstractComponent {
 
             new Command("end", "end an active event")
                 .setRequiredUserRole(UserRole.USE)
-                .setAction(this::endEvent)
+                .setAction(this::endEvent),
+
+            new Command("speaker", "invite a user as a stage speaker, or move the user to the audience")
+                .addOptions(
+                    new OptionData(OptionType.USER, "user", "user", true),
+                    new OptionData(OptionType.BOOLEAN, "remove", "move the user into the audience instead", false)
+                )
+                .setAction(this::inviteToStage)
         );
 
         getServer().getStringSelectHandler().addListener("event_end_event", this::endEvent);
@@ -281,13 +293,65 @@ public class EventComponent extends AbstractComponent {
             throw new BotErrorException("Event `%s` not found", eventId);
         }
 
-        scheduledEvent.getManager().setStatus(ScheduledEvent.Status.COMPLETED)
-            .queue(success -> {
-                    reply.edit(Reply.formatOk("Event `%s` ended", scheduledEvent.getName()));
-                    getServer().log(event.getUser(), "Ended event `%s`", scheduledEvent.getName());
+        try {
+            scheduledEvent.getManager().setStatus(ScheduledEvent.Status.COMPLETED)
+                .queue(success -> {
+                        reply.edit(Reply.formatOk("Event `%s` ended", scheduledEvent.getName()));
+                        getServer().log(event.getUser(), "Ended event `%s`", scheduledEvent.getName());
+                    },
+                    failure -> reply.edit(new BotErrorException(failure.getMessage()))
+                );
+        } catch (InsufficientPermissionException | IllegalStateException e) {
+            throw new BotErrorException(e.getMessage());
+        }
+    }
+
+    private void inviteToStage(CommandEvent command, InteractionReply reply) {
+        Member member = command.get("user").getAsMember();
+
+        if (member == null) {
+            throw new BotErrorException("Member %s not found", command.get("user").getAsUser().getAsMention());
+        }
+
+        GuildVoiceState memberVoiceState = getGuild().retrieveMemberVoiceState(member).complete();
+        if (memberVoiceState == null || memberVoiceState.getChannel() == null
+            || !memberVoiceState.getChannel().getType().equals(ChannelType.STAGE)) {
+            throw new BotWarningException("Member is not in a stage channel");
+        }
+
+        boolean remove = command.hasOption("remove") && command.get("remove").getAsBoolean();
+
+        if (memberVoiceState.isSuppressed() && remove) {
+            throw new BotWarningException("Member is already in the audience");
+        }
+        if (!memberVoiceState.isSuppressed() && !remove) {
+            throw new BotWarningException("Member is already a speaker on stage");
+        }
+
+        try {
+            RestAction<Void> restAction = remove
+                ? memberVoiceState.declineSpeaker()
+                : memberVoiceState.inviteSpeaker();
+
+            restAction.queue(
+                success -> {
+                    if (remove) {
+                        reply.ok("Removed %s from stage", member.getAsMention());
+                        getServer().log(command.getMember().getUser(), "Removed %s from stage", member.getAsMention());
+                    } else {
+                        reply.ok("Invited %s to stage", member.getAsMention());
+                        getServer().log(command.getMember().getUser(), "Invited %s to stage", member.getAsMention());
+                    }
                 },
-                failure -> reply.edit(new BotErrorException(failure.getMessage()))
+                failure -> {
+                    reply.hide();
+                    reply.send(new BotErrorException(failure.getMessage()));
+                }
             );
+        } catch (InsufficientPermissionException e) {
+            throw new BotErrorException(e.getMessage());
+        }
+
     }
 
     @Override
