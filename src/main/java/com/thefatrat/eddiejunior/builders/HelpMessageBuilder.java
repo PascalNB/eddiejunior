@@ -39,15 +39,15 @@ public class HelpMessageBuilder {
 
         for (Command command : commands) {
             if (command.hasSubCommands()) {
-                String commandOptions = formatOptions(command.getOptions());
-                String commandString = "/" + command.getName() + " " + commandOptions;
-                this.commands.add(new MessageEmbed.Field(commandString, command.getDescription(), false));
-            } else {
                 for (Command sub : command.getSubcommands()) {
                     String commandOptions = formatOptions(sub.getOptions());
                     String commandString = "/" + command.getName() + " " + sub.getName() + " " + commandOptions;
                     this.commands.add(new MessageEmbed.Field(commandString, sub.getDescription(), false));
                 }
+            } else {
+                String commandOptions = formatOptions(command.getOptions());
+                String commandString = "/" + command.getName() + " " + commandOptions;
+                this.commands.add(new MessageEmbed.Field(commandString, command.getDescription(), false));
             }
         }
     }
