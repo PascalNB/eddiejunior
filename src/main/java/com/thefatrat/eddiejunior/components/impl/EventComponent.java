@@ -314,7 +314,9 @@ public class EventComponent extends AbstractComponent {
             throw new BotErrorException("Member %s not found", command.get("user").getAsUser().getAsMention());
         }
 
-        GuildVoiceState memberVoiceState = getGuild().retrieveMemberVoiceState(member).complete();
+        GuildVoiceState memberVoiceState = getGuild().retrieveMemberVoiceState(member)
+            .onErrorMap(e -> null)
+            .complete();
         if (memberVoiceState == null || memberVoiceState.getChannel() == null
             || !memberVoiceState.getChannel().getType().equals(ChannelType.STAGE)) {
             throw new BotWarningException("Member is not in a stage channel");
