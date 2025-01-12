@@ -7,10 +7,12 @@ import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.entities.UserRole;
 import com.thefatrat.eddiejunior.events.CommandEvent;
 import com.thefatrat.eddiejunior.events.EventEvent;
+import com.thefatrat.eddiejunior.events.SelectEvent;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotException;
 import com.thefatrat.eddiejunior.exceptions.BotWarningException;
 import com.thefatrat.eddiejunior.reply.InteractionReply;
+import com.thefatrat.eddiejunior.reply.MenuReply;
 import com.thefatrat.eddiejunior.reply.Reply;
 import com.thefatrat.eddiejunior.sources.Server;
 import com.thefatrat.eddiejunior.util.Colors;
@@ -19,13 +21,13 @@ import net.dv8tion.jda.api.entities.ScheduledEvent;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import net.dv8tion.jda.api.interactions.components.selections.SelectOption;
+import net.dv8tion.jda.api.interactions.components.selections.StringSelectMenu;
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 public class EventComponent extends AbstractComponent {
 
@@ -59,8 +61,14 @@ public class EventComponent extends AbstractComponent {
 
             new Command("list", "show the list of links")
                 .setRequiredUserRole(UserRole.USE)
-                .setAction((c, r) -> this.listAllLinks(r))
+                .setAction((c, r) -> this.listAllLinks(r)),
+
+            new Command("end", "end an active event")
+                .setRequiredUserRole(UserRole.USE)
+                .setAction(this::endEvent)
         );
+
+        getServer().getStringSelectHandler().addListener("event_end_event", this::endEvent);
     }
 
     /**
@@ -236,6 +244,50 @@ public class EventComponent extends AbstractComponent {
             .setTitle("List of links")
             .setDescription(joined)
             .build());
+    }
+
+    private void endEvent(CommandEvent command, InteractionReply reply) {
+        List<SelectOption> activeEvents = getGuild().getScheduledEvents().stream()
+            .filter(event -> event.getStatus() == ScheduledEvent.Status.ACTIVE)
+            .map(event -> SelectOption.of(event.getName(), event.getId()))
+            .toList();
+
+        if (activeEvents.isEmpty()) {
+            throw new BotWarningException("No active event found");
+        }
+
+        reply.send(new MessageCreateBuilder()
+            .setEmbeds(
+                new EmbedBuilder()
+                    .setTitle("Select event:")
+                    .setColor(Colors.TRANSPARENT)
+                    .build()
+            )
+            .setActionRow(
+                StringSelectMenu.create("event_end_event")
+                    .addOptions(activeEvents)
+                    .build()
+            )
+            .build()
+        );
+    }
+
+    private void endEvent(SelectEvent<SelectOption> event, MenuReply reply) {
+        SelectOption option = event.getOption();
+        String eventId = option.getValue();
+
+        ScheduledEvent scheduledEvent = getGuild().getScheduledEventById(eventId);
+        if (scheduledEvent == null) {
+            throw new BotErrorException("Event `%s` not found", eventId);
+        }
+
+        scheduledEvent.getManager().setStatus(ScheduledEvent.Status.COMPLETED)
+            .queue(success -> {
+                    reply.edit(Reply.formatOk("Event `%s` ended", scheduledEvent.getName()));
+                    getServer().log(event.getUser(), "Ended event `%s`", scheduledEvent.getName());
+                },
+                failure -> reply.edit(new BotErrorException(failure.getMessage()))
+            );
     }
 
     @Override

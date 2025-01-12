@@ -80,4 +80,11 @@ public interface Reply {
         }
     };
 
+    static MessageEmbed formatOk(String content, Object... variables) {
+        return new EmbedBuilder()
+            .setColor(Icon.OK.getColor())
+            .setDescription(String.format(Icon.OK + " " + content, variables))
+            .build();
+    }
+
 }

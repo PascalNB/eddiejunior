@@ -2,6 +2,7 @@ package com.thefatrat.eddiejunior;
 
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.util.MetadataHolder;
+import net.dv8tion.jda.api.interactions.components.selections.StringSelectMenu;
 import net.dv8tion.jda.api.interactions.modals.Modal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -26,6 +27,12 @@ public class RequestManager {
         decoder = Base64.getDecoder();
     }
 
+    public String setupMetadata(MetadataHolder metadataHolder) {
+        String id = populateHolder(metadataHolder);
+        removeRequest(metadataHolder.getMetadataId());
+        return id;
+    }
+
     @NotNull
     public String createRequest(String name, Map<String, Object> metadata) {
         String key = storeMetadata(metadata);
@@ -41,7 +48,7 @@ public class RequestManager {
     }
 
     @Nullable
-    public Map.Entry<String, Map<String, Object>> retrieveRequest(String id) throws BotErrorException {
+    private Map.Entry<String, Map<String, Object>> retrieveRequest(String id) throws BotErrorException {
         String[] decoded = decode(id);
         if (decoded == null) {
             return null;
@@ -51,7 +58,7 @@ public class RequestManager {
     }
 
     @NotNull
-    public String populateHolder(@NotNull MetadataHolder metadataHolder) {
+    private String populateHolder(@NotNull MetadataHolder metadataHolder) {
         String id = metadataHolder.getMetadataId();
         Map.Entry<String, Map<String, Object>> request = retrieveRequest(id);
         if (request == null) {
@@ -62,12 +69,12 @@ public class RequestManager {
     }
 
     @NotNull
-    public String encode(@NotNull String name, @NotNull String key) {
+    private String encode(@NotNull String name, @NotNull String key) {
         return '%' + encoder.encodeToString(name.getBytes()) + '-' + key;
     }
 
     @Nullable
-    public String[] decode(@NotNull String id) {
+    private String[] decode(@NotNull String id) {
         if (!id.startsWith("%")) {
             return null;
         }
@@ -77,7 +84,7 @@ public class RequestManager {
     }
 
     @NotNull
-    public String storeMetadata(@NotNull Map<String, Object> data) {
+    private String storeMetadata(@NotNull Map<String, Object> data) {
         byte[] bytes = new byte[16];
         random.nextBytes(bytes);
         String key = encoder.encodeToString(bytes);
@@ -102,6 +109,11 @@ public class RequestManager {
     public Modal.Builder createModal(String id, String title, Map<String, Object> metadata) {
         String newId = createRequest(id, metadata);
         return Modal.create(newId, title);
+    }
+
+    public StringSelectMenu.Builder createStringSelectMenu(String id, Map<String, Object> metadata) {
+        String newId = createRequest(id, metadata);
+        return StringSelectMenu.create(newId);
     }
 
 }

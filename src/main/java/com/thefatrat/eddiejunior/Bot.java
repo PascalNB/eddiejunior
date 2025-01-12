@@ -205,8 +205,8 @@ public class Bot extends ListenerAdapter {
         }
 
         MenuReply reply = new MenuReply(event);
-        SelectEvent<SelectOption> selectEvent = new SelectEvent<>(event.getUser(), event.getMessage(),
-            event.getInteraction().getSelectedOptions().get(0));
+        SelectEvent<SelectOption> selectEvent = new SelectEvent<>(event.getSelectMenu().getId(), event.getUser(),
+            event.getMessage(), event.getInteraction().getSelectedOptions().get(0));
 
         if (!event.isFromGuild()) {
             try {
@@ -216,11 +216,12 @@ public class Bot extends ListenerAdapter {
             }
         } else {
             try {
-                getServer(Objects.requireNonNull(event.getGuild()).getId()).getStringSelectHandler()
-                    .handle(event.getComponentId(), selectEvent, reply);
+                Server server = getServer(Objects.requireNonNull(event.getGuild()).getId());
+                String id = server.getRequestManager().setupMetadata(selectEvent);
+                server.getStringSelectHandler().handle(id, selectEvent, reply);
+
             } catch (BotException e) {
-                reply.hide();
-                reply.send(e);
+                reply.edit(e);
             }
         }
 
@@ -237,10 +238,12 @@ public class Bot extends ListenerAdapter {
             MenuReply reply = new MenuReply(event);
 
             try {
-                SelectEvent<IMentionable> selectEvent = new SelectEvent<>(event.getUser(), event.getMessage(),
-                    event.getInteraction().getValues().get(0));
-                servers.get(guild.getId()).getEntitySelectHandler()
-                    .handle(event.getComponentId(), selectEvent, reply);
+                SelectEvent<IMentionable> selectEvent = new SelectEvent<>(event.getSelectMenu().getId(),
+                    event.getUser(), event.getMessage(), event.getInteraction().getValues().get(0));
+
+                Server server = servers.get(guild.getId());
+                String id = server.getRequestManager().setupMetadata(selectEvent);
+                server.getEntitySelectHandler().handle(id, selectEvent, reply);
 
             } catch (BotException e) {
                 reply.edit(e);
@@ -342,8 +345,7 @@ public class Bot extends ListenerAdapter {
         Server server = servers.get(guild.getId());
 
         try {
-            String id = server.getRequestManager().populateHolder(modalEvent);
-            server.getRequestManager().removeRequest(event.getModalId());
+            String id = server.getRequestManager().setupMetadata(modalEvent);
             server.getModalHandler().handle(id, modalEvent, reply);
         } catch (BotException e) {
             reply.hide();
