@@ -4,9 +4,11 @@ import com.thefatrat.eddiejunior.components.AbstractComponent;
 import com.thefatrat.eddiejunior.components.Component;
 import com.thefatrat.eddiejunior.components.RunnableComponent;
 import com.thefatrat.eddiejunior.entities.Command;
+import com.thefatrat.eddiejunior.entities.Interaction;
 import com.thefatrat.eddiejunior.entities.UserRole;
 import com.thefatrat.eddiejunior.events.CommandEvent;
 import com.thefatrat.eddiejunior.events.EventEvent;
+import com.thefatrat.eddiejunior.events.InteractionEvent;
 import com.thefatrat.eddiejunior.events.SelectEvent;
 import com.thefatrat.eddiejunior.exceptions.BotErrorException;
 import com.thefatrat.eddiejunior.exceptions.BotException;
@@ -82,6 +84,12 @@ public class EventComponent extends AbstractComponent {
         );
 
         getServer().getStringSelectHandler().addListener("event_end_event", this::endEvent);
+
+        addMemberInteractions(
+            new Interaction<Member>("toggle_speaker")
+                .setRequiredUserRole(UserRole.USE)
+                .setAction(this::inviteToStage)
+        );
     }
 
     /**
@@ -354,7 +362,44 @@ public class EventComponent extends AbstractComponent {
         } catch (InsufficientPermissionException e) {
             throw new BotErrorException(e.getMessage());
         }
+    }
 
+    private void inviteToStage(InteractionEvent<Member> event, InteractionReply reply) {
+        Member member = event.getEntity();
+        GuildVoiceState memberVoiceState = getGuild().retrieveMemberVoiceState(member)
+            .onErrorMap(e -> null)
+            .complete();
+
+        if (memberVoiceState == null || memberVoiceState.getChannel() == null
+            || !memberVoiceState.getChannel().getType().equals(ChannelType.STAGE)) {
+            throw new BotWarningException("Member is not in a stage channel");
+        }
+
+        boolean remove = !memberVoiceState.isSuppressed();
+
+        try {
+            RestAction<Void> restAction = remove
+                ? memberVoiceState.declineSpeaker()
+                : memberVoiceState.inviteSpeaker();
+
+            restAction.queue(
+                success -> {
+                    if (memberVoiceState.isSuppressed()) {
+                        reply.ok("Removed %s from stage", member.getAsMention());
+                        getServer().log(event.getMember().getUser(), "Removed %s from stage", member.getAsMention());
+                    } else {
+                        reply.ok("Invited %s to stage", member.getAsMention());
+                        getServer().log(event.getMember().getUser(), "Invited %s to stage", member.getAsMention());
+                    }
+                },
+                failure -> {
+                    reply.hide();
+                    reply.send(new BotErrorException(failure.getMessage()));
+                }
+            );
+        } catch (InsufficientPermissionException e) {
+            throw new BotErrorException(e.getMessage());
+        }
     }
 
     @Override
