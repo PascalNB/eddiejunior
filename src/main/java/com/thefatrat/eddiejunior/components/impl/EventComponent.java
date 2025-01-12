@@ -73,6 +73,7 @@ public class EventComponent extends AbstractComponent {
                 .setAction(this::endEvent),
 
             new Command("speaker", "invite a user as a stage speaker, or move the user to the audience")
+                .setRequiredUserRole(UserRole.USE)
                 .addOptions(
                     new OptionData(OptionType.USER, "user", "user", true),
                     new OptionData(OptionType.BOOLEAN, "remove", "move the user into the audience instead", false)

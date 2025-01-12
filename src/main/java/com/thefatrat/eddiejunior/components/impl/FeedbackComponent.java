@@ -53,6 +53,7 @@ public class FeedbackComponent extends DirectMessageComponent {
     private int submissionCount = 0;
     private Role winRole = null;
     private Member currentWinner = null;
+    private boolean autoStageInvite;
 
     public FeedbackComponent(Server server) {
         super(server, NAME, "Song Review (Feedback)", false);
@@ -62,6 +63,7 @@ public class FeedbackComponent extends DirectMessageComponent {
         winChannel = getDatabaseManager().getSetting("winchannel");
         voiceChannel = getDatabaseManager().getSetting("voicechannel");
         buttonChannelId = getDatabaseManager().getSetting("buttonchannel");
+        autoStageInvite = getDatabaseManager().getSettingOrDefault("autostageinvite", false);
         String winRoleId = getDatabaseManager().getSetting("winRole");
         if (winRoleId != null) {
             winRole = getGuild().getRoleById(winRoleId);
@@ -394,6 +396,18 @@ public class FeedbackComponent extends DirectMessageComponent {
                         getServer().log(Colors.GRAY, command.getMember().getUser(),
                             "Removed feedback voice channel");
                     }
+                }),
+
+            new Command("autoinvite", "set whether users should be invited to stage if they win")
+                .addOptions(
+                    new OptionData(OptionType.BOOLEAN, "autoinvite", "autoinvite", true)
+                )
+                .setAction((command, reply) -> {
+                    boolean autoinvite = command.get("autoinvite").getAsBoolean();
+                    this.autoStageInvite = autoinvite;
+                    getDatabaseManager().setSetting("autoinvite", autoinvite);
+                    reply.ok("Set auto invite to `%s`", autoinvite);
+                    getServer().log(command.getMember().getUser(), "Set auto invite to `%s`", autoinvite);
                 })
         );
 
@@ -417,12 +431,14 @@ public class FeedbackComponent extends DirectMessageComponent {
                     throw new BotWarningException("There are no submissions left in the queue");
                 }
 
-                TextChannel channel = event.getMessage().getChannel().asTextChannel();
-                PermissionChecker.requireSend(channel);
+                TextChannel submissionChannel = event.getMessage().getChannel().asTextChannel();
+                PermissionChecker.requireSend(submissionChannel);
                 Submission submission = null;
 
                 AudioChannel audioChannel = voiceChannel == null ? null :
                     getGuild().getChannelById(AudioChannel.class, voiceChannel);
+
+                GuildVoiceState voiceState = null;
 
                 while (!submissions.isEmpty()) {
                     Collections.shuffle(submissions);
@@ -432,7 +448,7 @@ public class FeedbackComponent extends DirectMessageComponent {
                         break;
                     }
 
-                    GuildVoiceState voiceState = getGuild().retrieveMemberVoiceState(submission.member())
+                    voiceState = getGuild().retrieveMemberVoiceState(submission.member())
                         .onErrorMap(e -> null)
                         .complete();
 
@@ -469,6 +485,14 @@ public class FeedbackComponent extends DirectMessageComponent {
                     }
                 }
 
+                if (autoStageInvite && voiceState != null && voiceState.getChannel() != null
+                    && voiceState.getChannel().getType().equals(ChannelType.STAGE)) {
+                    try {
+                        voiceState.inviteSpeaker().queue();
+                    } catch (Exception ignore) {
+                    }
+                }
+
                 if (winChannel != null) {
                     TextChannel output = getGuild().getTextChannelById(winChannel);
                     if (output != null && output.canTalk()) {
@@ -485,7 +509,7 @@ public class FeedbackComponent extends DirectMessageComponent {
                     }
                 }
 
-                channel.sendMessage(submission.submission()).queue();
+                submissionChannel.sendMessage(submission.submission()).queue();
 
                 MessageEditBuilder builder = MessageEditBuilder.fromMessage(event.getMessage());
                 List<Button> buttons = builder.getComponents()
@@ -499,6 +523,7 @@ public class FeedbackComponent extends DirectMessageComponent {
                     builder.setComponents(ActionRow.of(buttons));
                 }
                 reply.edit(builder.build());
+
             } else if ("submit".equals(action)) {
                 if (!isRunning()) {
                     throw new BotWarningException("There is no feedback session at the moment");
@@ -738,8 +763,10 @@ public class FeedbackComponent extends DirectMessageComponent {
                 Win role: %s
                 Button channel: %s
                 Voice channel: %s
+                Auto invite: %s
                 """,
-            isEnabled(), isRunning(), submissionCount, submissions.size(), dest, win, winRole, butt, voice);
+            isEnabled(), isRunning(), submissionCount, submissions.size(), dest, win, winRole, butt, voice,
+            autoStageInvite);
     }
 
     private record Submission(Member member, MessageCreateData submission) {
