@@ -63,7 +63,7 @@ public class FeedbackComponent extends DirectMessageComponent {
         winChannel = getDatabaseManager().getSetting("winchannel");
         voiceChannel = getDatabaseManager().getSetting("voicechannel");
         buttonChannelId = getDatabaseManager().getSetting("buttonchannel");
-        autoStageInvite = getDatabaseManager().getSettingOrDefault("autostageinvite", false);
+        autoStageInvite = getDatabaseManager().getSettingOrDefault("autoinvite", false);
         String winRoleId = getDatabaseManager().getSetting("winRole");
         if (winRoleId != null) {
             winRole = getGuild().getRoleById(winRoleId);
