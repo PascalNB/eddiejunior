@@ -96,6 +96,7 @@ public class Bot extends ListenerAdapter {
             Server server = new Server(id);
             servers.put(server.getId(), server);
             server.registerComponents(components);
+            server.registerPermissionOverwrites();
             commandManager.setupGuildCommands(server);
         }
     }

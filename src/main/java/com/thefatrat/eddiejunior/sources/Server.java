@@ -6,6 +6,7 @@ import com.thefatrat.eddiejunior.HandlerCollection;
 import com.thefatrat.eddiejunior.RequestManager;
 import com.thefatrat.eddiejunior.components.Component;
 import com.thefatrat.eddiejunior.components.GlobalComponent;
+import com.thefatrat.eddiejunior.components.impl.ManagerComponent;
 import com.thefatrat.eddiejunior.entities.Command;
 import com.thefatrat.eddiejunior.entities.Interaction;
 import com.thefatrat.eddiejunior.entities.UserRole;
@@ -64,7 +65,7 @@ public class Server {
         return id;
     }
 
-    private void checkPermissions(@NotNull Member member, UserRole userRole) {
+    public void checkPermissions(@NotNull Member member, UserRole userRole) {
         if (userRole != null) {
             if (member.hasPermission(Permission.ADMINISTRATOR)) {
                 return;
@@ -211,6 +212,24 @@ public class Server {
         }
 
         return this.components.values();
+    }
+
+    public void registerPermissionOverwrites() {
+        ManagerComponent component = getComponent("main", ManagerComponent.class);
+        if (component == null) {
+            return;
+        }
+        component.getDatabaseManager().getSettings("commandpermission").forEach(permissionString -> {
+            String[] split = permissionString.split(":", 2);
+            try {
+                UserRole userRole = UserRole.valueOf(split[1]);
+                String commandString = split[0];
+                if (getCommandHandler().getRequiredPermission(commandString) != null) {
+                    getCommandHandler().addRequiredPermission(split[0], userRole);
+                }
+            } catch (IllegalArgumentException ignore) {
+            }
+        });
     }
 
     public Set<String> getRegisteredCommands() {

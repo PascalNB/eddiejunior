@@ -43,6 +43,8 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class ManagerComponent extends AbstractComponent implements GlobalComponent {
 
@@ -123,7 +125,31 @@ public class ManagerComponent extends AbstractComponent implements GlobalCompone
             new Command("setuserole", "set the role that can use Eddie Junior")
                 .setRequiredUserRole(UserRole.MANAGE)
                 .addOptions(new OptionData(OptionType.ROLE, "role", "role", true))
-                .setAction(this::setUseRole)
+                .setAction(this::setUseRole),
+
+            new Command("setcommandpermission", "set the user permission of a command")
+                .setRequiredUserRole(UserRole.MANAGE)
+                .addOptions(
+                    new OptionData(OptionType.STRING, "command", "command", true),
+                    new OptionData(OptionType.STRING, "permission", "permission", true)
+                        .addChoices(
+                            Stream.of(UserRole.values())
+                                .map(userRole ->
+                                    new net.dv8tion.jda.api.interactions.commands.Command.Choice(
+                                        userRole.name(), userRole.name())
+                                )
+                                .toArray(net.dv8tion.jda.api.interactions.commands.Command.Choice[]::new)
+                        )
+                )
+                .setAction(this::setCommandPermission),
+
+            new Command("listpermissions", "list the user permissions of the commands of a component")
+                .setRequiredUserRole(UserRole.USE)
+                .addOptions(
+                    new OptionData(OptionType.STRING, "component", "component", true)
+                )
+                .setAction(this::listPermissions)
+
         );
     }
 
@@ -320,13 +346,13 @@ public class ManagerComponent extends AbstractComponent implements GlobalCompone
         String vitals = String.format(Locale.ROOT, """
                 System: `%s`
                 OS: `%s`
-                                
+                
                 CPU: `%s`
                 - Cores: `%d`
                 - Usage: `%.2f%%`
                 - Speed: `%d MHz`
                 - Temp: `%.2f °C`
-                                
+                
                 Memory: `%d / %d MB`
                 """,
             info.getHardware().getComputerSystem().getModel(),
@@ -375,6 +401,75 @@ public class ManagerComponent extends AbstractComponent implements GlobalCompone
         reply.ok("Enabled role %s to use Eddie Junior", role.getAsMention());
         getServer().log(Colors.BLUE, member.getUser(), "Enabled role %s (`%s`) to use Eddie Junior",
             role.getAsMention(), role.getId());
+    }
+
+    private void setCommandPermission(CommandEvent command, InteractionReply reply) {
+        String commandString = command.get("command").getAsString();
+        UserRole currentPermission = getServer().getCommandHandler().getRequiredPermission(commandString);
+        if (currentPermission == null) {
+            throw new BotWarningException("Command not found");
+        }
+
+        reply.defer();
+
+        String permission = command.get("permission").getAsString();
+        UserRole userRole = UserRole.valueOf(permission);
+        getServer().checkPermissions(command.getMember(), userRole);
+        getServer().checkPermissions(command.getMember(), currentPermission);
+
+        getServer().getCommandHandler().addRequiredPermission(commandString, userRole);
+        getDatabaseManager().removeSetting("commandpermission", commandString + ":" + currentPermission)
+            .then(__ -> {
+                getDatabaseManager().setSetting("commandpermission", commandString + ":" + userRole).await();
+                reply.ok("Set required permission of command `%s` to `%s`", commandString, userRole);
+                getServer().log(command.getMember().getUser(), "Set required permission of command `%s` to `%s`",
+                    commandString, userRole);
+                return null;
+            });
+    }
+
+    private void listPermissions(CommandEvent command, InteractionReply reply) {
+        String componentString = command.get("component").getAsString();
+        Component component = getComponentSafe(componentString);
+        reply.defer();
+
+        String output = Stream.concat(
+                component.getCommands().stream()
+                    .flatMap(cmd -> {
+                        if (cmd.hasSubCommands()) {
+                            return cmd.getSubcommands().stream().map(scmd -> cmd.getName() + " " + scmd.getName());
+                        } else {
+                            return Stream.of(cmd.getName());
+                        }
+                    })
+                    .map(name -> Map.entry(name,
+                        String.valueOf(
+                            getServer().getCommandHandler().getRequiredPermission(name)))
+                    ),
+                Stream.concat(
+                    component.getMemberInteractions().stream()
+                        .map(interaction -> Map.entry(interaction.getName(),
+                            String.valueOf(
+                                getServer().getMemberInteractionHandler().getRequiredPermission(interaction.getName())))
+                        ),
+                    component.getMessageInteractions().stream()
+                        .map(interaction -> Map.entry(interaction.getName(),
+                            String.valueOf(
+                                getServer().getMessageInteractionHandler().getRequiredPermission(interaction.getName())))
+                        )
+                )
+            )
+            .sorted(Map.Entry.comparingByKey())
+            .map(entry -> String.format("`%s`: `%s`", entry.getKey(), entry.getValue()))
+            .collect(Collectors.joining("\n"));
+
+        reply.send(
+            new EmbedBuilder()
+                .setTitle(componentString)
+                .setColor(Colors.TRANSPARENT)
+                .setDescription(output)
+                .build()
+        );
     }
 
     /**

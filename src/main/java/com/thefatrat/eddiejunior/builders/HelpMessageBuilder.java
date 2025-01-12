@@ -38,7 +38,7 @@ public class HelpMessageBuilder {
         this.component = component;
 
         for (Command command : commands) {
-            if (command.getSubcommands().isEmpty()) {
+            if (command.hasSubCommands()) {
                 String commandOptions = formatOptions(command.getOptions());
                 String commandString = "/" + command.getName() + " " + commandOptions;
                 this.commands.add(new MessageEmbed.Field(commandString, command.getDescription(), false));
