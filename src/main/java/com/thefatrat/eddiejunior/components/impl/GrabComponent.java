@@ -435,7 +435,7 @@ public class GrabComponent extends AbstractComponent {
         );
 
         addMessageInteractions(
-            new Interaction<Message>("sticker")
+            new Interaction<Message>("sticker", "grab a sticker")
                 .setRequiredUserRole(UserRole.USE)
                 .setAction((event, reply) -> {
                     List<StickerItem> stickers = event.getEntity().getStickers();

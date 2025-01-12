@@ -13,11 +13,15 @@ import java.util.function.BiConsumer;
 public class Interaction<E> implements UserRoleEntity<Interaction<E>> {
 
     private String name;
+    private String description;
     private BiConsumer<InteractionEvent<E>, InteractionReply> action = (e, r) -> {};
     private final List<Permission> permissions = new ArrayList<>();
     private UserRole userRole = null;
 
-    public Interaction(String name) {this.name = name;}
+    public Interaction(String name, String description) {
+        this.name = name;
+        this.description = description;
+    }
 
     public String getName() {
         return name;
@@ -25,6 +29,14 @@ public class Interaction<E> implements UserRoleEntity<Interaction<E>> {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public BiConsumer<InteractionEvent<E>, InteractionReply> getAction() {

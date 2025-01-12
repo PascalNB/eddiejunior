@@ -46,7 +46,7 @@ public class HoistComponent extends AbstractComponent {
                 .setAction(this::toggleHoistable)
         );
 
-        addMemberInteractions(new Interaction<Member>("bot")
+        addMemberInteractions(new Interaction<Member>("bot", "host a bot's role")
             .setAction(this::hoistInteraction)
         );
     }

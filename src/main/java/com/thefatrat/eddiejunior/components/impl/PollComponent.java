@@ -122,7 +122,7 @@ public class PollComponent extends AbstractComponent {
         getServer().getButtonHandler().addListener(this::castVote);
 
         addMessageInteractions(
-            new Interaction<Message>("peek")
+            new Interaction<Message>("peek", "peek poll results")
                 .setRequiredUserRole(UserRole.USE)
                 .setAction((e, r) -> showPoll(e.getEntity(), r))
         );

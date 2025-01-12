@@ -86,7 +86,7 @@ public class EventComponent extends AbstractComponent {
         getServer().getStringSelectHandler().addListener("event_end_event", this::endEvent);
 
         addMemberInteractions(
-            new Interaction<Member>("toggle_speaker")
+            new Interaction<Member>("toggle_speaker", "Toggle a user's ability to speak on stage")
                 .setRequiredUserRole(UserRole.USE)
                 .setAction(this::inviteToStage)
         );

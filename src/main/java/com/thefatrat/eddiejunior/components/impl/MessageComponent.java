@@ -326,7 +326,7 @@ public class MessageComponent extends AbstractComponent {
         );
 
         addMessageInteractions(
-            new Interaction<Message>("edit")
+            new Interaction<Message>("edit", "edit a message")
                 .addPermissions(Permission.MESSAGE_MANAGE)
                 .setRequiredUserRole(UserRole.MANAGE)
                 .setAction((event, reply) -> {
@@ -363,7 +363,7 @@ public class MessageComponent extends AbstractComponent {
                     );
                 }),
 
-            new Interaction<Message>("editembed")
+            new Interaction<Message>("editembed", "edit a message's embed")
                 .addPermissions(Permission.MESSAGE_MANAGE)
                 .setRequiredUserRole(UserRole.MANAGE)
                 .setAction((event, reply) -> {
@@ -433,7 +433,7 @@ public class MessageComponent extends AbstractComponent {
                     );
                 }),
 
-            new Interaction<Message>("copy")
+            new Interaction<Message>("copy", "copy a message's content")
                 .setRequiredUserRole(UserRole.USE)
                 .setAction((event, reply) -> {
                     Message message = event.getEntity();

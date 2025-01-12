@@ -2,7 +2,10 @@ package com.thefatrat.eddiejunior.builders;
 
 import com.thefatrat.eddiejunior.components.Component;
 import com.thefatrat.eddiejunior.entities.Command;
+import com.thefatrat.eddiejunior.entities.Interaction;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import org.jetbrains.annotations.NotNull;
@@ -25,7 +28,8 @@ public class HelpMessageBuilder {
      * @param component the component
      */
     public HelpMessageBuilder(@NotNull Component component) {
-        this(component.getId(), component.getCommands());
+        this(component.getId(), component.getCommands(), component.getMessageInteractions(),
+            component.getMemberInteractions());
     }
 
     /**
@@ -34,7 +38,10 @@ public class HelpMessageBuilder {
      * @param component the component name
      * @param commands  list of commands
      */
-    public HelpMessageBuilder(String component, @NotNull Collection<Command> commands) {
+    public HelpMessageBuilder(String component, @NotNull Collection<Command> commands,
+        @NotNull Collection<Interaction<Message>> messageInteractions,
+        @NotNull Collection<Interaction<Member>> memberInteractions) {
+
         this.component = component;
 
         for (Command command : commands) {
@@ -49,6 +56,13 @@ public class HelpMessageBuilder {
                 String commandString = "/" + command.getName() + " " + commandOptions;
                 this.commands.add(new MessageEmbed.Field(commandString, command.getDescription(), false));
             }
+        }
+
+        for (Interaction<?> interaction : messageInteractions) {
+            this.commands.add(new MessageEmbed.Field(interaction.getName(), interaction.getDescription(), false));
+        }
+        for (Interaction<Member> interaction : memberInteractions) {
+            this.commands.add(new MessageEmbed.Field(interaction.getName(), interaction.getDescription(), false));
         }
     }
 
