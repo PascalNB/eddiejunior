@@ -24,6 +24,7 @@ import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.components.text.TextInput;
 import net.dv8tion.jda.api.interactions.components.text.TextInputStyle;
+import net.dv8tion.jda.api.requests.RestAction;
 import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
 import net.dv8tion.jda.api.utils.FileUpload;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
@@ -443,6 +444,31 @@ public class MessageComponent extends AbstractComponent {
                     );
                     reply.hide();
                     reply.ok("Copied!");
+                }),
+
+            new Interaction<Message>("pin", "pin an message and repin the top pin")
+                .setRequiredUserRole(UserRole.USE)
+                .setAction((event, reply) -> {
+                    reply.hide();
+                    reply.defer();
+                    Message message = event.getEntity();
+                    try {
+                        Optional<Message> topPin = message.getChannel()
+                            .retrievePinnedMessages()
+                            .complete()
+                            .stream()
+                            .findFirst();
+                        if (topPin.isPresent()) {
+                            Message pin = topPin.get();
+                            RestAction.allOf(pin.unpin(), message.pin()).complete();
+                            pin.pin().complete();
+                        } else {
+                            message.pin().complete();
+                        }
+                        reply.ok("Message pinned");
+                    } catch (Exception e) {
+                        reply.send(new BotErrorException(e.getMessage()));
+                    }
                 })
         );
 
