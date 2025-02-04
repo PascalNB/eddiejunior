@@ -214,12 +214,20 @@ public class ManagerComponent extends AbstractComponent implements GlobalCompone
             throw new BotWarningException("This component is always enabled");
         }
 
-        DatabaseManager.toggleComponent(getServer().getId(), componentString, true);
-        component.enable();
-        getServer().toggleComponent(component, true).queue();
-        reply.send(Icon.ENABLE, "Component `%s` enabled", componentString);
-        getServer().log(Colors.BLUE, command.getMember().getUser(),
-            "Enabled component `%s`", componentString);
+        reply.defer();
+
+        try {
+            getServer().toggleComponent(component, true).complete();
+            DatabaseManager.toggleComponent(getServer().getId(), componentString, true);
+            component.enable();
+            reply.send(Icon.ENABLE, "Component `%s` enabled", componentString);
+            getServer().log(Colors.BLUE, command.getMember().getUser(),
+                "Enabled component `%s`", componentString);
+        } catch (Exception e) {
+            reply.send(new BotErrorException(e.getMessage()));
+            getServer().log(Colors.RED, "Failed to enable component `%s`:%n%s", componentString, e.getMessage());
+            getServer().toggleComponent(component, false).queue();
+        }
     }
 
     private void disableComponent(@NotNull CommandEvent command, InteractionReply reply) {
@@ -302,11 +310,20 @@ public class ManagerComponent extends AbstractComponent implements GlobalCompone
         if (component instanceof GlobalComponent) {
             throw new BotErrorException("Cannot reload this component");
         }
-        getServer().toggleComponent(component, false).queue(__ ->
-            getServer().toggleComponent(component, true).queue()
-        );
-        DatabaseManager.toggleComponent(getServer().getId(), component.getId(), true);
-        reply.ok("Reloaded component `%s`", component.getId());
+        reply.defer();
+        try {
+            getServer().toggleComponent(component, false).queue(__ ->
+                getServer().toggleComponent(component, true).queue()
+            );
+            DatabaseManager.toggleComponent(getServer().getId(), component.getId(), true);
+            reply.ok("Reloaded component `%s`", component.getId());
+        } catch (Exception e) {
+            component.disable();
+            DatabaseManager.toggleComponent(getServer().getId(), component.getId(), false);
+            reply.send(new BotErrorException(e.getMessage()));
+            getServer().log(Colors.RED, "Failed to enable component `%s`:%n%s", component.getId(), e.getMessage());
+            getServer().toggleComponent(component, false).queue();
+        }
     }
 
     private void setLogChannel(@NotNull CommandEvent command, @NotNull InteractionReply reply) {
