@@ -7,6 +7,8 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.interactions.IntegrationType;
+import net.dv8tion.jda.api.interactions.InteractionContextType;
 import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
@@ -49,17 +51,23 @@ public class CommandManager {
             SlashCommandData slashCommandData = Commands.slash(command.getName(), command.getDescription())
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(command.getPermissions()))
                 .addOptions(command.getOptions())
-                .addSubcommands(command.getSubcommandsData());
+                .addSubcommands(command.getSubcommandsData())
+                .setContexts(InteractionContextType.GUILD)
+                .setIntegrationTypes(IntegrationType.GUILD_INSTALL);
             commandDataList.add(slashCommandData);
             commandNames.add(command.getName());
         }
         for (Interaction<?> messageInteraction : messageInteractions) {
-            CommandData commandData = Commands.message(messageInteraction.getName());
+            CommandData commandData = Commands.message(messageInteraction.getName())
+                .setContexts(InteractionContextType.GUILD)
+                .setIntegrationTypes(IntegrationType.GUILD_INSTALL);
             commandDataList.add(commandData);
             commandNames.add(messageInteraction.getName());
         }
         for (Interaction<?> userInteraction : userInteractions) {
-            CommandData commandData = Commands.user(userInteraction.getName());
+            CommandData commandData = Commands.user(userInteraction.getName())
+                .setContexts(InteractionContextType.GUILD)
+                .setIntegrationTypes(IntegrationType.GUILD_INSTALL);
             commandDataList.add(commandData);
             commandNames.add(userInteraction.getName());
         }
@@ -80,19 +88,23 @@ public class CommandManager {
             commandData.add(Commands.slash(command.getName(), command.getDescription())
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(command.getPermissions()))
                 .addOptions(command.getOptions())
-                .addSubcommands(command.getSubcommandsData()));
+                .addSubcommands(command.getSubcommandsData())
+                .setContexts(InteractionContextType.GUILD)
+                .setIntegrationTypes(IntegrationType.GUILD_INSTALL));
         }
 
         for (Interaction<Message> interaction : component.getMessageInteractions()) {
             commandData.add(Commands.message(interaction.getName())
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(interaction.getPermissions()))
-                .setGuildOnly(true));
+                .setContexts(InteractionContextType.GUILD)
+                .setIntegrationTypes(IntegrationType.GUILD_INSTALL));
         }
 
         for (Interaction<Member> interaction : component.getMemberInteractions()) {
             commandData.add(Commands.user(interaction.getName())
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(interaction.getPermissions()))
-                .setGuildOnly(true));
+                .setContexts(InteractionContextType.GUILD)
+                .setIntegrationTypes(IntegrationType.GUILD_INSTALL));
         }
 
         return registerGuildCommands(server, commandData);

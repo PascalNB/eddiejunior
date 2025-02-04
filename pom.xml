@@ -65,11 +65,11 @@
     </dependencyManagement>
 
     <dependencies>
-        <!-- https://mvnrepository.com/artifact/mysql/mysql-connector-java -->
+        <!-- https://mvnrepository.com/artifact/com.mysql/mysql-connector-j -->
         <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <version>8.0.30</version>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <version>9.2.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.google.protobuf</groupId>
@@ -78,17 +78,12 @@
             </exclusions>
         </dependency>
 
-        <!--        &lt;!&ndash; https://mvnrepository.com/artifact/net.dv8tion/JDA&ndash;&gt;-->
-        <!--        <dependency>-->
-        <!--            <groupId>net.dv8tion</groupId>-->
-        <!--            <artifactId>JDA</artifactId>-->
-        <!--            <version>5.1.0</version>-->
-        <!--        </dependency>-->
 
+        <!-- https://mvnrepository.com/artifact/net.dv8tion/JDA-->
         <dependency>
-            <groupId>com.github.PascalNB</groupId>
+            <groupId>net.dv8tion</groupId>
             <artifactId>JDA</artifactId>
-            <version>29c335d</version>
+            <version>5.3.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>club.minnced</groupId>
@@ -96,6 +91,18 @@
                 </exclusion>
             </exclusions>
         </dependency>
+
+        <!--        <dependency>-->
+        <!--            <groupId>com.github.PascalNB</groupId>-->
+        <!--            <artifactId>JDA</artifactId>-->
+        <!--            <version>29c335d</version>-->
+        <!--            <exclusions>-->
+        <!--                <exclusion>-->
+        <!--                    <groupId>club.minnced</groupId>-->
+        <!--                    <artifactId>opus-java</artifactId>-->
+        <!--                </exclusion>-->
+        <!--            </exclusions>-->
+        <!--        </dependency>-->
 
 
         <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-simple -->
