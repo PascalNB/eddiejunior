@@ -79,6 +79,8 @@ public class FeedbackComponent extends DirectMessageComponent {
                     winChannel = channel.getId();
                     getDatabaseManager().setSetting("winchannel", winChannel);
                     reply.ok("Set win channel to %s", channel.getAsMention());
+                    getServer().log(command.getMember().getUser(), "Set feedback win channel to %s (`%s`)",
+                        channel.getAsMention(), channel.getId());
                 }),
 
             new Command("winrole", "set the role that is given to the current winner")
