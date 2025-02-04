@@ -312,9 +312,8 @@ public class ManagerComponent extends AbstractComponent implements GlobalCompone
         }
         reply.defer();
         try {
-            getServer().toggleComponent(component, false).queue(__ ->
-                getServer().toggleComponent(component, true).queue()
-            );
+            getServer().toggleComponent(component, false).complete();
+            getServer().toggleComponent(component, true).complete();
             DatabaseManager.toggleComponent(getServer().getId(), component.getId(), true);
             reply.ok("Reloaded component `%s`", component.getId());
         } catch (Exception e) {
