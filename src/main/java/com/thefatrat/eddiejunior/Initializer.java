@@ -77,7 +77,7 @@ public class Initializer {
                 GatewayIntent.SCHEDULED_EVENTS,
                 GatewayIntent.GUILD_MESSAGES
             )
-            .setMemberCachePolicy(MemberCachePolicy.VOICE)
+            .setMemberCachePolicy(MemberCachePolicy.NONE)
             .enableCache(
                 CacheFlag.MEMBER_OVERRIDES,
                 CacheFlag.SCHEDULED_EVENTS,
