@@ -91,22 +91,22 @@ public class DatabaseManager {
     }
 
     public Promise<Void> removeSetting(String setting) {
-        return DatabaseAction.of(REMOVE_SETTING.withArgs(server, component, setting)).execute();
+        return DatabaseAction.of(REMOVE_SETTING.withArgs(server, component, setting)).execute().stage();
     }
 
     public Promise<Void> removeSetting(String setting, @NotNull String value) {
-        return DatabaseAction.of(REMOVE_SETTING_VALUE.withArgs(server, component, setting, value)).execute();
+        return DatabaseAction.of(REMOVE_SETTING_VALUE.withArgs(server, component, setting, value)).execute().stage();
     }
 
     public Promise<Void> setSetting(String setting, @NotNull Object value) {
         return DatabaseAction.allOf(
             DatabaseAction.of(REMOVE_SETTING.withArgs(server, component, setting)),
             DatabaseAction.of(ADD_SETTING.withArgs(server, component, setting, value))
-        ).execute();
+        ).execute().stage();
     }
 
     public Promise<Void> addSetting(String setting, String value) {
-        return DatabaseAction.of(ADD_SETTING.withArgs(server, component, setting, value)).execute();
+        return DatabaseAction.of(ADD_SETTING.withArgs(server, component, setting, value)).execute().stage();
     }
 
     public String getSetting(String setting) {
@@ -138,7 +138,7 @@ public class DatabaseManager {
     }
 
     public static Promise<Void> toggleComponent(String serverId, String componentId, boolean enable) {
-        return DatabaseAction.of(TOGGLE_COMPONENT.withArgs(serverId, componentId, enable, enable)).execute();
+        return DatabaseAction.of(TOGGLE_COMPONENT.withArgs(serverId, componentId, enable, enable)).execute().stage();
     }
 
     public List<FaqComponent.Question> getQuestions() {
@@ -147,7 +147,7 @@ public class DatabaseManager {
                 Mapper.stream()
             )
             .query()
-            .then(stream -> stream
+            .map(stream -> stream
                 .map(tuple -> {
                     int id = Integer.parseInt(tuple.get("q_number"));
                     String json = tuple.get("value");
@@ -161,13 +161,13 @@ public class DatabaseManager {
     public Promise<Void> removeQuestion(int id) {
         return DatabaseAction.of(
             REMOVE_QUESTION.withArgs(server, id)
-        ).execute();
+        ).execute().stage();
     }
 
     public Promise<Void> setQuestion(int id, String json) {
         return DatabaseAction.of(
             SET_QUESTION.withArgs(server, id, json, json)
-        ).execute();
+        ).execute().stage();
     }
 
     public Map<String, PollComponent.Poll> getPolls() {
@@ -176,7 +176,7 @@ public class DatabaseManager {
                 Mapper.stream()
             )
             .query()
-            .then(stream -> stream
+            .map(stream -> stream
                 .flatMap(tuple -> {
                     String value = tuple.get("value");
                     try {
@@ -213,7 +213,7 @@ public class DatabaseManager {
         return DatabaseAction.of(
                 REMOVE_POLL.withArgs(server, poll.getId())
             )
-            .execute();
+            .execute().stage();
     }
 
 }

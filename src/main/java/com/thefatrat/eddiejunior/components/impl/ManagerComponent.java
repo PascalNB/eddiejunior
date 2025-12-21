@@ -435,12 +435,11 @@ public class ManagerComponent extends AbstractComponent implements GlobalCompone
 
         getServer().getCommandHandler().addRequiredPermission(commandString, userRole);
         getDatabaseManager().removeSetting("commandpermission", commandString + ":" + currentPermission)
-            .then(__ -> {
+            .async(__ -> {
                 getDatabaseManager().setSetting("commandpermission", commandString + ":" + userRole).await();
                 reply.ok("Set required permission of command `%s` to `%s`", commandString, userRole);
                 getServer().log(command.getMember().getUser(), "Set required permission of command `%s` to `%s`",
                     commandString, userRole);
-                return null;
             });
     }
 
